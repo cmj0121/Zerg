@@ -1,2 +1,5 @@
-# Zerg
-A useless programming language
+# ZERG #
+
+ZERG 是一個設計用來練手的程式語言：本身沒有太多特別的功能。
+程式本體預計會有兩個部分：zerg (編譯器) 以及 zasm (組譯器)。
+
