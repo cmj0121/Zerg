@@ -19,9 +19,8 @@ $(SUBDIR):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
 clean: $(SUBDIR)
+	rm -f $(BIN)
 
-install: src
+install: $(SUBDIR)
 	install -d ~/.vim/syntax/
 	install -m644 $(VIMRC) ~/.vim/syntax/
-	install -m755 src/zasm.inst /usr/local/bin/zasm
-
