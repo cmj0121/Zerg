@@ -3,7 +3,10 @@ include Makefile.in
 ZASM_SRC=$(wildcard zasm/*.cpp)
 ZASM_OBJ=$(subst .cpp,.o,$(ZASM_SRC))
 
-BIN=zasm.inst
+ZERG_SRC=$(wildcard zerg/*.cpp)
+ZERG_OBJ=$(subst .cpp,.o,$(ZERG_SRC))
+
+BIN=zasm.inst zerg.inst
 
 CXXFLAGS:=$(CXXFLAGS) -I../include
 
@@ -12,6 +15,10 @@ CXXFLAGS:=$(CXXFLAGS) -I../include
 all: $(BIN)
 
 zasm.inst: $(ZASM_OBJ)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
+	$(STRIP) $@
+
+zerg.inst: $(ZERG_OBJ)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 	$(STRIP) $@
 

@@ -123,7 +123,8 @@ off_t Instruction::setIMM(off_t imm, int size, bool reset) {
 	}
 
 	if (off != 0 && off != (off_t)-1) {
-		_E("Not Implemented %llX %llX", imm, off);
+		_D(LOG_CRIT, "Not Implemented %llX %llX", imm, off);
+		exit(-1);
 	}
 
 	return imm;
@@ -161,7 +162,8 @@ void Instruction::assemble(void) {
 	}
 
 	if (idx == ARRAY_SIZE(InstructionSets)) {
-		_E("Not Implemented %s %s %s",
+		_D(LOG_CRIT, "Not Implemented %s %s %s",
 			this->cmd().raw().c_str(), this->dst().raw().c_str(), this->src().raw().c_str());
+		exit(-1);
 	}
 }

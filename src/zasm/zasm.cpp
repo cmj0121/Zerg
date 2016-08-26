@@ -34,7 +34,8 @@ void Zasm::compile(std::fstream &src) {
 					(*this) += new Instruction(line[0], line[1], line[2]);
 					break;
 				default:
-					_E("Not Implemented");
+					_D(LOG_CRIT, "Not Implemented %zu", line.size());
+					exit(-1);
 					break;
 			}
 			line.clear();
@@ -82,7 +83,8 @@ ZasmToken* Zasm::token(std::fstream &src) {
 					}
 				}
 				if (']' != token[token.size()-1]) {
-					_E("Syntax Error - '%s'", token.c_str());
+					_D(LOG_CRIT, "Syntax Error - '%s'", token.c_str());
+					exit(-1);
 				}
 				break;
 			default:
@@ -144,7 +146,8 @@ int main(int argc, char *argv[]) {
 		std::vector<std::string> line;
 
 		if (0 >= argc) {
-			_E("Bad Parameter");
+			_D(LOG_CRIT, "Bad Parameter");
+			exit(-1);
 		}
 
 		src.open(argv[0], std::fstream::in);

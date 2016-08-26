@@ -68,7 +68,8 @@ bool ZasmToken::isEXT(void) {
 		ZasmToken *tmp = this->asReg();
 		return tmp->isEXT();
 	} else {
-		NOT_IMPLEMENTED;
+		_D(LOG_CRIT, "Not Implemented");
+		exit(-1);
 	}
 	return false;
 }
@@ -98,12 +99,14 @@ off_t ZasmToken::asInt(void) {
 		ss >> ret;
 		return ret;
 	} else {
-		_E("Not Implemented '%s'", this->_src_.c_str());
+		_D(LOG_CRIT, "Not Implemented '%s'", this->_src_.c_str());
+		exit(-1);
 	}
 }
 ZasmToken* ZasmToken::asReg(void) {
 	if (!(this->isREG() || this->isMEM())) {
-		_E("Only support register or member");
+		_D(LOG_CRIT, "Only support register or member");
+		exit(-1);
 	} else if (this->isREG()) {
 		return this;
 	} else {
@@ -168,7 +171,8 @@ ZasmToken* ZasmToken::indexReg(void) {
 		}
 
 		if (cnt > 2) {
-			_E("Not support %s", this->_src_.c_str());
+			_D(LOG_CRIT, "Not support %s", this->_src_.c_str());
+			exit(-1);
 		}
 		if (cnt != 2) {
 			delete token;
@@ -308,7 +312,8 @@ bool ZasmToken::match(unsigned int flag) {
 				blRet = *this == "cl";
 				break;
 			default:
-				NOT_IMPLEMENTED;
+				_D(LOG_CRIT, "Not Implemented");
+				exit(-1);
 		}
 	}
 #endif /* __x86_64__ */

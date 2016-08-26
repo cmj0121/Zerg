@@ -3,7 +3,7 @@ include Makefile.in
 SUBDIR=src
 
 VIMRC=$(wildcard *.vim)
-BIN=zasm
+BIN=zasm zerg
 
 
 .PHONY: all clean install $(SUBDIR)

@@ -43,7 +43,8 @@ off_t Binary::dump(off_t entry) {
 		}
 
 		if (pos == _inst_.size() || pos == idx || 0 > pos) {
-			_E("Not found the symbol [%s]", _inst_[idx]->refer().c_str());
+			_D(LOG_CRIT, "Not found the symbol [%s]", _inst_[idx]->refer().c_str());
+			exit(-1);
 		} else if (pos > idx) {
 			for (int i = idx+1; i < pos; ++i) offset += _inst_[i]->length();
 		} else {
