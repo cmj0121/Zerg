@@ -2,10 +2,12 @@
 #ifndef __ZERG_H__
 #  define __ZERG_H__
 
-#include "utils.h"
-#include "zasm.h"
+#include <string>
 
-class Zerg : public Binary {
+#include "utils.h"
+#include "zerg/ir.h"
+
+class Zerg : public IR {
 	public:
 		Zerg(std::string src, std::string dst);
 };
