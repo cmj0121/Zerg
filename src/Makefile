@@ -14,11 +14,11 @@ CXXFLAGS:=$(CXXFLAGS) -I../include
 
 all: $(BIN)
 
-zasm.inst: $(ZASM_OBJ)
+zasm.inst: zasm.cpp $(ZASM_OBJ)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 	$(STRIP) $@
 
-zerg.inst: $(ZERG_OBJ)
+zerg.inst: zerg.cpp $(ZASM_OBJ) $(ZERG_OBJ)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 	$(STRIP) $@
 

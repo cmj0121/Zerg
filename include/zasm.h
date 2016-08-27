@@ -4,7 +4,6 @@
 
 #include <stdio.h>
 static int __line__;
-extern int __verbose__;
 
 #include "utils.h"
 
@@ -100,14 +99,13 @@ class Instruction {
 
 		off_t offset(void);
 		std::vector<ZasmToken *>_inst_;
-
-		#ifdef __x86_64__
+#ifdef __x86_64__
 		void legacyPrefix(X86_64_INST &inst);
 		void opcode(X86_64_INST &inst);
 		void modRW(X86_64_INST &inst);
 		void displacement(X86_64_INST &inst);
 		void immediate(X86_64_INST &inst);
-		#endif /* __x86_64__ */
+#endif /* __x86_64__ */
 };
 
 #include <inttypes.h>

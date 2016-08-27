@@ -3,7 +3,11 @@
 #  define __ZERG_H__
 
 #include "utils.h"
+#include "zasm.h"
 
-extern int __verbose__;
+class Zerg : public Binary {
+	public:
+		Zerg(std::string src, std::string dst);
+};
 
 #endif /* __ZERG_H__ */

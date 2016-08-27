@@ -9,3 +9,39 @@ language and how the binary work via a compiler.
 Zerg (v1) is designed on the Mac OS X, this means zerg only workable on Mac environment and
 based on zasm, it is a assembler designed for zerg, to produce a binary running on Mac.
 
+## 設計流程 / Design Flow ##
+如同 commit 06eb66e 上的說法，Zerg 已經被我重新設計過很多次了，在這些設計過程中犯了不少錯誤，
+也修改的不少實作的方式。在這個版本中，依然使用 C++ (c++11) 來實作第一版的 Zerg，
+並且最終希望可以用這一版 Zerg 編譯出其他版的 Zerg 而達到 self-hosting 的目的。
+
+這次實作的方式利用 Top-Down 的流程來完成 Zerg：也就是先假設底層功能已經完成 (像是
+Parser 與 AST 等)，先完成一個最小有價值產品 (Minimal Value Product, MVP)，並且評估是否有過度設計
+(Over-engineering) 的狀況發生。
+
+根據編譯器 (compiler) 在產生最終可執行檔時，會經過若干個過程：詞彙分析 (lexical analysis)、
+語法分析 (syntax analysis)、語意分析 (semantic analysis)、中介語言
+(intermediate representation, IR)、代碼產生 (code generation)。而在 IR 階段，
+可以幾過若干最佳化後產生不同的 IR，進而產生更加的機械語言。這裡的最佳可以是大小、速度或平台相容等。
+
+
+### 射出器 / Emitter ###
+從 IR 到 code generation 會經由射出器 (emitter) 來橋接兩個階段。
+在這個階段會經由一個 emitter，將 IR 射出成相對的代碼 (機械碼)。對於 IR 來說是平台無關
+(platform-independent) 的一個語言，代表的是低階的程式操作，像是暫存器 (register) 的運算、
+寫入到記憶體 (memory) 或者是系統中斷 (interrupt) 等。然而，對於不同平台會有不同的支援程度，
+像是 x86-64 擁有 16 個通用暫存器，但是 ARM A8 卻擁有 31 個通用暫存器。
+
+因此 IR 的設計會假設擁有平台無關的特性：無限多個暫存器、支援所有運算與浮點運算等。
+根據 IR 的設計，可能會偏向原本程式語言的型態 (High-Level IR) 或者是偏向目標語言
+(Low-Level IR)，每種 IR 都有相對應的目的與最佳化的方式。而我所設計的 Zasm 也可以當作是一種 IR：
+可以藉由 Zasm 的語法來產生最終的機械碼與可執行檔。然而 Zasm 本身指定使用特定的暫存器，這跟 IR
+的設計目的有相違背，因此在 Zerg 會先設計出 Zasm+：這是一個基於 Zasm 語法的 IR 但擁有無限數量的
+register。在 Zasm+ 中用 r 開頭表示 64-bits 大小的 register 並且接續數字表示使用第 n 個暫存器：
+
++ r12 表示使用第 12 個通用暫存器，size 為 64-bits
++ w12 為 32-bits
++ d12 為 16-bits
++ b12 為 8-bits
+
+而 Zasm+ 使用 3-tuple 來呈現：也就是使用 (operation, dst, src) 來表示一個虛擬指令，
+這個指令也就是 dst = dst operation src 的用法。

@@ -2,6 +2,7 @@
 #ifndef _ZERG_UTILS_H_
 #  define _ZERG_UTILS_H_
 
+extern int __verbose__;
 enum ZergLogLevel {
 	LOG_CRIT	= 0,
 	LOG_BUG,
@@ -15,7 +16,7 @@ enum ZergLogLevel {
 	do {														\
 		if (lv <= __verbose__) {								\
 			fprintf(stderr, "%-16s L#%04d (%02d) - " msg "\n",	\
-				 __FILE__, __LINE__, lv, ##__VA_ARGS__);		\
+					__FILE__, __LINE__, lv, ##__VA_ARGS__);		\
 		}														\
 	} while (0)
 #define _DEBUG()	_D(0, "\x1b[1;34m ~ debug ~\x1b[m")
