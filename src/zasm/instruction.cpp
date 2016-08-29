@@ -134,7 +134,7 @@ void Instruction::assemble(void) {
 	int idx = 0;
 	X86_64_INST inst;
 
-	_D(ZASM_LOG_WARNING, "Assemble %s %s %s",
+	_D(ZASM_LOG_WARNING, "Assemble `%s` `%s` `%s`",
 			this->cmd().raw().c_str(), this->dst().raw().c_str(), this->src().raw().c_str());
 	if (this->cmd() == TOKEN_ASM) {
 		if (this->src()) {

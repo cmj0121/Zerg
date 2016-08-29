@@ -6,16 +6,28 @@ ZasmPEmitter::ZasmPEmitter(std::string dst) : Binary(dst) {
 	_param_nr_ = 0;
 
 	/* Mock Testing */
+	ZasmPEmitter::emit("PARAM", "0x2000004");
+	ZasmPEmitter::emit("PARAM", "0x01");
+	ZasmPEmitter::emit("PARAM", "&str");
+	ZasmPEmitter::emit("PARAM", "0x0C");
+	ZasmPEmitter::emit("INTERRUPT");
+
 	ZasmPEmitter::emit("PARAM", "0x2000001");
 	ZasmPEmitter::emit("PARAM", "0x04");
 	ZasmPEmitter::emit("INTERRUPT");
+
+	ZasmPEmitter::emit("LABEL", "str", "ZasmP IR\\n");
 	Binary::dump();
 }
 
 void ZasmPEmitter::emit(ZasmPToken op, ZasmPToken dst, ZasmPToken src, ZasmPToken extra) {
 	if (op == "COPY") {					/* (COPY,  DST, SRC) */
 		/* Copy data from src to dst */
-		(*this) += new Instruction("mov", dst, src);
+		if ("rsi" == dst && '&' == src[0]) {
+			(*this) += new Instruction("lea", dst, src);
+		} else {
+			(*this) += new Instruction("mov", dst, src);
+		}
 	} else if (op == "LOAD") {			/* (LOAD,  DST, SRC, EXTRA) */
 		/* Load data from memory with index if need */
 		char buff[BUFSIZ] = {0};
@@ -58,19 +70,19 @@ void ZasmPEmitter::emit(ZasmPToken op, ZasmPToken dst, ZasmPToken src, ZasmPToke
 		/* dst = dst - 1 */
 		(*this) += new Instruction("dec", dst);
 	} else if (op == "SHL") {			/* (SHL,   DST, SRC) */
-		/* dst = dsr << src */
+		/* dst = dst << src */
 		(*this) += new Instruction("shl", dst, src);
 	} else if (op == "SHR") {			/* (SHR,   DST, SRC) */
-		/* dst = dsr >> src */
+		/* dst = dst >> src */
 		(*this) += new Instruction("shr", dst, src);
 	} else if (op == "AND") {			/* (AND,   DST, SRC) */
-		/* dst = dsr & src */
+		/* dst = dst & src */
 		(*this) += new Instruction("and", dst, src);
 	} else if (op == "OR") {			/* (OR,    DST, SRC) */
-		/* dst = dsr | src */
+		/* dst = dst | src */
 		(*this) += new Instruction("or", dst, src);
 	} else if (op == "XOR") {			/* (XOR,   DST, SRC) */
-		/* dst = dsr ^ src */
+		/* dst = dst ^ src */
 		(*this) += new Instruction("xor", dst, src);
 	} else if (op == "NOT") {			/* (NOT,   DST) */
 		/* negative dst with 1's complement */
@@ -87,6 +99,17 @@ void ZasmPEmitter::emit(ZasmPToken op, ZasmPToken dst, ZasmPToken src, ZasmPToke
 	} else if (op == "PARAM") {			/* (PARAM, DST) */
 		/* Save the parameter */
 		this->_param_[this->_param_nr_ ++] = dst;
+	} else if (op == "LABEL") {			/* (LABEL, DST, SRC) */
+		/* Set label or set variable */
+		if ("" == src) {
+			(*this) += new Instruction("asm", dst + ":");
+		} else {
+			/* NOTE - the string need to be a "STRING" */
+			(*this) += new Instruction("asm", dst, "\"" + src + "\"");
+		}
+	} else if (op == "NOP") {			/* (NOP) */
+		/* NOP */
+		(*this) += new Instruction("nop");
 	} else if (op == "INTERRUPT") {		/* (INTERRUPT) */
 		/* Call system interrupt, and it is platform-dependent */
 		std::vector<ZasmPToken> regs = { "rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"};
