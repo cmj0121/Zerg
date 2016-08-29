@@ -9,19 +9,25 @@
 
 #include "zasm.h"
 
-class Tuple {
+typedef std::string		ZasmPToken;
+#define MAX_ZASMP_PARAM	10
+/* Low-Level IR to emit Zasm language
+ *
+ * This IR is a max-to-4 tuple (OP, DST, SRC, EXTRA) and support 40 pseudo operators
+ */
+class ZasmPEmitter : public Binary {
 	public:
-		Tuple(std::string op, std::string dst="", std::string x="", std::string y="");
-		friend std::fstream& operator << (std::fstream &stream, const Tuple &src);
+		ZasmPEmitter(std::string dst);
+		void emit(ZasmPToken op, ZasmPToken dst="", ZasmPToken src="", ZasmPToken extra="");
 	private:
-		std::string _op_, _dst_, _x_, _y_;
+		int _param_nr_;;
+		ZasmPToken _param_[MAX_ZASMP_PARAM];
 };
 
-class IR : public Binary {
+class IR : public ZasmPEmitter {
 	public:
 		IR(std::string dst);
-	private:
-		std::vector<std::string> _operators_;
+
 };
 
 #endif /* __ZERG_IR_H__ */

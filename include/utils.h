@@ -11,6 +11,9 @@ enum ZergLogLevel {
 	LOG_INFO,
 };
 
+#include <string>
+typedef std::string STRING;
+
 #include <stdio.h>
 #define _D(lv, msg, ...) 										\
 	do {														\
