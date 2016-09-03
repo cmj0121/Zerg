@@ -9,25 +9,35 @@
 
 #include "zasm.h"
 
-typedef std::string		ZasmPToken;
 #define MAX_ZASMP_PARAM	10
 /* Low-Level IR to emit Zasm language
  *
  * This IR is a max-to-4 tuple (OP, DST, SRC, EXTRA) and support 40 pseudo operators
  */
-class ZasmPEmitter : public Binary {
+class IRToken {
 	public:
-		ZasmPEmitter(std::string dst);
-		void emit(ZasmPToken op, ZasmPToken dst="", ZasmPToken src="", ZasmPToken extra="");
+		IRToken();
+		IRToken(std::string op, std::string dst="", std::string src="", std::string extra="");
+
+		std::string op(void)	{ return this->_op_;  }
+		std::string dst(void)	{ return this->_dst_; }
+		std::string src(void)	{ return this->_src_; }
+		std::string extra(void)	{ return this->_ext_; }
+		friend std::fstream& operator<< (std::fstream& stream, const IRToken &src);
 	private:
-		int _param_nr_;;
-		ZasmPToken _param_[MAX_ZASMP_PARAM];
+		std::string _op_, _dst_, _src_, _ext_;
 };
 
-class IR : public ZasmPEmitter {
+
+class IR : public Binary {
 	public:
 		IR(std::string dst);
 
+		void emit(IRToken token);
+		void emit(std::string op, std::string dst="", std::string src="", std::string extra="");
+	private:
+		int _param_nr_;;
+		std::string _param_[MAX_ZASMP_PARAM];
 };
 
 #endif /* __ZERG_IR_H__ */

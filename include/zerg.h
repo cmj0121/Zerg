@@ -10,6 +10,9 @@
 class Zerg : public IR {
 	public:
 		Zerg(std::string src, std::string dst);
+
+		void lexer(void);		/* lexer analysis */
+		void parser(void);		/* syntax and semantic analysis */
 };
 
 #endif /* __ZERG_H__ */
