@@ -19,20 +19,10 @@ std::fstream& operator<< (std::fstream &stream, const IRToken &src) {
 	return stream;
 }
 
-IR::IR(std::string dst) : Binary(dst), _param_nr_(0) {
-	/* Mock Testing */
-	IR::emit(IRToken("PARAM", "0x2000004"));
-	IR::emit(IRToken("PARAM", "0x01"));
-	IR::emit(IRToken("PARAM", "&str"));
-	IR::emit(IRToken("PARAM", "0x0C"));
-	IR::emit(IRToken("INTERRUPT"));
-
-	IR::emit("PARAM", "0x2000001");
-	IR::emit("PARAM", "0x04");
-	IR::emit("INTERRUPT");
-
-	IR::emit("LABEL", "str", "ZasmP IR\\n");
-	Binary::dump();
+IR::IR(std::string dst, off_t entry) : Binary(dst), _param_nr_(0), _entry_(entry) {
+}
+IR::~IR(void) {
+	Binary::dump(this->_entry_);
 }
 
 void IR::emit(IRToken token) {

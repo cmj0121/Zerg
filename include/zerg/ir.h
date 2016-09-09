@@ -31,12 +31,14 @@ class IRToken {
 
 class IR : public Binary {
 	public:
-		IR(std::string dst);
+		IR(std::string dst, off_t entry = 0x1000);
+		~IR(void);
 
 		void emit(IRToken token);
 		void emit(std::string op, std::string dst="", std::string src="", std::string extra="");
 	private:
-		int _param_nr_;;
+		int _param_nr_;
+		off_t _entry_;
 		std::string _param_[MAX_ZASMP_PARAM];
 };
 

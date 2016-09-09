@@ -47,6 +47,7 @@ int main(int argc, char *argv[]) {
 
 	Zerg *zerg = new Zerg(argv[0], dst);
 	delete zerg;
+
 	return 0;
 }
 /* vim set: tabstop=4 */
