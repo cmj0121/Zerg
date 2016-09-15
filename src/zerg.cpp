@@ -6,6 +6,8 @@
 #include "zerg.h"
 
 int __verbose__ = 0;
+bool _only_ir_	= false;
+
 void help(void) {
 	fprintf(stderr, "ZERG - A useless compiler\n");
 	fprintf(stderr, "\n");
@@ -17,21 +19,25 @@ void help(void) {
 }
 int main(int argc, char *argv[]) {
 	int optIdx = -1;
-	char ch, opts[] = "vo:";
+	char ch, opts[] = "o:rv";
 	struct option options[] = {
-		{"verbose", optional_argument, 0, 'v'},
-		{"output",	required_argument, 0, 'o'},
+		{"output",	required_argument,	0, 'o'},
+		{"ir",		no_argument, 		0, 'r'},
+		{"verbose", optional_argument,	0, 'v'},
 		{NULL, 0, 0, 0}
 	};
 	std::string dst = "a.out";
 
 	while (-1 != (ch = getopt_long(argc, argv, opts, options, &optIdx))) {
 		switch(ch) {
-			case 'v':
-				__verbose__++;
-				break;
 			case 'o':
 				dst = optarg;
+				break;
+			case 'r':
+				_only_ir_ = true;
+				break;
+			case 'v':
+				__verbose__++;
 				break;
 			default:
 				_D(LOG_CRIT, "Not support option %c", ch);
@@ -45,8 +51,9 @@ int main(int argc, char *argv[]) {
 		help();
 	}
 
-	Zerg *zerg = new Zerg(argv[0], dst);
-	delete zerg;
+	Zerg zerg(dst);
+
+	zerg.compile(argv[0], _only_ir_);
 
 	return 0;
 }

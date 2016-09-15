@@ -68,7 +68,7 @@ bool ZasmToken::isEXT(void) {
 		ZasmToken *tmp = this->asReg();
 		return tmp->isEXT();
 	} else {
-		_D(LOG_CRIT, "Not Implemented");
+		_D(LOG_CRIT, "Not Implemented token `%s`", this->_src_.c_str());
 		exit(-1);
 	}
 	return false;

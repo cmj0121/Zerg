@@ -1,23 +1,34 @@
 #include "zerg.h"
 
-AST::AST(std::string src) : Tree<AST>(src), _label_(0), _raw_(src) {
+AST::AST(std::string src) : Tree<AST>(src), _emitted_(false), _label_(0), _raw_(src) {
+	std::vector<std::string> ops = {"+", "-", "*", "/", "<", ">"};
+
 	if (0 == src.size()) {
 		_type_ = AST_ROOT;
 	} else if ("syscall" == src) {
 		_type_ = AST_INTERRUPT;
 	} else if ('\'' == src[0] || '\"' == src[0]) {
 		_type_ = AST_STRING;
-	} else {
+	} else if (0 == src.find("0x")) {
 		_type_ = AST_NUMBER;
+	} else if ("=" == src) {
+		_type_ = AST_ASSIGN;
+	} else if (ops.end() != std::find(ops.begin(), ops.end(), src)) {
+		_type_ = AST_OPERATORS;
+	} else {
+		_type_ = AST_IDENTIFIER;
 	}
 }
 
 void AST::insert(std::string src) {
 	AST *node = new AST(src);
+
+	_D(LOG_DEBUG, "AST insert %s", src.c_str());
 	return Tree<AST>::insert(node);
 }
 void AST::setLabel(int nr) {
 	/* Set as label */
+	_D(LOG_DEBUG, "AST set label %d on %s", nr, this->_raw_.c_str());
 	this->_label_ = nr;
 }
 ASTType AST::type(void) {
@@ -36,4 +47,13 @@ std::string AST::data(void) {
 	} else {
 		return this->_raw_;
 	}
+}
+
+void AST::setEmitted(void) {
+	/* set this AST already emitted */
+	this->_emitted_ = true;
+}
+bool AST::isEmmited(void) {
+	/* reply this AST is emitted or not */
+	return this->_emitted_;
 }

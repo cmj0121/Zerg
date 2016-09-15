@@ -2,18 +2,23 @@
 #ifndef __ZERG_TREE_H__
 #	define __ZERG_TREE_H__
 
+#include "../utils.h"
+
 template<class T>
 class Tree {
 	public:
 		Tree(std::string src) : _src_(src), _parent_(NULL) {};
 		virtual ~Tree() {
+			_D(LOG_DEBUG, "delete tree node %s", this->_src_.c_str());
 			for (unsigned int i = 0; i < this->length(); ++i) {
 				delete this->_childs_[i];
 			}
+			 this->_childs_.clear();
 		}
 
 		ssize_t length(void) const {
 			/* return numbers of the children */
+			_D(LOG_INFO, "get tree length");
 			return this->_childs_.size();
 		}
 		ssize_t height(void) const {

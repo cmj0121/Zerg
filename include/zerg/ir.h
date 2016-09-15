@@ -34,8 +34,8 @@ class IR : public Binary {
 		IR(std::string dst, off_t entry = 0x1000);
 		~IR(void);
 
-		void emit(IRToken token);
-		void emit(std::string op, std::string dst="", std::string src="", std::string extra="");
+		virtual void emit(IRToken token);
+		virtual void emit(std::string op, std::string dst="", std::string src="", std::string extra="");
 	private:
 		int _param_nr_;
 		off_t _entry_;
