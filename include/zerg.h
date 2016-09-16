@@ -39,6 +39,8 @@ class AST : public Tree<AST> {
 
 		void insert(std::string dst);
 		void setLabel(int nr);
+		void setReg(int nr);
+		int  getReg(void);
 		void setEmitted(void);
 		bool isEmmited(void);
 
@@ -46,7 +48,7 @@ class AST : public Tree<AST> {
 		std::string data(void);
 	private:
 		bool _emitted_;
-		int _label_;
+		int _label_, _reg_;
 		std::string _raw_;
 		ASTType _type_;
 };
@@ -78,7 +80,7 @@ class CFG : public AST {
 	private:
 		bool _bypass_, _refed_, _branch_;
 		std::string _name_;
-		CFG *_next_[2];
+		CFG *_next_[2], *_parent_;
 #ifdef DEBUG
 		/* CFG relation map */
 		std::vector<CFG *>stages;
@@ -95,6 +97,8 @@ class Zerg : public IR {
 
 		void compile(std::string src, bool only_ir=false);
 		void emit(std::string op, std::string dst="", std::string src="", std::string extra="");
+
+		std::string regalloc(std::string src);
 	private:
 		bool _only_ir_;
 		int _labelcnt_;

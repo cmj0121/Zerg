@@ -33,7 +33,7 @@ class Tree {
 			return ret;
 		}
 
-		Tree<T>* parent(void) {
+		T* parent(void) {
 			/* return the parent node */
 			return this->_parent_;
 		}
@@ -48,7 +48,7 @@ class Tree {
 		void insert(T *dst) {
 			/* insert a tree node */
 			this->_childs_.push_back(dst);
-			dst->_parent_ = this;
+			dst->_parent_ = (T *)this;
 		}
 		void remove(void) {
 			/* remove the current node in the tree */
@@ -59,9 +59,11 @@ class Tree {
 			}
 
 			/* remove from parent */
-			for (auto it = this->_parent_->_childs_.begin(); it != this->_parent_->_childs_.end(); ++it) {
+			Tree<T> *parent = (Tree<T> *)this->_parent_;
+
+			for (auto it = parent->_childs_.begin(); it != parent->_childs_.end(); ++it) {
 				if (*it == this) {
-					this->_parent_->_childs_.erase(it);
+					parent->_childs_.erase(it);
 					break;
 				}
 			}
@@ -88,7 +90,7 @@ class Tree {
 		}
 	private:
 		std::string _src_;
-		Tree<T> *_parent_;
+		T *_parent_;
 		std::vector<T *> _childs_;
 
 		bool isLastChild(void) const {

@@ -10,6 +10,7 @@
 #include "zasm.h"
 
 #define MAX_ZASMP_PARAM	10
+#define __IR_REG_FMT__	"__ZERG_REG_%d__"
 /* Low-Level IR to emit Zasm language
  *
  * This IR is a max-to-4 tuple (OP, DST, SRC, EXTRA) and support 40 pseudo operators
@@ -34,8 +35,10 @@ class IR : public Binary {
 		IR(std::string dst, off_t entry = 0x1000);
 		~IR(void);
 
-		virtual void emit(IRToken token);
-		virtual void emit(std::string op, std::string dst="", std::string src="", std::string extra="");
+		void emit(IRToken token);
+		void emit(std::string op, std::string dst="", std::string src="", std::string extra="");
+
+		virtual std::string regalloc(std::string src) = 0;
 	private:
 		int _param_nr_;
 		off_t _entry_;

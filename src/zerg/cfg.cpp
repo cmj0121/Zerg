@@ -3,7 +3,7 @@
 #include <iomanip>
 #include "zerg.h"
 
-CFG::CFG(std::string name) : AST(""), _name_(name) {
+CFG::CFG(std::string name) : AST(""), _name_(name), _parent_(NULL) {
 	this->_refed_   = false;
 	this->_branch_  = false;
 	this->_next_[0] = NULL;
@@ -39,6 +39,8 @@ void CFG::passto(CFG *next) {
 	}
 	this->_bypass_  = true;
 	this->_next_[0] = next;
+
+	if (next) next->_parent_ = this;
 }
 void CFG::branch(CFG *truecase, CFG *falsecase) {
 	if (NULL != this->_next_[0] || NULL != this->_next_[1]) {
@@ -54,8 +56,14 @@ void CFG::branch(CFG *truecase, CFG *falsecase) {
 	}
 
 	/* set the branch node */
-	if (NULL != truecase)  truecase->_branch_  = true;
-	if (NULL != falsecase) falsecase->_branch_ = true;
+	if (NULL != truecase) {
+		truecase->_branch_  = true;
+		truecase->_parent_  = this;
+	}
+	if (NULL != falsecase) {
+		falsecase->_branch_ = true;
+		falsecase->_parent_ = this;
+	}
 }
 std::string CFG::label(void) {
 	/* return the CFG label */
