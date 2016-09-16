@@ -159,6 +159,14 @@ void Instruction::modRW(X86_64_INST &inst) {
 
 		if (this->offset()) {
 			mod = 0 == (~0x7F & this->offset()) ? 0x01 : 0x02;
+		} else if (this->src().isMEM() && !this->src().isREF()) {
+			ZasmToken *base = this->src().asReg();
+
+			mod = (*base == "rsp" || *base == "rbp") ? 0x01 : 0x00;
+		} else if (this->dst().isMEM() && !this->dst().isREF()) {
+			ZasmToken *base = this->dst().asReg();
+
+			mod = (*base == "rsp" || *base == "rbp") ? 0x01 : 0x00;
 		}
 
 
@@ -171,6 +179,10 @@ void Instruction::modRW(X86_64_INST &inst) {
 
 		_payload_[_length_++] = (mod & 0x3) << 6 | (reg & 0x7) << 3 | (rm & 0x7);
 		_D(ZASM_LOG_WARNING, "Mod R/W       - %02X", _payload_[_length_-1]);
+
+		if (mod == 0x01) {
+			_payload_[_length_++] = 0x0;
+		}
 	}
 }
 void Instruction::displacement(X86_64_INST &inst) {
