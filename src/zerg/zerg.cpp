@@ -5,57 +5,97 @@
 
 Zerg::Zerg(std::string dst, off_t entry) : IR(dst, entry) {
 	this->_labelcnt_ = 0;
-	this->_root_     = NULL;
 }
 Zerg::~Zerg() {
 	/* delete the AST node */
-	delete this->_root_;
+	for (auto it : this->_root_) {
+		delete it.second;
+	}
 }
 
 void Zerg::compile(std::string src, bool only_ir) {
 	this->_only_ir_ = only_ir;
+	CFG *root = NULL, *subroutine = NULL;
 
-	CFG *root = NULL, *condi = NULL, *payload = NULL, *exit = NULL;
+	{	/* main function */
+		CFG *condi = NULL, *payload = NULL, *func = NULL, *exit = NULL;
 
-	root = new CFG("root");
-	root->insert("=");
-	root->child(0)->insert("_VAR");
-	root->child(0)->insert("0x0");
+		root = new CFG("root");
+		root->insert("=");
+		root->child(0)->insert("_VAR");
+		root->child(0)->insert("0x0");
 
-	condi = new CFG("branch");
-	condi->insert("<");
-	condi->child(0)->insert("_VAR");
-	condi->child(0)->insert("0x03");
+		condi = new CFG("branch");
+		condi->insert("<");
+		condi->child(0)->insert("_VAR");
+		condi->child(0)->insert("0x03");
 
-	/* syscall (0x2000004, 0x02, "Zerg IR Countdown\n", 0x0C) */
-	payload = new CFG("payload");
-	payload->insert("syscall");
-	payload->child(0)->insert("0x2000004");
-	payload->child(0)->insert("0x01");
-	payload->child(0)->insert("'Zerg IR Countdown\\n'");
-	payload->child(0)->insert("0x12");
+		/* syscall (0x2000004, 0x02, "Zerg IR Countdown\n", 0x0C) */
+		payload = new CFG("payload");
+		payload->insert("syscall");
+		payload->child(0)->insert("0x2000004");
+		payload->child(0)->insert("0x01");
+		payload->child(0)->insert("'Zerg IR Countdown\\n'");
+		payload->child(0)->insert("0x12");
 
-	payload->insert("=");
-	payload->child(1)->insert("_VAR");
-	payload->child(1)->insert("+");
-	payload->child(1)->child(1)->insert("_VAR");
-	payload->child(1)->child(1)->insert("0x1");
+		payload->insert("=");
+		payload->child(1)->insert("_VAR");
+		payload->child(1)->insert("+");
+		payload->child(1)->child(1)->insert("_VAR");
+		payload->child(1)->child(1)->insert("0x1");
 
+		/* function call */
+		func = new CFG("function-call");
+		func->insert("[FUNCTION CALL]", AST_FUNCCALL);
+		func->child(0)->insert("foo");
 
-	/* syscall (0x2000001, 0x04) */
-	exit = new CFG("exit");
-	exit->insert("syscall");
-	exit->child(0)->insert("0x2000001");
-	exit->child(0)->insert("0x04");
+		/* syscall (0x2000001, 0x04) */
+		exit = new CFG("exit");
+		exit->insert("syscall");
+		exit->child(0)->insert("0x2000001");
+		exit->child(0)->insert("0x04");
 
-	do { /* relation of CFG */
-		root->passto(condi);
-		condi->branch(payload, exit);
-		payload->branch(condi, NULL);
-	} while (0);
+		do { /* relation of CFG */
+			root->passto(condi);
+			condi->branch(payload, func);
+			payload->passto(condi);
+			func->passto(exit);
+		} while (0);
+	}
+	this->_root_[CFG_MAIN] = root;
 
-	this->_root_ = root;
-	this->DFS(root);
+	{	/* subroutine - foo */
+		CFG *payload = NULL;
+		subroutine = new CFG("foo");
+
+		/* syscall (0x2000004, 0x02, "subroutine\n", 0x0C) */
+		payload = new CFG("payload");
+		payload->insert("syscall");
+		payload->child(0)->insert("0x2000004");
+		payload->child(0)->insert("0x01");
+		payload->child(0)->insert("'call subroutine\\n'");
+		payload->child(0)->insert("0x10");
+
+		subroutine->passto(payload);
+	}
+	this->_root_["foo"] = subroutine;
+
+	this->compileCFG(this->_root_[CFG_MAIN]);
+	for (auto it : this->_root_) {
+		if (it.first != CFG_MAIN) {
+			/* compile subroutine */
+			_D(LOG_WARNING, "compile subroutine `%s`", it.first.c_str());
+			this->emit("LABEL", it.first);
+			this->compileCFG(it.second);
+			this->emit("RET");
+		}
+	}
+
+	/* Dump all symbol at end of CFG */
+	_D(LOG_INFO, "dump all symbols");
+	for (auto it : this->_symb_) {
+		this->emit("LABEL", it.first, it.second);
+	}
 }
 
 /* Private Properties */
@@ -67,7 +107,7 @@ void Zerg::parser(void) {
 	_D(LOG_CRIT, "Not Implemented");
 	exit(-1);
 }
-void Zerg::DFS(CFG *node) {
+void Zerg::compileCFG(CFG *node) {
 	CFG *tmp = NULL;
 
 	if (NULL != node && ! node->isEmmited()) {
@@ -75,38 +115,49 @@ void Zerg::DFS(CFG *node) {
 		std::cout << *node << std::endl;
 		#endif
 
-		if ("" != node->label()) {
+		/*
+		 *         +---+
+		 *         |   |           CONDITION NODE          test expression
+		 *         +---+                                   JMP to [BRANCH FALSE] if false
+		 *          / \
+		 *         /   \
+		 *     +---+  +---+                                statement for true branch
+		 *     | T |  | F |        BRANCH NODE             , and then JMP to [NORMAL NODE]
+		 *     +---+  +---+
+		 *       \     /                                   statement for false branch
+		 *         \ /
+		 *        +---+
+		 *        |   |            NORMAL NODE             statement for normal expression
+		 *        +---+
+		 */
+		if (node->isCondit() || node->isRefed()){
+			/* set label if need */
 			this->emit("LABEL", node->label());
 		}
-		this->DFS((AST *)node);
 
-		/* else-part */
-		if (NULL != node->nextCFG(false)) {
+		/* main logical to generate IR */
+		this->DFS(node);
+
+		if (node->isCondit()) {				/* CONDITION NODE */
 			std::string op = node->child(0)->data();
 
-			/* NOTE - the jump logical is reversed */
 			tmp = node->nextCFG(false);
 			if ("<" == op) {
+				/* if x < y not not established*/
 				this->emit("JGTE", "&" + tmp->label());
 			} else {
-				_D(LOG_CRIT, "Not Implemented %s", op.c_str());
+				_D(LOG_CRIT, "Not Implemented `%s`", op.c_str());
+				exit(-1);
 			}
-		}
-
-		if (node->isBranch() && node->nextCFG(true)) {
+		} else if (node->isBranch()) {		/* BRANCH NODE */
 			tmp = node->nextCFG(true);
 			/* end of branch node, jump to next stage */
 			this->emit("JMP","&" + tmp->label());
 		}
-		this->DFS(node->nextCFG(true));
-		this->DFS(node->nextCFG(false));
-	}
 
-	if (node == this->_root_) {
-		_D(LOG_INFO, "dump all symbols");
-		for (auto it : this->_symb_) {
-			this->emit("LABEL", it.first, it.second);
-		}
+		/* process other stage in CFG */
+		this->compileCFG(node->nextCFG(true));
+		this->compileCFG(node->nextCFG(false));
 	}
 }
 void Zerg::DFS(AST *node) {
@@ -114,58 +165,69 @@ void Zerg::DFS(AST *node) {
 	for (ssize_t i = 0; i < node->length(); ++i) {
 		this->DFS(node->child(i));
 	}
-	this->compileIR(node);
+	this->emitIR(node);
 }
-void Zerg::compileIR(AST *node) {
+void Zerg::emitIR(AST *node) {
 	static int regs = 0;
 	static std::vector<std::string> stack;
 	std::string tmp;
 
-	_D(LOG_INFO, "emit IR on %s", node->data().c_str());
-
 	/* translate AST to IR */
+	_D(LOG_INFO, "emit IR on %s", node->data().c_str());
 	switch(node->type()) {
 		case AST_ROOT:
 		case AST_NUMBER:
 			/* NOP */
-			break;
-		case AST_IDENTIFIER:
-			/* Load into register */
-			if (AST_ASSIGN != node->parent()->type()) {
-				size_t pos;
-				tmp = node->data();
-				node->setReg(++regs);
-
-				pos = std::find(stack.begin(), stack.end(), tmp) - stack.begin();
-				if (stack.size() != pos) {
-					char nr[BUFSIZ] = {0};
-
-					snprintf(nr, sizeof(nr), "0x%zX", pos);
-					this->emit("LOAD", node->data(), "STACK", nr);
-				} else {
-					this->emit("LOAD", node->data(), tmp);
-				}
-			}
 			break;
 		case AST_STRING:
 			tmp = node->data();
 			node->setLabel(++this->_labelcnt_);
 			this->_symb_.push_back(std::make_pair(node->data(), tmp));
 			break;
-		case AST_INTERRUPT:
-			for (ssize_t i = 0; i < node->length(); ++i) {
-				AST *child = node->child(i);
+		case AST_IDENTIFIER:
+			/* Load into register */
+			switch(node->parent()->type()) {
+				case AST_ASSIGN:
+				case AST_FUNCCALL:
+					/* need NOT load as variable */
+					break;
+				default:
+					do {
+						size_t pos;
+						tmp = node->data();
+						node->setReg(++regs);
 
-				switch(child->type()) {
-					case AST_STRING:
-						this->emit("PARAM", "&" + node->child(i)->data());
-						break;
-					default:
-						this->emit("PARAM", node->child(i)->data());
-						break;
-				}
+						pos = std::find(stack.begin(), stack.end(), tmp) - stack.begin();
+						if (stack.size() != pos) {
+							char nr[BUFSIZ] = {0};
+
+							snprintf(nr, sizeof(nr), "0x%zX", pos);
+							this->emit("LOAD", node->data(), "STACK", nr);
+						} else {
+							this->emit("LOAD", node->data(), tmp);
+						}
+					} while (0);
+					break;
 			}
-			this->emit("INTERRUPT");
+			break;
+		case AST_OPERATORS:
+			if ("<" == node->data()) {
+				AST *x = NULL, *y = NULL;
+
+				x = node->child(0);
+				y = node->child(1);
+				this->emit("CMP", x->data(), y->data());
+			} else if ("+" == node->data()) {
+				AST *x = NULL, *y = NULL;
+
+				x = node->child(0);
+				y = node->child(1);
+				this->emit("ADD", x->data(), y->data());
+				node->setReg(x->getReg());
+			} else {
+				_D(LOG_CRIT, "Not Implemented %s", node->data().c_str());
+				exit(-1);
+			}
 			break;
 		case AST_ASSIGN:
 			if (2 == node->length()) {
@@ -197,23 +259,34 @@ void Zerg::compileIR(AST *node) {
 				exit(-1);
 			}
 			break;
-		case AST_OPERATORS:
-			if ("<" == node->data()) {
-				AST *x = NULL, *y = NULL;
+		case AST_INTERRUPT:
+			for (ssize_t i = 0; i < node->length(); ++i) {
+				AST *child = node->child(i);
 
-				x = node->child(0);
-				y = node->child(1);
-				this->emit("CMP", x->data(), y->data());
-			} else if ("+" == node->data()) {
-				AST *x = NULL, *y = NULL;
-
-				x = node->child(0);
-				y = node->child(1);
-				this->emit("ADD", x->data(), y->data());
-				node->setReg(x->getReg());
-			} else {
-				_D(LOG_CRIT, "Not Implemented %s", node->data().c_str());
-				exit(-1);
+				switch(child->type()) {
+					case AST_STRING:
+						this->emit("PARAM", "&" + node->child(i)->data());
+						break;
+					default:
+						this->emit("PARAM", node->child(i)->data());
+						break;
+				}
+			}
+			this->emit("INTERRUPT");
+			break;
+		case AST_FUNCCALL:
+			switch (node->length()) {
+				case 0:
+					_D(LOG_CRIT, "Syntax Error !");
+					exit(-1);
+					break;
+				case 1:
+					this->emit("CALL", "&" + node->child(0)->data());
+					break;
+				default:
+					_D(LOG_CRIT, "Not Implemented");
+					exit(-1);
+					break;
 			}
 			break;
 		default:

@@ -9,6 +9,7 @@
 #include "zerg/ir.h"
 #include "zerg/tree.h"
 
+#define CFG_MAIN	"__MAIN__"
 
 typedef enum _ASTType_ {
 	AST_UNKNOWN	= 0,
@@ -25,6 +26,7 @@ typedef enum _ASTType_ {
 
 	/* reserved words */
 	AST_INTERRUPT,
+	AST_FUNCCALL,
 } ASTType;
 
 /* AST - Abstract Syntax Tree
@@ -35,9 +37,9 @@ typedef enum _ASTType_ {
  */
 class AST : public Tree<AST> {
 	public:
-		AST(std::string src="");
+		AST(std::string src="", ASTType type=AST_UNKNOWN);
 
-		void insert(std::string dst);
+		void insert(std::string dst, ASTType type=AST_UNKNOWN);
 		void setLabel(int nr);
 		void setReg(int nr);
 		int  getReg(void);
@@ -61,15 +63,15 @@ class AST : public Tree<AST> {
  *
  *     1- Always pass-to
  *     2- Boolean case, i.e. True and False
- *
  */
 class CFG : public AST {
 	public:
 		CFG(std::string name);
 		virtual ~CFG();
 
-		bool isPassto(void);
+		bool isRefed(void);
 		bool isBranch(void);
+		bool isCondit(void);
 		void passto(CFG *next);
 		void branch(CFG *truecase, CFG *falsecase);
 		std::string label(void);
@@ -78,7 +80,7 @@ class CFG : public AST {
 
 		friend std::ostream& operator <<(std::ostream &stream, const CFG &src);
 	private:
-		bool _bypass_, _refed_, _branch_;
+		bool _refed_, _condi_, _branch_;
 		std::string _name_;
 		CFG *_next_[2], *_parent_;
 #ifdef DEBUG
@@ -102,15 +104,16 @@ class Zerg : public IR {
 	private:
 		bool _only_ir_;
 		int _labelcnt_;
-		CFG *_root_;
+		std::map<std::string, CFG *>_root_;
+
 		std::vector<std::pair<std::string, std::string>> _symb_;
 
 		void lexer(void);		/* lexer analysis */
 		void parser(void);		/* syntax and semantic analysis */
 
-		void DFS(CFG *node);
+		void compileCFG(CFG *node);
 		void DFS(AST *node);
-		void compileIR(AST *node);
+		void emitIR(AST *node);
 };
 
 #endif /* __ZERG_H__ */

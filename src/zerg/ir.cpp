@@ -157,6 +157,12 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 	} else if (op == "JGTE") {			/* (JGTE,  DST) */
 		/* jump if greater or equal */
 		(*this) += new Instruction("jge", dst);
+	} else if (op == "CALL") {			/* (CALL,  DST) */
+		/* call produce */
+		(*this) += new Instruction("call", dst);
+	} else if (op == "RET") {			/* (RET) */
+		/* 	return from procedure */
+		(*this) += new Instruction("ret");
 	} else if (op == "PARAM") {			/* (PARAM, DST) */
 		/* Save the parameter */
 		this->_param_[this->_param_nr_ ++] = dst;

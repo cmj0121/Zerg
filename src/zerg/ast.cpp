@@ -1,37 +1,41 @@
 #include "zerg.h"
 
-AST::AST(std::string src) : Tree<AST>(src), _emitted_(false), _raw_(src) {
+AST::AST(std::string src, ASTType type) : Tree<AST>(src), _emitted_(false), _raw_(src) {
 	std::vector<std::string> ops = {"+", "-", "*", "/", "<", ">"};
 
 	this->_label_ = 0;
 	this->_reg_   = 0;
 
-	if (0 == src.size()) {
-		/* root of AST */
-		_type_ = AST_ROOT;
-	} else if ("syscall" == src) {
-		/* low-level system call (interrupt) */
-		_type_ = AST_INTERRUPT;
-	} else if ("=" == src) {
-		/* assignment */
-		_type_ = AST_ASSIGN;
-	} else if ('\'' == src[0] || '\"' == src[0]) {
-		/* NOTE - string which already verified on stage of lexer analysis */
-		_type_ = AST_STRING;
-	} else if (0 == src.find("0x")) {
-		/* FIXME - need more general */
-		_type_ = AST_NUMBER;
-	} else if (ops.end() != std::find(ops.begin(), ops.end(), src)) {
-		/* FIXME - need classified via the grammar result */
-		_type_ = AST_OPERATORS;
+	if (AST_UNKNOWN == type) {
+		if (0 == src.size()) {
+			/* root of AST */
+			_type_ = AST_ROOT;
+		} else if ("syscall" == src) {
+			/* low-level system call (interrupt) */
+			_type_ = AST_INTERRUPT;
+		} else if ("=" == src) {
+			/* assignment */
+			_type_ = AST_ASSIGN;
+		} else if ('\'' == src[0] || '\"' == src[0]) {
+			/* NOTE - string which already verified on stage of lexer analysis */
+			_type_ = AST_STRING;
+		} else if (0 == src.find("0x")) {
+			/* FIXME - need more general */
+			_type_ = AST_NUMBER;
+		} else if (ops.end() != std::find(ops.begin(), ops.end(), src)) {
+			/* FIXME - need classified via the grammar result */
+			_type_ = AST_OPERATORS;
+		} else {
+			/* FIXME - not always be the identifier */
+			_type_ = AST_IDENTIFIER;
+		}
 	} else {
-		/* FIXME - not always be the identifier */
-		_type_ = AST_IDENTIFIER;
+		this->_type_ = type;
 	}
 }
 
-void AST::insert(std::string src) {
-	AST *node = new AST(src);
+void AST::insert(std::string src, ASTType type) {
+	AST *node = new AST(src, type);
 
 	_D(LOG_INFO, "AST insert %s", src.c_str());
 	return Tree<AST>::insert(node);

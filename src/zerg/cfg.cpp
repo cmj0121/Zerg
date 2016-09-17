@@ -24,21 +24,25 @@ CFG::~CFG(void) {
 #endif /* DEBUG */
 }
 
-bool CFG::isPassto(void) {
-	/* direct to next CFG or not */
-	return this->_bypass_;
+bool CFG::isRefed(void) {
+	/* reply the node is referred or not */
+	return this->_refed_;
 }
 bool CFG::isBranch(void) {
 	/* reply the branch node or not */
 	return this->_branch_;
+}
+bool CFG::isCondit(void) {
+	/* reply the condition node or not */
+	return this->_condi_;
 }
 void CFG::passto(CFG *next) {
 	if (NULL != this->_next_[0] || NULL != this->_next_[1]) {
 		_D(LOG_CRIT, "stage already be assigned");
 		exit(-1);
 	}
-	this->_bypass_  = true;
 	this->_next_[0] = next;
+	next->_refed_   = this->_branch_;
 
 	if (next) next->_parent_ = this;
 }
@@ -48,6 +52,7 @@ void CFG::branch(CFG *truecase, CFG *falsecase) {
 		exit(-1);
 	}
 	this->_next_[0] = truecase;
+	this->_condi_ = true;
 
 	truecase->_refed_ = true;
 	if (NULL != falsecase) {
@@ -67,10 +72,7 @@ void CFG::branch(CFG *truecase, CFG *falsecase) {
 }
 std::string CFG::label(void) {
 	/* return the CFG label */
-	if (this->_refed_)
-		return this->_name_;
-	else
-		return "";
+	return this->_name_;
 }
 
 CFG* CFG::nextCFG(bool branch) {
