@@ -85,6 +85,7 @@ void Zerg::compile(std::string src, bool only_ir) {
 		if (it.first != CFG_MAIN) {
 			/* compile subroutine */
 			_D(LOG_WARNING, "compile subroutine `%s`", it.first.c_str());
+			this->emit("# Sub-Routine - " + it.first);
 			this->emit("LABEL", it.first);
 			this->compileCFG(it.second);
 			this->emit("RET");
@@ -93,6 +94,7 @@ void Zerg::compile(std::string src, bool only_ir) {
 
 	/* Dump all symbol at end of CFG */
 	_D(LOG_INFO, "dump all symbols");
+	this->emit("# Dump all symbols");
 	for (auto it : this->_symb_) {
 		this->emit("LABEL", it.first, it.second);
 	}
@@ -299,7 +301,10 @@ void Zerg::emitIR(AST *node) {
 }
 /* wrapper for the IR emitter */
 void Zerg::emit(std::string op, std::string dst, std::string src, std::string extra) {
-	if (this->_only_ir_) {
+	if ('#' == op[0]) {
+		/* dump the comment */
+		if (this->_only_ir_) std::cout << "\n" << op << std::endl;
+	} else if (this->_only_ir_) {
 		std::cout << "(" << std::left << std::setw(10) <<op;
 		if ("" != dst)   std::cout << ", " << dst;
 		if ("" != src)   std::cout << ", " << src;
