@@ -2,6 +2,8 @@
 #ifndef __ZERG_TREE_H__
 #	define __ZERG_TREE_H__
 
+#include <ostream>
+#include <vector>
 #include "../utils.h"
 
 template<class T>

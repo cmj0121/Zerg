@@ -1,6 +1,6 @@
 #include "zerg.h"
 
-AST::AST(std::string src, ASTType type) : Tree<AST>(src), _emitted_(false), _raw_(src) {
+AST::AST(ZergToken src, ASTType type) : Tree<AST>(src), _emitted_(false), _raw_(src) {
 	std::vector<std::string> ops = {"+", "-", "*", "/", "<", ">"};
 
 	this->_label_ = 0;
@@ -34,7 +34,7 @@ AST::AST(std::string src, ASTType type) : Tree<AST>(src), _emitted_(false), _raw
 	}
 }
 
-void AST::insert(std::string src, ASTType type) {
+void AST::insert(ZergToken src, ASTType type) {
 	AST *node = new AST(src, type);
 
 	_D(LOG_INFO, "AST insert %s", src.c_str());

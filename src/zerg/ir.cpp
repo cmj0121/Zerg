@@ -20,14 +20,11 @@ std::fstream& operator<< (std::fstream &stream, const IRToken &src) {
 }
 
 IR::IR(std::string dst, off_t entry) : Binary(dst), _param_nr_(0), _entry_(entry) {
-	/* FIXME - prologue need more general */
-	(*this) += new Instruction("push", "rbp");
-	(*this) += new Instruction("mov", "rbp", "rsp");
 }
 IR::~IR(void) {
-	/* FIXME - epilogue need more general */
-	(*this) += new Instruction("pop", "rbp");
-	Binary::dump(this->_entry_);
+	if (!this->_only_ir_) {
+		Binary::dump(this->_entry_);
+	}
 }
 
 void IR::emit(IRToken token) {
@@ -186,6 +183,19 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 		}
 		(*this) += new Instruction("syscall");
 		this->_param_nr_ = 0;
+	} else if (op == "PROLOGUE") {		/* (PROLOGUE, NR) */
+		(*this) += new Instruction("push", "rbp");
+		(*this) += new Instruction("mov", "rbp", "rsp");
+		if ("" != dst) {
+			/* save the number of local variable */
+			(*this) += new Instruction("sub", "rsp", dst);
+		}
+	} else if (op == "EPILOGUE") {		/* (EPILOGUE, NR) */
+		if ("" != dst) {
+			/* save the number of local variable */
+			(*this) += new Instruction("add", "rsp", dst);
+		}
+		(*this) += new Instruction("pop", "rbp");
 	} else {
 		_D(LOG_CRIT, "Not Implemented operators `%s`", op.c_str());
 		exit(-1);

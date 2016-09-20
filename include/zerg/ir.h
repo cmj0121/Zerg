@@ -39,6 +39,8 @@ class IR : public Binary {
 		void emit(std::string op, std::string dst="", std::string src="", std::string extra="");
 
 		virtual std::string regalloc(std::string src) = 0;
+	protected:
+		bool _only_ir_;
 	private:
 		int _param_nr_;
 		off_t _entry_;

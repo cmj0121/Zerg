@@ -88,7 +88,7 @@ into several simpler one, like
 
 
 ### Low-Level IR ###
-在這個 IR 設計中，提供的運算子盡可能貼近到底層的操作而不做過多的包裝。因此只使用下述 35 種運算子，
+在這個 IR 設計中，提供的運算子盡可能貼近到底層的操作而不做過多的包裝。因此只使用下述 37 種運算子，
 這些運算子本身提供最低限度的邏輯來呈現一個程式，包含值之間傳遞、基本的數值運算、位元運算、
 條件判斷、函數呼叫、整數與浮點數的轉換、標籤與系統中斷。
 
@@ -106,6 +106,7 @@ label and system interrupt.
 	CALL	RET		PARAM
 	ITOF	FTOI
 	LABEL	NOP		INTERRUPT
+	PROLOGUE		EPILOGUE
 	ASM
 
 

@@ -80,6 +80,8 @@ void Zerg::compile(std::string src, bool only_ir) {
 	}
 	this->_root_["foo"] = subroutine;
 
+
+	this->emit("PROLOGUE");
 	this->compileCFG(this->_root_[CFG_MAIN]);
 	for (auto it : this->_root_) {
 		if (it.first != CFG_MAIN) {
@@ -91,6 +93,7 @@ void Zerg::compile(std::string src, bool only_ir) {
 			this->emit("RET");
 		}
 	}
+	this->emit("EPILOGUE");
 
 	/* Dump all symbol at end of CFG */
 	_D(LOG_INFO, "dump all symbols");
