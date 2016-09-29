@@ -13,17 +13,21 @@
  */
 class AST : public Tree<AST> {
 	public:
-		AST(ZergToken src="", ASTType type=AST_UNKNOWN);
+		AST(ZergToken src="");
 
-		void insert(ZergToken dst, ASTType type=AST_UNKNOWN);
+		void insert(ZergToken dst);
+		void insert(AST *node);
 		void setLabel(int nr);
 		void setReg(int nr);
 		int  getReg(void);
+		int  weight(void);
 		void setEmitted(void);
 		bool isEmmited(void);
 
 		ASTType type(void);
 		std::string data(void);
+
+		friend bool operator== (const AST &obj, const char *src);
 	private:
 		bool _emitted_;
 		int _label_, _reg_;

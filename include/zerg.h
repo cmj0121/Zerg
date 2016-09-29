@@ -26,6 +26,7 @@ class Zerg : public IR {
 
 		void lexer(void);		/* lexer analysis */
 		void parser(void);		/* syntax and semantic analysis */
+		AST *parser(std::vector<ZergToken> tokens);
 
 		void compileCFG(CFG *node);
 		void DFS(AST *node);

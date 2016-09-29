@@ -15,71 +15,8 @@ Zerg::~Zerg() {
 
 void Zerg::compile(std::string src, bool only_ir) {
 	this->_only_ir_ = only_ir;
-	CFG *root = NULL, *subroutine = NULL;
 
-	{	/* main function */
-		CFG *condi = NULL, *payload = NULL, *func = NULL, *exit = NULL;
-
-		root = new CFG("root");
-		root->insert("=");
-		root->child(0)->insert("_VAR");
-		root->child(0)->insert("0x0");
-
-		condi = new CFG("branch");
-		condi->insert("<");
-		condi->child(0)->insert("_VAR");
-		condi->child(0)->insert("0x03");
-
-		/* syscall (0x2000004, 0x02, "Zerg IR Countdown\n", 0x0C) */
-		payload = new CFG("payload");
-		payload->insert("syscall");
-		payload->child(0)->insert("0x2000004");
-		payload->child(0)->insert("0x01");
-		payload->child(0)->insert("'Zerg IR Countdown\\n'");
-		payload->child(0)->insert("0x12");
-
-		payload->insert("=");
-		payload->child(1)->insert("_VAR");
-		payload->child(1)->insert("+");
-		payload->child(1)->child(1)->insert("_VAR");
-		payload->child(1)->child(1)->insert("0x1");
-
-		/* function call */
-		func = new CFG("function-call");
-		func->insert("[FUNCTION CALL]", AST_FUNCCALL);
-		func->child(0)->insert("foo");
-
-		/* syscall (0x2000001, 0x04) */
-		exit = new CFG("exit");
-		exit->insert("syscall");
-		exit->child(0)->insert("0x2000001");
-		exit->child(0)->insert("0x04");
-
-		do { /* relation of CFG */
-			root->passto(condi);
-			condi->branch(payload, func);
-			payload->passto(condi);
-			func->passto(exit);
-		} while (0);
-	}
-	this->_root_[CFG_MAIN] = root;
-
-	{	/* subroutine - foo */
-		CFG *payload = NULL;
-		subroutine = new CFG("foo");
-
-		/* syscall (0x2000004, 0x02, "subroutine\n", 0x0C) */
-		payload = new CFG("payload");
-		payload->insert("syscall");
-		payload->child(0)->insert("0x2000004");
-		payload->child(0)->insert("0x01");
-		payload->child(0)->insert("'call subroutine\\n'");
-		payload->child(0)->insert("0x10");
-
-		subroutine->passto(payload);
-	}
-	this->_root_["foo"] = subroutine;
-
+	this->parser();
 
 	this->emit("PROLOGUE");
 	this->compileCFG(this->_root_[CFG_MAIN]);
@@ -109,8 +46,167 @@ void Zerg::lexer(void) {
 	exit(-1);
 }
 void Zerg::parser(void) {
-	_D(LOG_CRIT, "Not Implemented");
-	exit(-1);
+	AST *cur = NULL;
+	std::vector<ZergToken> tokens[] = {
+		{"_VAR", "=", "0"},
+		{"_VAR", "=", "_VAR", "+", "1", "*", "-", "2", "%", "3", "/", "-", "-", "4"},
+	};
+
+	for (auto token: tokens) {
+		if (NULL != (cur = this->parser(token))) {
+			std::cout << *cur << std::endl;
+			delete cur;
+		}
+	}
+}
+AST* Zerg::parser(std::vector<ZergToken> tokens) {
+	ZergToken prev = "";
+	AST *ast = NULL, *cur = NULL;
+
+	std::vector<std::string> grammar = {"assign", "expr", "pow", "atom"};
+	std::map<ASTType, std::map<ASTType, int>> _map_ = {
+		{
+			AST_UNKNOWN, {
+				{AST_NEWLINE,		0},
+				{AST_NUMBER,		4},
+				{AST_IDENTIFIER,	4},
+				{AST_ADD,			5},
+				{AST_SUB,			5},
+			}
+		}, {
+			AST_NUMBER, {
+				{AST_NEWLINE,	0},
+				{AST_ADD,		2},
+				{AST_SUB,		2},
+				{AST_MUL,		3},
+				{AST_DIV,		3},
+				{AST_MOD,		3},
+			}
+		}, {
+			AST_IDENTIFIER, {
+				{AST_NEWLINE,	0},
+				{AST_ADD,		2},
+				{AST_SUB,		2},
+				{AST_MUL,		3},
+				{AST_DIV,		3},
+				{AST_MOD,		3},
+				{AST_ASSIGN,	1},
+			}
+		}, {
+			AST_ADD, {
+				{AST_NUMBER,		4},
+				{AST_IDENTIFIER,	4},
+				{AST_ADD,			5},
+				{AST_SUB,			5},
+			}
+		}, {
+			AST_SUB, {
+				{AST_NUMBER,		4},
+				{AST_IDENTIFIER,	4},
+				{AST_ADD,			5},
+				{AST_SUB,			5},
+			}
+		}, {
+			AST_MUL, {
+				{AST_NUMBER,		4},
+				{AST_IDENTIFIER,	4},
+				{AST_ADD,			5},
+				{AST_SUB,			5},
+			}
+		}, {
+			AST_DIV, {
+				{AST_NUMBER,		4},
+				{AST_IDENTIFIER,	4},
+				{AST_ADD,			5},
+				{AST_SUB,			5},
+			}
+		}, {
+			AST_MOD, {
+				{AST_NUMBER,		4},
+				{AST_IDENTIFIER,	4},
+				{AST_ADD,			5},
+				{AST_SUB,			5},
+			}
+		}, {
+			AST_ASSIGN, {
+				{AST_NUMBER,		4},
+				{AST_IDENTIFIER,	4},
+				{AST_ADD,			5},
+				{AST_SUB,			5},
+			}
+		}
+	};
+
+	/* generate the AST via the parsing table */
+	for (auto &token : tokens) {
+		/* syntax check - check the source code is valid or not */
+		if (_map_.end() == _map_.find(prev.type())) {
+			std::string line;
+
+			for (auto &it : tokens) line += it + " ";
+			_D(LOG_CRIT, "Syntax Error `%s` on %s", token.c_str(), line.c_str());
+			delete ast;
+			return NULL;
+		} else if (_map_[prev.type()].end() == _map_[prev.type()].find(token.type())) {
+			std::string line;
+
+			for (auto &it : tokens) line += it + " ";
+			_D(LOG_CRIT, "Syntax Error `%s` on %s", token.c_str(), line.c_str());
+			return NULL;
+		}
+		token.weight(_map_[prev.type()][token.type()]);
+
+		_D(LOG_DEBUG, "grammar (W:%d) `%s` -> %s %s",
+					token.weight(),
+					grammar[_map_[prev.type()][token.type()]].c_str(),
+					prev.c_str(),
+					token.c_str());
+
+		AST *tmp = new AST(token), *prevnode = NULL;
+		do {
+			if (NULL == ast) {							/* first node in AST */
+				ast = tmp;
+				cur = ast;
+				break;
+			} else if (NULL == cur) {					/* trace on the root of AST */
+				tmp->insert(ast);
+				ast = tmp;
+				cur = ast;
+				goto NEXT_STEP;
+			} else if(cur->weight() < tmp->weight()) {	/* found */
+				if (NULL == prevnode || 2 > cur->length()) {
+					cur->insert(tmp);
+					cur = tmp;
+					goto NEXT_STEP;
+				} else {
+					switch(cur->type()) {
+						default:
+							prevnode->replace(tmp);
+							tmp->insert(prevnode);
+							cur = tmp;
+							goto NEXT_STEP;
+							break;
+					}
+					break;
+				}
+				cur->insert(tmp);
+				cur = tmp;
+NEXT_STEP:
+				break;
+			}
+
+			prevnode = cur;
+			cur = cur->parent();
+		} while (true);
+
+		#ifdef DEBUG
+			std::cout << "point -> `" << cur->data() << "`\n";
+			std::cout << *ast << std::endl;
+		#endif /* DEBUG */
+		prev = token;
+	}
+
+	return ast;
 }
 void Zerg::compileCFG(CFG *node) {
 	CFG *tmp = NULL;
@@ -154,8 +250,7 @@ void Zerg::compileCFG(CFG *node) {
 				_D(LOG_CRIT, "Not Implemented `%s`", op.c_str());
 				exit(-1);
 			}
-		} else if (node->isBranch()) {		/* BRANCH NODE */
-			tmp = node->nextCFG(true);
+		} else if (node->isBranch() && NULL != (tmp = node->nextCFG(true))) {
 			/* end of branch node, jump to next stage */
 			this->emit("JMP","&" + tmp->label());
 		}
@@ -193,7 +288,6 @@ void Zerg::emitIR(AST *node) {
 			/* Load into register */
 			switch(node->parent()->type()) {
 				case AST_ASSIGN:
-				case AST_FUNCCALL:
 					/* need NOT load as variable */
 					break;
 				default:
@@ -264,20 +358,22 @@ void Zerg::emitIR(AST *node) {
 				exit(-1);
 			}
 			break;
-		case AST_INTERRUPT:
-			for (ssize_t i = 0; i < node->length(); ++i) {
-				AST *child = node->child(i);
+		case AST_RESERVED:
+			if (*node == "syscall") {
+				for (ssize_t i = 0; i < node->length(); ++i) {
+					AST *child = node->child(i);
 
-				switch(child->type()) {
-					case AST_STRING:
-						this->emit("PARAM", "&" + node->child(i)->data());
-						break;
-					default:
-						this->emit("PARAM", node->child(i)->data());
-						break;
+					switch(child->type()) {
+						case AST_STRING:
+							this->emit("PARAM", "&" + node->child(i)->data());
+							break;
+						default:
+							this->emit("PARAM", node->child(i)->data());
+							break;
+					}
 				}
+				this->emit("INTERRUPT");
 			}
-			this->emit("INTERRUPT");
 			break;
 		case AST_FUNCCALL:
 			switch (node->length()) {

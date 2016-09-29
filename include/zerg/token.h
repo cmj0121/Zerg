@@ -4,28 +4,66 @@
 
 #include <string>
 
+#define RESERVED_IF			"if"
+#define RESERVED_FUNC		"func"
+#define RESERVED_SYSCALL	"syscall"
+
+#define CHECK_RESERVED_TYPE(token, type)	\
+	do {									\
+		if (RESERVED_##type == token) {		\
+			this->_type_ = AST_##type;		\
+		}									\
+	} while (0)
+
 typedef enum _ASTType_ {
-	AST_UNKNOWN	= 0,
+	AST_UNKNOWN			= 0x00,
 	AST_ROOT,
+	AST_NEWLINE,
+	AST_INDENT,
+	AST_DEDENT,
+	AST_FUNCCALL,
 
 	/* basic type */
-	AST_NUMBER,
+	AST_NUMBER			= 0x10,
 	AST_STRING,
 	AST_IDENTIFIER,
+	AST_PARENTHESES_OPEN,
+	AST_PARENTHESES_CLOSE,
 
 	/* operators */
-	AST_OPERATORS,	/* FIXME */
+	AST_OPERATORS			= 0x20,
+	AST_COLON,
+	AST_COMMA,
 	AST_ASSIGN,
 
+	AST_ADD,
+	AST_SUB,
+	AST_MUL,
+	AST_DIV,
+	AST_MOD,
+
 	/* reserved words */
-	AST_INTERRUPT,
-	AST_FUNCCALL,
+	AST_RESERVED		= 0x100,
+	AST_IF,
+	AST_FUNC,
+	AST_SYSCALL,
 } ASTType;
 
 /* token used in Zerg for lexer analysis */
 class ZergToken : public std::string {
 	public:
-		ZergToken (const char *);
+		ZergToken (const char *src);
+
+		void setType(ASTType type);
+		ASTType type(void);
+
+		void weight(int weight);
+		int  weight(void);
+	protected:
+		void classify(std::string src);
+	private:
+		int _weight_;
+		ASTType _type_;
 };
 
 

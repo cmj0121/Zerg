@@ -1,43 +1,19 @@
+#include <assert.h>
 #include "zerg.h"
 
-AST::AST(ZergToken src, ASTType type) : Tree<AST>(src), _emitted_(false), _raw_(src) {
-	std::vector<std::string> ops = {"+", "-", "*", "/", "<", ">"};
-
+AST::AST(ZergToken src) : Tree<AST>(src), _emitted_(false), _raw_(src) {
 	this->_label_ = 0;
 	this->_reg_   = 0;
-
-	if (AST_UNKNOWN == type) {
-		if (0 == src.size()) {
-			/* root of AST */
-			_type_ = AST_ROOT;
-		} else if ("syscall" == src) {
-			/* low-level system call (interrupt) */
-			_type_ = AST_INTERRUPT;
-		} else if ("=" == src) {
-			/* assignment */
-			_type_ = AST_ASSIGN;
-		} else if ('\'' == src[0] || '\"' == src[0]) {
-			/* NOTE - string which already verified on stage of lexer analysis */
-			_type_ = AST_STRING;
-		} else if (0 == src.find("0x")) {
-			/* FIXME - need more general */
-			_type_ = AST_NUMBER;
-		} else if (ops.end() != std::find(ops.begin(), ops.end(), src)) {
-			/* FIXME - need classified via the grammar result */
-			_type_ = AST_OPERATORS;
-		} else {
-			/* FIXME - not always be the identifier */
-			_type_ = AST_IDENTIFIER;
-		}
-	} else {
-		this->_type_ = type;
-	}
+	this->_type_  = src.type();
 }
 
-void AST::insert(ZergToken src, ASTType type) {
-	AST *node = new AST(src, type);
-
+void AST::insert(ZergToken src) {
+	AST *node = new AST(src);
 	_D(LOG_INFO, "AST insert %s", src.c_str());
+	return this->insert(node);
+}
+void AST::insert(AST *node) {
+	assert(node != NULL);
 	return Tree<AST>::insert(node);
 }
 void AST::setLabel(int nr) {
@@ -52,6 +28,10 @@ void AST::setReg(int nr) {
 int AST::getReg(void) {
 	/* get the number of register */
 	return this->_reg_;
+}
+int AST::weight(void) {
+	/* reply the weight of the node in AST */
+	return this->_raw_.weight();
 }
 ASTType AST::type(void) {
 	/* category of the node in AST */
@@ -83,4 +63,8 @@ void AST::setEmitted(void) {
 bool AST::isEmmited(void) {
 	/* reply this AST is emitted or not */
 	return this->_emitted_;
+}
+
+bool operator== (const AST &obj, const char *src) {
+	return obj._raw_ == src;
 }

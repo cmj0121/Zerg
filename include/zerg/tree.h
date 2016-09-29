@@ -71,6 +71,17 @@ class Tree {
 			}
 		}
 
+		void replace(T *src) {
+			int pos = 0;
+			std::vector<T *> childs = this->_parent_->_childs_;
+
+			pos = std::find(childs.begin(), childs.end(), (T *)this) - childs.begin();
+			this->_parent_->_childs_[pos] = src;
+			src->_parent_ = this->_parent_;
+
+			this->_parent_ = NULL;
+		}
+
 		friend std::ostream& operator <<(std::ostream &stream, const Tree<T> &src) {
 			std::string indent;
 			Tree<T> *cur = (Tree<T> *)&src;

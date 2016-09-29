@@ -82,8 +82,9 @@ CFG* CFG::nextCFG(bool branch) {
 std::ostream& operator <<(std::ostream &stream, const CFG &src) {
 	AST *node = (AST *)&src;
 
-	stream << "==== CFG stage (" << src._name_ << ") ====" << std::endl;
-	stream << *node << std::endl;
+	stream << "\n\n==== CFG stage (" << src._name_ << ") ====" << std::endl;
+	stream << *node;
+	stream << "================";
 
 	return stream;
 }
