@@ -93,7 +93,7 @@ into several simpler one, like
 條件判斷、函數呼叫、整數與浮點數的轉換、標籤與系統中斷。
 
 The operators used in low-level IR is more like the assemble language but without any
-platform-dependent instructions. So the following 41 operators is the used in this stage. These
+platform-dependent instructions. So the following 37 operators is the used in this stage. These
 operators provide the lower logical to describe a simple logical, like variable copy, basic
 arithmetic and bitwise operation, condition check, function call, transfer between integer and float,
 label and system interrupt.
