@@ -25,3 +25,5 @@ clean: $(SUBDIR)
 install: $(SUBDIR)
 	install -d ~/.vim/syntax/
 	install -m644 $(VIMRC) ~/.vim/syntax/
+
+grammar: $(SUBDIR)

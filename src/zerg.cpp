@@ -5,8 +5,9 @@
 
 #include "zerg.h"
 
-int __verbose__ = 0;
-bool _only_ir_	= false;
+int  __verbose__  = 0;
+bool _only_ir_	  = false;
+bool _gen_grammar = false;
 
 void help(void) {
 	fprintf(stderr, "ZERG - A useless compiler\n");
@@ -14,13 +15,17 @@ void help(void) {
 	fprintf(stderr, "Usage - zerg [option]\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Option\n");
+	fprintf(stderr, "    -G, --grammar          Generate the new grammar header\n");
+	fprintf(stderr, "    -o, --output           Output file\n");
+	fprintf(stderr, "    -r, --ir               Show the IR\n");
 	fprintf(stderr, "    -v, --verbose          Show the verbose message\n");
 	exit(-1);
 }
 int main(int argc, char *argv[]) {
 	int optIdx = -1;
-	char ch, opts[] = "o:rv";
+	char ch, opts[] = "Go:rv";
 	struct option options[] = {
+		{"grammar",	no_argument,		0, 'G'},
 		{"output",	required_argument,	0, 'o'},
 		{"ir",		no_argument, 		0, 'r'},
 		{"verbose", optional_argument,	0, 'v'},
@@ -30,6 +35,9 @@ int main(int argc, char *argv[]) {
 
 	while (-1 != (ch = getopt_long(argc, argv, opts, options, &optIdx))) {
 		switch(ch) {
+			case 'G':
+				_gen_grammar = true;
+				break;
 			case 'o':
 				dst = optarg;
 				break;
@@ -49,11 +57,15 @@ int main(int argc, char *argv[]) {
 
 	if (0 == argc) {
 		help();
+	} else if (_gen_grammar) {
+		Parser parser;
+
+		parser.load(argv[0]);
+		std::cout << parser << std::endl;
+	} else {
+		Zerg zerg(dst);
+		zerg.compile(argv[0], _only_ir_);
 	}
-
-	Zerg zerg(dst);
-
-	zerg.compile(argv[0], _only_ir_);
 
 	return 0;
 }

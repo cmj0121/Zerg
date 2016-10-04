@@ -3,7 +3,7 @@
 #include <iomanip>
 #include "zerg.h"
 
-Zerg::Zerg(std::string dst, off_t entry) : IR(dst, entry) {
+Zerg::Zerg(std::string dst, off_t entry) : Parser(), IR(dst, entry) {
 	this->_labelcnt_ = 0;
 }
 Zerg::~Zerg() {
@@ -63,102 +63,23 @@ AST* Zerg::parser(std::vector<ZergToken> tokens) {
 	ZergToken prev = "";
 	AST *ast = NULL, *cur = NULL;
 
-	std::vector<std::string> grammar = {"assign", "expr", "pow", "atom"};
-	std::map<ASTType, std::map<ASTType, int>> _map_ = {
-		{
-			AST_UNKNOWN, {
-				{AST_NEWLINE,		0},
-				{AST_NUMBER,		4},
-				{AST_IDENTIFIER,	4},
-				{AST_ADD,			5},
-				{AST_SUB,			5},
-			}
-		}, {
-			AST_NUMBER, {
-				{AST_NEWLINE,	0},
-				{AST_ADD,		2},
-				{AST_SUB,		2},
-				{AST_MUL,		3},
-				{AST_DIV,		3},
-				{AST_MOD,		3},
-			}
-		}, {
-			AST_IDENTIFIER, {
-				{AST_NEWLINE,	0},
-				{AST_ADD,		2},
-				{AST_SUB,		2},
-				{AST_MUL,		3},
-				{AST_DIV,		3},
-				{AST_MOD,		3},
-				{AST_ASSIGN,	1},
-			}
-		}, {
-			AST_ADD, {
-				{AST_NUMBER,		4},
-				{AST_IDENTIFIER,	4},
-				{AST_ADD,			5},
-				{AST_SUB,			5},
-			}
-		}, {
-			AST_SUB, {
-				{AST_NUMBER,		4},
-				{AST_IDENTIFIER,	4},
-				{AST_ADD,			5},
-				{AST_SUB,			5},
-			}
-		}, {
-			AST_MUL, {
-				{AST_NUMBER,		4},
-				{AST_IDENTIFIER,	4},
-				{AST_ADD,			5},
-				{AST_SUB,			5},
-			}
-		}, {
-			AST_DIV, {
-				{AST_NUMBER,		4},
-				{AST_IDENTIFIER,	4},
-				{AST_ADD,			5},
-				{AST_SUB,			5},
-			}
-		}, {
-			AST_MOD, {
-				{AST_NUMBER,		4},
-				{AST_IDENTIFIER,	4},
-				{AST_ADD,			5},
-				{AST_SUB,			5},
-			}
-		}, {
-			AST_ASSIGN, {
-				{AST_NUMBER,		4},
-				{AST_IDENTIFIER,	4},
-				{AST_ADD,			5},
-				{AST_SUB,			5},
-			}
-		}
-	};
-
 	/* generate the AST via the parsing table */
 	for (auto &token : tokens) {
-		/* syntax check - check the source code is valid or not */
-		if (_map_.end() == _map_.find(prev.type())) {
+		int weight = this->weight(prev.type(), token.type());
+
+		if (-1 == weight) {
 			std::string line;
 
 			for (auto &it : tokens) line += it + " ";
 			_D(LOG_CRIT, "Syntax Error `%s` on %s", token.c_str(), line.c_str());
 			delete ast;
 			return NULL;
-		} else if (_map_[prev.type()].end() == _map_[prev.type()].find(token.type())) {
-			std::string line;
-
-			for (auto &it : tokens) line += it + " ";
-			_D(LOG_CRIT, "Syntax Error `%s` on %s", token.c_str(), line.c_str());
-			return NULL;
 		}
-		token.weight(_map_[prev.type()][token.type()]);
+		token.weight(weight);
 
 		_D(LOG_DEBUG, "grammar (W:%d) `%s` -> %s %s",
 					token.weight(),
-					grammar[_map_[prev.type()][token.type()]].c_str(),
+					this->stmt(weight).c_str(),
 					prev.c_str(),
 					token.c_str());
 
@@ -191,7 +112,7 @@ AST* Zerg::parser(std::vector<ZergToken> tokens) {
 				}
 				cur->insert(tmp);
 				cur = tmp;
-NEXT_STEP:
+		NEXT_STEP:
 				break;
 			}
 

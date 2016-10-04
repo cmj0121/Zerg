@@ -20,7 +20,6 @@ class Tree {
 
 		ssize_t length(void) const {
 			/* return numbers of the children */
-			_D(LOG_INFO, "get tree length");
 			return this->_childs_.size();
 		}
 		ssize_t height(void) const {

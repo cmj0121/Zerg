@@ -28,3 +28,10 @@ clean:
 install: $(BIN)
 	install -m755 zasm.inst /usr/local/bin/zasm
 	install -m755 zerg.inst /usr/local/bin/zerg
+
+
+GRAMMAR=Grammar/Grammar
+PARSING_TABLE=../include/zerg/parse_inc.h
+
+grammar: zerg.inst
+	./$^ -G $(GRAMMAR) > $(PARSING_TABLE)

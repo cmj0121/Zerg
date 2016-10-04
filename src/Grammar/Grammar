@@ -1,0 +1,11 @@
+# Grmmar for Zerg
+#
+# Author  : cmj <cmj@cmj.tw>
+# Date    : 2016/10/01
+# Version : 0.1
+
+stmt   : ( assign | expr )? NEWLINE
+assign : IDENTIFIER '=' expr
+expr   : pow  ( ( '+' | '-' ) pow )*
+pow    : atom ( ( '*' | '/' | '%' ) atom )*
+atom   : INT | IDENTIFIER | ( '+' | '-' ) atom
