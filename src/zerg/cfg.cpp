@@ -8,10 +8,10 @@ CFG::CFG(std::string name) : AST(""), _name_(name), _parent_(NULL) {
 	this->_branch_  = false;
 	this->_next_[0] = NULL;
 	this->_next_[1] = NULL;
-#ifdef DEBUG
-	/* only used on CFG relationship graph */
-	this->_map_ = NULL;
-#endif /* DEBUG */
+	#ifdef DEBUG
+		/* only used on CFG relationship graph */
+		this->_map_ = NULL;
+	#endif /* DEBUG */
 }
 CFG::~CFG(void) {
 #ifdef DEBUG

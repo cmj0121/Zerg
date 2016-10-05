@@ -35,12 +35,13 @@ class CFG : public AST {
 		bool _refed_, _condi_, _branch_;
 		std::string _name_;
 		CFG *_next_[2], *_parent_;
-#ifdef DEBUG
-		/* CFG relation map */
-		std::vector<CFG *>stages;
-		bool **_map_;
 
-		void buildRelation(CFG *node);
-#endif /* DEBUG */
+	#ifdef DEBUG
+			/* CFG relation map */
+			std::vector<CFG *>stages;
+			bool **_map_;
+
+			void buildRelation(CFG *node);
+	#endif /* DEBUG */
 };
 #endif /* __ZERG_CFG_H__ */

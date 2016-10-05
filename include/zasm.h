@@ -16,14 +16,6 @@ static int __line__;
 #include <algorithm>
 #include <vector>
 
-enum ZASM_LOG {
-	ZASM_LOG_CRIT		= 0,
-	ZASM_LOG_DISASM		= 1,
-	ZASM_LOG_WARNING	= 4,
-	ZASM_LOG_DEBUG,
-	ZASM_LOG_INFO,
-};
-
 class Utils {
 	public:
 		virtual ~Utils();

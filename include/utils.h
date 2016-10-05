@@ -4,11 +4,16 @@
 
 extern int __verbose__;
 enum ZergLogLevel {
-	LOG_CRIT	= 0,
-	LOG_BUG,
-	LOG_WARNING,
-	LOG_DEBUG,
-	LOG_INFO,
+	LOG_CRIT	= -1,	/* critical issue, need stop program */
+	LOG_BUG		= 0,	/* system bugs */
+	LOG_WARNING,		/* warning message */
+	LOG_INFO,			/* information */
+	LOG_DEBUG,			/* debug message */
+
+	ZASM_LOG_DISASM		= 1,
+	ZASM_LOG_WARNING	= 4,
+	ZASM_LOG_INFO,
+	ZASM_LOG_DEBUG,
 };
 
 #include <string>
@@ -18,12 +23,20 @@ typedef std::string STRING;
 #include <stdio.h>
 #define _D(lv, msg, ...) 										\
 	do {														\
-		if (lv <= __verbose__) {								\
+		if (LOG_CRIT == lv) {									\
+			fprintf(stderr, "%-16s L#%04d - " msg "\n",			\
+					__FILE__, __LINE__, ##__VA_ARGS__);			\
+			exit(-1);											\
+		} else if (lv <= __verbose__) {							\
 			fprintf(stderr, "%-16s L#%04d (%02d) - " msg "\n",	\
 					__FILE__, __LINE__, lv, ##__VA_ARGS__);		\
 		}														\
 	} while (0)
 #define _DEBUG()	_D(0, "\x1b[1;34m ~ debug ~\x1b[m")
+#define ALERT(expr)								\
+	if (expr) {									\
+		_D(LOG_CRIT, "BUG - `%s`", #expr);	\
+	}
 
 #define StrCP(dst, src)		snprintf(dst, sizeof(dst), "%s", src)
 #define ARRAY_SIZE(ctx)		(sizeof(ctx)/sizeof(ctx[0]))

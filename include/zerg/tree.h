@@ -39,10 +39,8 @@ class Tree {
 			return this->_parent_;
 		}
 		T* child(int nr) {
-			if (nr >= this->length()) {
-				_D(LOG_WARNING, "Out of boundary %d", nr);
-				return NULL;
-			}
+			ALERT(nr >= this->length());
+
 			return this->_childs_[nr];
 		}
 
