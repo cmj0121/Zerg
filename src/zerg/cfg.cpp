@@ -6,6 +6,7 @@
 CFG::CFG(std::string name) : AST(""), _name_(name), _parent_(NULL) {
 	this->_refed_   = false;
 	this->_branch_  = false;
+	this->_condi_   = false;
 	this->_next_[0] = NULL;
 	this->_next_[1] = NULL;
 	#ifdef DEBUG

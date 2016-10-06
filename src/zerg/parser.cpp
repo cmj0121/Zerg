@@ -190,7 +190,11 @@ END:
 
 std::string Parser::stmt(int weight) {
 	/* return the statement name */
-	return this->_stmt_[weight].first;
+	if (weight >= this->_stmt_.size()) {
+		return "";
+	} else {
+		return this->_stmt_[weight].first;
+	}
 }
 int Parser::weight(ASTType prev, ASTType cur) {
 	int weight = -1;
