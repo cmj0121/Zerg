@@ -88,12 +88,12 @@ into several simpler one, like
 
 
 ### Low-Level IR ###
-在這個 IR 設計中，提供的運算子盡可能貼近到底層的操作而不做過多的包裝。因此只使用下述 37 種運算子，
+在這個 IR 設計中，提供的運算子盡可能貼近到底層的操作而不做過多的包裝。因此只使用下述 40 種運算子，
 這些運算子本身提供最低限度的邏輯來呈現一個程式，包含值之間傳遞、基本的數值運算、位元運算、
 條件判斷、函數呼叫、整數與浮點數的轉換、標籤與系統中斷。
 
 The operators used in low-level IR is more like the assemble language but without any
-platform-dependent instructions. So the following 37 operators is the used in this stage. These
+platform-dependent instructions. So the following 40 operators is the used in this stage. These
 operators provide the lower logical to describe a simple logical, like variable copy, basic
 arithmetic and bitwise operation, condition check, function call, transfer between integer and float,
 label and system interrupt.
@@ -107,6 +107,14 @@ label and system interrupt.
 	ITOF	FTOI
 	LABEL	NOP		INTERRUPT
 	PROLOGUE		EPILOGUE
+	LOCAL	GLOBAL	DELETE
 	ASM
 
+在這其中，會使用到幾個特殊的保留字：LOCAL 表示儲存的資料為區域變數 (Local Variable)，
+實際上儲存的位子有底層 IR emitter 決定，但是在 EPILOGUE 之後就會被清除。
+同理，GLOBAL 表示為全域變數 (Global Variable)，這個變數可以讓變數持續存在，直到被 DELETE 刪除為止。
+
+In these reserved words, LOCAL is used to store the local variable, the actucally storage is
+related on the IR emitter, and this storage will be delete after EPILOGUE be called.
+Similar, GLOBAL means the global variable, the data is keep until DELETE be called.
 

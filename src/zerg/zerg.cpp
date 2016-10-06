@@ -46,16 +46,26 @@ void Zerg::lexer(void) {
 	exit(-1);
 }
 void Zerg::parser(void) {
-	AST *cur = NULL;
 	std::vector<ZergToken> tokens[] = {
 		{"_VAR", "=", "0"},
-		{"_VAR", "=", "_VAR", "+", "1", "*", "-", "2", "%", "3", "/", "-", "-", "4"},
+		{"_VAR", "=", "_VAR", "+", "1", "*", "2", "%", "3", "/", "4"},
 	};
+	CFG *cfg = NULL, *curcfg = NULL;
+	AST *cur = NULL;
 
 	for (auto token: tokens) {
-		if (NULL != (cur = this->parser(token))) {
-			std::cout << *cur << std::endl;
-			delete cur;
+		cur = this->parser(token);
+		cfg = new CFG("");
+
+		ALERT(cur == NULL);
+
+		cfg->insert(cur);
+		if (0 == this->_root_.size()) {
+			this->_root_[CFG_MAIN] = cfg;
+			curcfg = cfg;
+		} else {
+			curcfg->passto(cfg);
+			curcfg = cfg;
 		}
 	}
 }
@@ -191,14 +201,22 @@ void Zerg::DFS(AST *node) {
 void Zerg::emitIR(AST *node) {
 	static int regs = 0;
 	static std::vector<std::string> stack;
+
 	std::string tmp;
+	AST *x = NULL, *y = NULL;
+
 
 	/* translate AST to IR */
 	_D(LOG_INFO, "emit IR on %s", node->data().c_str());
 	switch(node->type()) {
+		case AST_UNKNOWN:
 		case AST_ROOT:
-		case AST_NUMBER:
 			/* NOP */
+			break;
+		case AST_NUMBER:
+			tmp = node->data();
+			node->setReg(++regs);
+			this->emit("STORE", node->data(), tmp);
 			break;
 		case AST_STRING:
 			tmp = node->data();
@@ -212,72 +230,55 @@ void Zerg::emitIR(AST *node) {
 					/* need NOT load as variable */
 					break;
 				default:
-					do {
-						size_t pos;
-						tmp = node->data();
-						node->setReg(++regs);
+					tmp = node->data();
+					node->setReg(++regs);
 
-						pos = std::find(stack.begin(), stack.end(), tmp) - stack.begin();
-						if (stack.size() != pos) {
-							char nr[BUFSIZ] = {0};
-
-							snprintf(nr, sizeof(nr), "0x%zX", pos);
-							this->emit("LOAD", node->data(), "STACK", nr);
-						} else {
-							this->emit("LOAD", node->data(), tmp);
-						}
-					} while (0);
+					this->emit("LOAD", node->data(), tmp, __IR_LOCAL_VAR__);
 					break;
 			}
 			break;
-		case AST_OPERATORS:
-			if ("<" == node->data()) {
-				AST *x = NULL, *y = NULL;
-
-				x = node->child(0);
-				y = node->child(1);
-				this->emit("CMP", x->data(), y->data());
-			} else if ("+" == node->data()) {
-				AST *x = NULL, *y = NULL;
-
-				x = node->child(0);
-				y = node->child(1);
-				this->emit("ADD", x->data(), y->data());
-				node->setReg(x->getReg());
-			} else {
-				_D(LOG_CRIT, "Not Implemented %s", node->data().c_str());
-				exit(-1);
-			}
+		case AST_ADD:
+			ALERT(2 > node->length())
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("ADD", x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case AST_SUB:
+			ALERT(2 > node->length())
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("SUB", x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case AST_MUL:
+			ALERT(2 > node->length())
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("MUL", x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case AST_DIV:
+			ALERT(2 > node->length())
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("DIV", x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case AST_MOD:
+			ALERT(2 > node->length())
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("MOD", x->data(), y->data());
+			node->setReg(x->getReg());
 			break;
 		case AST_ASSIGN:
-			if (2 == node->length()) {
-				AST *src = node->child(1), *dst = node->child(0);
+			ALERT(2 != node->length());
 
-				if ('_' == dst->data()[0]) {
-					size_t pos;
-					std::string tmp = dst->data();
-					/* local variable */
+			x = node->child(0);
+			y = node->child(1);
 
-					pos = std::find(stack.begin(), stack.end(), tmp) - stack.begin();
-
-					if (0 != stack.size() && pos != stack.size()) {
-						char nr[BUFSIZ] = {0};
-
-						snprintf(nr, sizeof(nr), "0x%zX", pos);
-						this->emit("STORE", "STACK", src->data(), nr);
-					} else {
-						stack.push_back(dst->data());
-						this->emit("STORE", "STACK", src->data());
-					}
-
-					_D(LOG_DEBUG, "save %s on stack %zu", dst->data().c_str(), pos);
-				} else {
-					this->emit("STORE", dst->data(), src->data());
-				}
-			} else {
-				_D(LOG_CRIT, "Not Implemented %zu", node->length());
-				exit(-1);
-			}
+			this->emit("STORE", x->data(), y->data(), __IR_LOCAL_VAR__);
 			break;
 		case AST_RESERVED:
 			if (*node == "syscall") {

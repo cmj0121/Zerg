@@ -10,7 +10,10 @@
 #include "zasm.h"
 
 #define MAX_ZASMP_PARAM	10
-#define __IR_REG_FMT__	"__ZERG_REG_%d__"
+#define __IR_REG_FMT__		"REG_%02d"
+#define __IR_LOCAL_VAR__	"LOCAL"
+#define __IR_GLOBAL_VAR__	"GLOBAL"
+
 /* Low-Level IR to emit Zasm language
  *
  * This IR is a max-to-4 tuple (OP, DST, SRC, EXTRA) and support 40 pseudo operators
