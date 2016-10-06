@@ -37,6 +37,9 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 	dst = this->regalloc(dst);
 	src = this->regalloc(src);
 
+	_D(LOG_INFO, "IR emit - %s %s %s %s",
+			op.c_str(), dst.c_str(), src.c_str(), extra.c_str());
+
 	if (op == "COPY") {					/* (COPY,  DST, SRC) */
 		/* Copy data from src to dst */
 		if ("rsi" == dst && '&' == src[0]) {
@@ -46,35 +49,48 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 		}
 	} else if (op == "LOAD") {			/* (LOAD,  DST, SRC, EXTRA) */
 		/* Load data from memory with index if need */
+		int pos = 0;
 		char buff[BUFSIZ] = {0};
 
-		if ("STACK" == src && "" == extra) {
-			/* load from stack */
-			(*this) += new Instruction("pop", dst);
-		} else if ("STACK" == src) {
-			/* load from stack which is already in stack */
-			snprintf(buff, sizeof(buff), "[rbp-%s]", extra.c_str());
-			(*this) += new Instruction("mov", dst, buff);
+		if (__IR_LOCAL_VAR__ == extra) {
+			/* save local variable */
+			pos = std::find(stack.begin(), stack.end(), src) - stack.begin();
+
+			if (stack.size() == pos) {
+				/* save into stack */
+				_D(LOG_CRIT, "Local VAR `%s` not declare", src.c_str());
+			} else {
+				snprintf(buff, sizeof(buff), "[rbp-0X%X]", pos * 0x08);
+				(*this) += new Instruction("mov", dst, buff);
+			}
+		} else if (__IR_GLOBAL_VAR__ == extra) {
+			/* save global variable */
+			_D(LOG_CRIT, "Not Implemented");
 		} else {
-			snprintf(buff, sizeof(buff),
-					"[%s%s%s]", src.c_str(), extra == "" ? "" : "+", extra.c_str());
-			(*this) += new Instruction("mov", dst, buff);
+			(*this) += new Instruction("mov", dst, src);
 		}
 	} else if (op == "STORE") {			/* (STORE, DST, SRC, EXTRA) */
 		/* Load data from memory with index if need */
+		int pos = 0;
 		char buff[BUFSIZ] = {0};
 
-		if ("STACK" == dst && "" == extra) {
-			/* save into stack, like local variable */
-			(*this) += new Instruction("push", src);
-		} else if ("STACK" == dst) {
-			/* save into stack which already in stack */
-			snprintf(buff, sizeof(buff), "[rbp-%s]", extra.c_str());
-			(*this) += new Instruction("mov", buff, src);
+		if (__IR_LOCAL_VAR__ == extra) {
+			/* save local variable */
+			pos = std::find(stack.begin(), stack.end(), dst) - stack.begin();
+
+			if (stack.size() == pos) {
+				/* save into stack */
+				stack.push_back(dst);
+				(*this) += new Instruction("push", src);
+			} else {
+				snprintf(buff, sizeof(buff), "[rbp-0X%X]", pos * 0x08);
+				(*this) += new Instruction("mov", src, buff);
+			}
+		} else if (__IR_GLOBAL_VAR__ == extra) {
+			/* save global variable */
+			_D(LOG_CRIT, "Not Implemented");
 		} else {
-			snprintf(buff, sizeof(buff), "[%s%s%s]",
-								dst.c_str(), extra == "" ? "" : "+", extra.c_str());
-			(*this) += new Instruction("mov", buff, src);
+			(*this) += new Instruction("mov", dst, src);
 		}
 	} else if (op == "ADD") {			/* (ADD,   DST, SRC) */
 		/* dst = dst + src */
@@ -88,13 +104,13 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 	} else if (op == "DIV") {			/* (DIV,   DST, SRC) */
 		/* dst = dst / src */
 		(*this) += new Instruction("mov", "rax", dst);
-		(*this) += new Instruction("xor", "rdx");
+		(*this) += new Instruction("xor", "rdx", "rdx");
 		(*this) += new Instruction("div", src);
 		(*this) += new Instruction("mov", dst, "rax");
 	} else if (op == "REM") {			/* (REM,   DST, SRC) */
 		/* dst = dst / src */
 		(*this) += new Instruction("mov", "rax", dst);
-		(*this) += new Instruction("xor", "rdx");
+		(*this) += new Instruction("xor", "rdx", "rdx");
 		(*this) += new Instruction("div", src);
 		(*this) += new Instruction("mov", dst, "rdx");
 	} else if (op == "INC") {			/* (ADD,   DST) */
