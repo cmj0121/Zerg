@@ -29,9 +29,10 @@ install: $(BIN)
 	install -m755 zasm.inst /usr/local/bin/zasm
 	install -m755 zerg.inst /usr/local/bin/zerg
 
+.PHONY: grammar
 
 GRAMMAR=Grammar/Grammar
 PARSING_TABLE=../include/zerg/parse_inc.h
 
-grammar: zerg.inst
+grammar: zerg.inst $(GRAMMAR)
 	./$^ -G $(GRAMMAR) > $(PARSING_TABLE)

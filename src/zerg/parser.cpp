@@ -113,6 +113,16 @@ bool Parser::gentable(std::string _stmt, ASTType _prev) {
 		{"'*'",			AST_MUL},
 		{"'/'",			AST_DIV},
 		{"'%'",			AST_MOD},
+		{"'~'",			AST_LIKE},
+		{"'<<'",		AST_LSHT},
+		{"'>>'",		AST_RSHT},
+		{"'|'",			AST_BIT_OR},
+		{"'&'",			AST_BIT_AND},
+		{"'^'",			AST_BIT_XOR},
+		{"'or'",		AST_LOG_OR},
+		{"'and'",		AST_LOG_AND},
+		{"'xor'",		AST_LOG_XOR},
+		{"'not'",		AST_LOG_NOT},
 	};
 
 	/* check this grammar rule is processed or not */
@@ -242,15 +252,25 @@ std::ostream& operator <<(std::ostream &stream, const Parser &src) {
 			{AST_DIV,			"'/'"},
 			{AST_MOD,			"'%'"},
 			{AST_ASSIGN,		"'='"},
+			{AST_LIKE,			"'~'"},
+			{AST_LSHT,			"'<<'"},
+			{AST_RSHT,			"'>>'"},
+			{AST_BIT_OR,		"'|'"},
+			{AST_BIT_AND,		"'&'"},
+			{AST_BIT_XOR,		"'^'"},
+			{AST_LOG_OR,		"'or'"},
+			{AST_LOG_AND,		"'and'"},
+			{AST_LOG_XOR,		"'xor'"},
+			{AST_LOG_NOT,		"'not'"},
 		};
 
 
 		stream << "/* Parsing Table\n *" << std::endl;
 		for (auto it : relationship) {
 			if (it.first != AST_UNKNOWN) {
-				stream << std::left << std::setw(12) << it.second;
+				stream << std::left << std::setw(18) << it.second;
 			} else {
-				stream << " * " << std::left << std::setw(12) << " ";
+				stream << " * " << std::left << std::setw(18) << " ";
 			}
 		}
 
@@ -285,12 +305,22 @@ std::ostream& operator <<(std::ostream &stream, const Parser &src) {
 			DEF(AST_NEWLINE),
 			DEF(AST_NUMBER),
 			DEF(AST_IDENTIFIER),
+			DEF(AST_ASSIGN),
 			DEF(AST_ADD),
 			DEF(AST_SUB),
 			DEF(AST_MUL),
 			DEF(AST_DIV),
 			DEF(AST_MOD),
-			DEF(AST_ASSIGN),
+			DEF(AST_LIKE),
+			DEF(AST_LSHT),
+			DEF(AST_RSHT),
+			DEF(AST_BIT_OR),
+			DEF(AST_BIT_AND),
+			DEF(AST_BIT_XOR),
+			DEF(AST_LOG_OR),
+			DEF(AST_LOG_AND),
+			DEF(AST_LOG_XOR),
+			DEF(AST_LOG_NOT),
 		#undef DEF
 		};
 

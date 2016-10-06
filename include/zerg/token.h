@@ -41,6 +41,17 @@ typedef enum _ASTType_ {
 	AST_MUL,
 	AST_DIV,
 	AST_MOD,
+	AST_LIKE,
+	AST_LSHT,
+	AST_RSHT,
+
+	AST_BIT_OR,
+	AST_BIT_AND,
+	AST_BIT_XOR,
+	AST_LOG_OR,
+	AST_LOG_AND,
+	AST_LOG_XOR,
+	AST_LOG_NOT,
 
 	/* reserved words */
 	AST_RESERVED		= 0x100,
