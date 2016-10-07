@@ -7,6 +7,54 @@
 #include <set>
 #include "zerg.h"
 
+
+static std::map<ASTType, std::pair<std::string, std::string>> _relation_ = {
+	#define DEF(type, ir)	{ type, { #type, ir } }
+		DEF(AST_UNKNOWN,	"stmt"),	/* FIXME - Should be the AST_ROOT */
+
+		DEF(AST_NEWLINE,	"NEWLINE"),
+		DEF(AST_INDENT,		"INDENT"),
+		DEF(AST_DEDENT,		"DEDENT"),
+
+		DEF(AST_NUMBER,		"NUMBER"),
+		DEF(AST_STRING,		"STRING"),
+		DEF(AST_IDENTIFIER,	"IDENTIFIER"),
+
+		DEF(AST_PARENTHESES_OPEN,	"'('"),
+		DEF(AST_PARENTHESES_CLOSE,	"')'"),
+
+		/* operations */
+		DEF(AST_COLON,		"':'"),
+		DEF(AST_COMMA,		"','"),
+		DEF(AST_ASSIGN,		"'='"),
+		DEF(AST_ADD,		"'+'"),
+		DEF(AST_SUB,		"'-'"),
+		DEF(AST_MUL,		"'*'"),
+		DEF(AST_DIV,		"'/'"),
+		DEF(AST_MOD,		"'%'"),
+		DEF(AST_LIKE,		"'~'"),
+
+		DEF(AST_LSHT,		"'<<'"),
+		DEF(AST_RSHT,		"'>>'"),
+
+		DEF(AST_BIT_OR,		"'|'"),
+		DEF(AST_BIT_AND,	"'&'"),
+		DEF(AST_BIT_XOR,	"'^'"),
+
+		DEF(AST_LOG_OR,		"'or'"),
+		DEF(AST_LOG_AND,	"'and'"),
+		DEF(AST_LOG_XOR,	"'xor'"),
+		DEF(AST_LOG_NOT,	"'not'"),
+
+
+		/* reserved word */
+		DEF(AST_IF,			"'if'"),
+		DEF(AST_FUNC,		"'func'"),
+		DEF(AST_SYSCALL,	"'syscall'"),
+	#undef DEF
+};
+
+
 bool Parser::load(std::string src, std::string stmt) {
 	std::fstream fs(src);
 	std::string line;
@@ -103,27 +151,6 @@ bool Parser::gentable(std::string _stmt, ASTType _prev) {
 	bool blRet = false;
 	size_t _weight = 0;
 	std::vector<ASTType> prev;
-	std::map<std::string, ASTType> _map_ = {
-		{"NEWLINE",		AST_NEWLINE},
-		{"INT",			AST_NUMBER},
-		{"IDENTIFIER",	AST_IDENTIFIER},
-		{"'='",			AST_ASSIGN},
-		{"'+'",			AST_ADD},
-		{"'-'",			AST_SUB},
-		{"'*'",			AST_MUL},
-		{"'/'",			AST_DIV},
-		{"'%'",			AST_MOD},
-		{"'~'",			AST_LIKE},
-		{"'<<'",		AST_LSHT},
-		{"'>>'",		AST_RSHT},
-		{"'|'",			AST_BIT_OR},
-		{"'&'",			AST_BIT_AND},
-		{"'^'",			AST_BIT_XOR},
-		{"'or'",		AST_LOG_OR},
-		{"'and'",		AST_LOG_AND},
-		{"'xor'",		AST_LOG_XOR},
-		{"'not'",		AST_LOG_NOT},
-	};
 
 	/* check this grammar rule is processed or not */
 	for (auto &it : this->_stmt_) {
@@ -176,18 +203,26 @@ bool Parser::gentable(std::string _stmt, ASTType _prev) {
 				for (auto _p: prev)
 					gentable(grammar, _p);
 				prev = this->_cached_[grammar];
-			} else if (_map_.end() != _map_.find(grammar)) {
-				/* token */
-				ASTType cur = _map_.find(grammar)->second;
-
-				for (auto _p : prev) {
-					this->_table_[_p][cur] = weight;
-				}
-				prev.clear();
-				prev.push_back(cur);
 			} else {
-				_D(LOG_CRIT, "Not define `%s`", grammar.c_str());
-				goto END;
+				bool blFound = false;
+
+				for (auto it : _relation_) {
+					if (it.second.second == grammar) {
+						for (auto _p : prev) {
+							this->_table_[_p][it.first] = weight;
+						}
+
+						prev.clear();
+						prev.push_back(it.first);
+						blFound = true;
+						break;
+					}
+				}
+
+				if (false == blFound) {
+					_D(LOG_CRIT, "Not define `%s`", grammar.c_str());
+					goto END;
+				}
 			}
 		}
 		this->_cached_[_stmt].insert(this->_cached_[_stmt].end(), prev.begin(), prev.end());
@@ -223,6 +258,7 @@ END:
 }
 
 std::ostream& operator <<(std::ostream &stream, const Parser &src) {
+	int layout = 14;
 
 	stream << "#ifndef __ZERG_PARSING_TABLE_H__" << std::endl;
 	stream << "\t#define __ZERG_PARSING_TABLE_H__" << std::endl;
@@ -234,54 +270,33 @@ std::ostream& operator <<(std::ostream &stream, const Parser &src) {
 				std::string line = "";
 
 				for (auto it : rule) line += it + " ";
-				stream << " * "<< std::setw(8) << stmt.first << " -> " << line << "\n";
+				stream << " * "<< std::left << std::setw(layout) << stmt.first;
+				stream << " -> " << line << "\n";
 			}
+			stream << " *\n";
 		}
 		stream << " */\n" << std::endl;
 	}
 
+#ifdef DEBUG
 	{	/* parsing table with simplify grammar rules */
-		std::map<ASTType, std::string> relationship = {
-			{AST_UNKNOWN,		"stmt"},
-			{AST_NEWLINE,		"NEWLINE"},
-			{AST_NUMBER,		"INT"},
-			{AST_IDENTIFIER,	"IDENTIFIER"},
-			{AST_ADD,			"'+'"},
-			{AST_SUB,			"'-'"},
-			{AST_MUL,			"'*'"},
-			{AST_DIV,			"'/'"},
-			{AST_MOD,			"'%'"},
-			{AST_ASSIGN,		"'='"},
-			{AST_LIKE,			"'~'"},
-			{AST_LSHT,			"'<<'"},
-			{AST_RSHT,			"'>>'"},
-			{AST_BIT_OR,		"'|'"},
-			{AST_BIT_AND,		"'&'"},
-			{AST_BIT_XOR,		"'^'"},
-			{AST_LOG_OR,		"'or'"},
-			{AST_LOG_AND,		"'and'"},
-			{AST_LOG_XOR,		"'xor'"},
-			{AST_LOG_NOT,		"'not'"},
-		};
-
-
 		stream << "/* Parsing Table\n *" << std::endl;
-		for (auto it : relationship) {
+		for (auto it : _relation_) {
 			if (it.first != AST_UNKNOWN) {
-				stream << std::left << std::setw(18) << it.second;
+				stream << std::left << std::setw(layout) << it.second.second;
 			} else {
-				stream << " * " << std::left << std::setw(18) << " ";
+				stream << " * " << std::left << std::setw(layout) << " ";
 			}
 		}
 
 		stream << std::endl;
-		for (auto it : relationship) {
+		for (auto it : _relation_) {
 			if (src._table_.end() == src._table_.find(it.first)) {
 				continue;
 			}
 
-			stream << " * " << std::left << std::setw(12) << it.second;
-			for (auto cur : relationship) {
+			stream << " * " << std::left << std::setw(12) << it.second.second;
+			for (auto cur : _relation_) {
 				std::map<_ASTType_, int> clm = src._table_.find(it.first)->second;
 
 				if (cur.first == AST_UNKNOWN) {
@@ -297,38 +312,14 @@ std::ostream& operator <<(std::ostream &stream, const Parser &src) {
 
 		stream << " */\n" << std::endl;
 	}
+#endif /* DEBUG */
 
 	{
-		std::map<ASTType, std::string> relationship = {
-		#define DEF(type)	{ type, #type }
-			DEF(AST_UNKNOWN),
-			DEF(AST_NEWLINE),
-			DEF(AST_NUMBER),
-			DEF(AST_IDENTIFIER),
-			DEF(AST_ASSIGN),
-			DEF(AST_ADD),
-			DEF(AST_SUB),
-			DEF(AST_MUL),
-			DEF(AST_DIV),
-			DEF(AST_MOD),
-			DEF(AST_LIKE),
-			DEF(AST_LSHT),
-			DEF(AST_RSHT),
-			DEF(AST_BIT_OR),
-			DEF(AST_BIT_AND),
-			DEF(AST_BIT_XOR),
-			DEF(AST_LOG_OR),
-			DEF(AST_LOG_AND),
-			DEF(AST_LOG_XOR),
-			DEF(AST_LOG_NOT),
-		#undef DEF
-		};
-
 		stream << "std::map<ASTType, std::map<ASTType, int>> _table_ = {\n\t";
 		for (auto row : src._table_) {
-			stream << "{\n\t\t" << relationship[row.first] << ", {\n";
+			stream << "{\n\t\t" << _relation_[row.first].first << ", {\n";
 			for (auto it : row.second) {
-				stream << "\t\t\t{ " << relationship[it.first] << ",\t" <<it.second << "},\n";
+				stream << "\t\t\t{ " << _relation_[it.first].first << ",\t" <<it.second << "},\n";
 			}
 			stream << "\t\t},\n\t}, ";
 		}
