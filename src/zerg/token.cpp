@@ -25,8 +25,8 @@ int ZergToken::weight(void) {
 
 void ZergToken::classify(std::string src) {
 	switch(src[0]) {
-		case '\0':									/* UNKNOWN */
-			this->_type_ = AST_UNKNOWN;
+		case '\0':									/* ROOT */
+			this->_type_ = AST_ROOT;
 			break;
 		case '\t':									/* INDENT */
 			this->_type_ = AST_INDENT;

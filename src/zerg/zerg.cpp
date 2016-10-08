@@ -209,7 +209,6 @@ void Zerg::emitIR(AST *node) {
 	/* translate AST to IR */
 	_D(LOG_DEBUG, "emit IR on %s", node->data().c_str());
 	switch(node->type()) {
-		case AST_UNKNOWN:
 		case AST_ROOT:
 			/* NOP */
 			break;

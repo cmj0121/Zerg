@@ -10,7 +10,8 @@
 
 static std::map<ASTType, std::pair<std::string, std::string>> _relation_ = {
 	#define DEF(type, ir)	{ type, { #type, ir } }
-		DEF(AST_UNKNOWN,	"stmt"),	/* FIXME - Should be the AST_ROOT */
+		DEF(AST_UNKNOWN,	""),
+		DEF(AST_ROOT,		"stmt"),
 
 		DEF(AST_NEWLINE,	"NEWLINE"),
 		DEF(AST_INDENT,		"INDENT"),
@@ -64,6 +65,8 @@ bool Parser::load(std::string src, std::string stmt) {
 			continue;
 		}
 
+		_D(LOG_DEBUG, "raw grammar - `%s`", line.c_str());
+
 		/* process the grammar rule `stmt : rules` */
 		size_t pos = 0;
 		std::string stmt;
@@ -83,10 +86,11 @@ bool Parser::load(std::string src, std::string stmt) {
 		}
 	}
 
-	return this->gentable(stmt);
+	return this->gentable(stmt, AST_ROOT);
 }
 bool Parser::load(std::string stmt, TOKENS rule, TOKENS front, TOKENS end) {
-	TOKENS sub, tmp;
+	TOKENS sub, tmp, ret;
+	std::string line;
 
 	for (size_t i = 0; i < rule.size(); ++i) {
 		switch(rule[i][0]) {
@@ -106,7 +110,6 @@ bool Parser::load(std::string stmt, TOKENS rule, TOKENS front, TOKENS end) {
 							case ')':	/* GROUP */
 								return load(stmt, sub, front, end);
 							case '*':	/* ANY - FIXME */
-							case '?':	/* ONE or NONE */
 								return load(stmt, TOKENS{}, front, end) && load(stmt, sub, front, end);
 							default:
 								_D(LOG_WARNING, "Not Implemented");
@@ -123,23 +126,43 @@ bool Parser::load(std::string stmt, TOKENS rule, TOKENS front, TOKENS end) {
 
 					return load(stmt, sub1, front, end) && load(stmt, sub2, front, end);
 				}
+			case '[':	/* OR GROUP */
+				for (size_t j = rule.size()-1; j > i; --j) {
+					if ("]" == rule[j]) {
+						/* update the front, cur, remainder parts */
+						tmp = TOKENS(rule.begin(), rule.begin()+i);
+						front.insert(front.end(), tmp.begin(), tmp.end());
+
+						sub = TOKENS(rule.begin()+i+1, rule.begin()+j);
+
+						tmp = TOKENS(rule.begin()+j+1, rule.end());
+						end.insert(end.end(), tmp.begin(), tmp.end());
+
+						return load(stmt, TOKENS{}, front, end) && load(stmt, sub, front, end);
+					}
+				}
+				_D(LOG_WARNING, "parentheses are not paired");
+				return false;
 			default:
 				break;
 		}
 	}
 
-
-	TOKENS ret;
-
 	/* concatenate into one rule */
 	ret.insert(ret.end(), front.begin(), front.end());
 	ret.insert(ret.end(), rule.begin(), rule.end());
-	ret.insert(ret.end(), end.begin(), end.end());
+	if (0 != end.size()) {
+		/* NOTE - Handle the end part */
+		return load(stmt, end, ret, TOKENS{});
+	}
+
+
+	for (auto it : ret) line += it + " ";
+	_D(LOG_INFO, "set grammar - %-12s -> %s", stmt.c_str(), line.c_str());
 
 	/* save into rule map */
 	if (this->_rules_.end() == this->_rules_.find(stmt)) {
 		std::vector<TOKENS> cur = { ret };
-
 		this->_rules_[stmt] = cur;
 	} else {
 		this->_rules_[stmt].push_back(ret);
@@ -174,12 +197,16 @@ bool Parser::gentable(std::string _stmt, ASTType _prev) {
 		this->_stmt_.push_back(std::make_pair(_stmt, tmp));
 	}
 
+	_D(LOG_DEBUG, "gentable on `%s` (W:%zu) with #%zu rules",
+					_stmt.c_str(),
+					_weight,
+					this->_rules_[_stmt].size());
 	for (auto rule : this->_rules_[_stmt]) {
 		#ifdef DEBUG
 			std::string line;
 
 			for (auto it : rule) line += it + " ";
-			_D(LOG_CRIT, "grammar : %-8s -> %s", _stmt.c_str(), strip(line).c_str());
+			_D(LOG_DEBUG, "grammar : %-8s -> %s", _stmt.c_str(), strip(line).c_str());
 		#endif
 		int weight = _weight;
 
@@ -193,7 +220,6 @@ bool Parser::gentable(std::string _stmt, ASTType _prev) {
 		prev.clear();
 		prev.push_back(_prev);
 		for (auto grammar : rule) {
-
 			if (_stmt == grammar) {
 				/* loop */
 				for (auto _p : prev)
@@ -282,7 +308,7 @@ std::ostream& operator <<(std::ostream &stream, const Parser &src) {
 	{	/* parsing table with simplify grammar rules */
 		stream << "/* Parsing Table\n *" << std::endl;
 		for (auto it : _relation_) {
-			if (it.first != AST_UNKNOWN) {
+			if (it.first != AST_ROOT) {
 				stream << std::left << std::setw(layout) << it.second.second;
 			} else {
 				stream << " * " << std::left << std::setw(layout) << " ";
@@ -299,7 +325,7 @@ std::ostream& operator <<(std::ostream &stream, const Parser &src) {
 			for (auto cur : _relation_) {
 				std::map<_ASTType_, int> clm = src._table_.find(it.first)->second;
 
-				if (cur.first == AST_UNKNOWN) {
+				if (cur.first == AST_ROOT) {
 					continue;
 				} else if (clm.end() == clm.find(cur.first)) {
 					stream << std::left << std::setw(12) << " ";

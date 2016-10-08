@@ -4,23 +4,23 @@
 # Date    : 2016/10/06
 # Version : 0.2
 
-stmt   : ( assign | expr )? NEWLINE
+stmt   : [ assign | expr ] NEWLINE
 
 assign : IDENTIFIER '=' expr
 
 expr : log_or_expr
 
-log_or_expr   : log_and_expr ( 'or'  log_and_expr )*
-log_and_expr  : log_xor_expr ( 'and' log_xor_expr )*
-log_xor_expr  : log_not_expr ( 'xor' log_not_expr )*
+log_or_expr   : [ log_or_expr  'or'  ] log_and_expr
+log_and_expr  : [ log_and_expr 'and' ] log_xor_expr
+log_xor_expr  : [ log_xor_expr 'xor' ] log_not_expr
 log_not_expr  : bit_xor_expr | 'not' log_not_expr
-bit_or_expr   : bit_and_expr ( '|' bit_and_expr )*
-bit_and_expr  : bit_xor_expr ( '&' bit_xor_expr )*
-bit_xor_expr  : shift_expr   ( '^' shift_expr )*
 
-shift_expr : arith_expr ( ( '<<' | '>>' ) arith_expr )*
-arith_expr : pow  ( ( '+' | '-' ) pow )*
-pow        : atom ( ( '*' | '/' | '%' | '~' ) atom )*
+bit_or_expr   : [ bit_or_expr  '|' ] bit_and_expr
+bit_and_expr  : [ bit_and_expr '&' ] bit_xor_expr
+bit_xor_expr  : [ bit_xor_expr '^' ] shift_expr
 
-atom   : NUMBER | STRING | IDENTIFIER | ( '+' | '-' | '~' ) atom
+shift_expr : [ shift_expr ( '<<' | '>>' ) ] arith_expr
+arith_expr : [ arith_expr ( '+' | '-' )  ] pow
+pow        : [ pow ( '*' | '/' | '%' | '~' ) ] atom
 
+atom   : [ '+' | '-' | '~' ] ( NUMBER | STRING | IDENTIFIER )

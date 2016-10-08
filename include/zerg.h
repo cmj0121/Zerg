@@ -16,7 +16,7 @@ class Parser {
 	public:
 		bool load(std::string src, std::string stmt="stmt");
 		bool load(std::string stmt, TOKENS rule, TOKENS front=TOKENS{}, TOKENS ends=TOKENS{});
-		bool gentable(std::string stmt, ASTType type=AST_UNKNOWN);
+		bool gentable(std::string stmt, ASTType type);
 
 		std::string stmt(int weight);
 		int weight(ASTType prev, ASTType cur);
