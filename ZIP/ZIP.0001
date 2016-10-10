@@ -1,0 +1,13 @@
+ZIP		- 1
+TITLE	- Zerg version description
+AUTHOR	- cmj<cmj@cmj.tw>
+STATUS	- Activate
+UPDATE	- 2016/10/10
+
+
+# 簡介 #
+Zerg 的版號由四個數字組成：MAJOR.MINOR.UPDATE.FIX。
+MAJOR 代表 Zerg 有顯著改善的版本、MINOR 用來表示語法有改變的版本、UPDATE 代表內建函式庫有所修改、
+FIX 表示為 bug fix 版本。
+
+
