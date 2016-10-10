@@ -60,6 +60,9 @@ bool ParsingTable::load(std::string src, std::string stmt) {
 	std::fstream fs(src);
 	std::string line;
 
+	/* re-build the parsing table */
+	this->_table_.clear();
+
 	while (std::getline(fs, line)) {
 		if ('\0' == line[0] || '#' == line[0]) {
 			continue;
