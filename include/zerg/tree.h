@@ -11,7 +11,6 @@ class Tree {
 	public:
 		Tree(std::string src) : _src_(src), _parent_(NULL) {};
 		virtual ~Tree() {
-			_D(LOG_DEBUG, "delete tree node %s", this->_src_.c_str());
 			for (unsigned int i = 0; i < this->length(); ++i) {
 				delete this->_childs_[i];
 			}

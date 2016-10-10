@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 	if (0 == argc) {
 		help();
 	} else if (_gen_grammar) {
-		Parser parser;
+		ParsingTable parser;
 
 		parser.load(argv[0]);
 		std::cout << parser << std::endl;

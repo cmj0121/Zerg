@@ -5,6 +5,9 @@
 ZergToken::ZergToken(const char *src) : std::string(src) {
 	this->classify(src);
 }
+ZergToken::ZergToken(std::string src) : std::string(src) {
+	this->classify(src);
+}
 
 void ZergToken::setType(ASTType type) {
 	/* reset the type of the token */

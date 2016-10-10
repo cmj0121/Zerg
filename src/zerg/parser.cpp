@@ -56,7 +56,7 @@ static std::map<ASTType, std::pair<std::string, std::string>> _relation_ = {
 };
 
 
-bool Parser::load(std::string src, std::string stmt) {
+bool ParsingTable::load(std::string src, std::string stmt) {
 	std::fstream fs(src);
 	std::string line;
 
@@ -88,7 +88,7 @@ bool Parser::load(std::string src, std::string stmt) {
 
 	return this->gentable(stmt, AST_ROOT);
 }
-bool Parser::load(std::string stmt, TOKENS rule, TOKENS front, TOKENS end) {
+bool ParsingTable::load(std::string stmt, TOKENS rule, TOKENS front, TOKENS end) {
 	TOKENS sub, tmp, ret;
 	std::string line;
 
@@ -170,7 +170,7 @@ bool Parser::load(std::string stmt, TOKENS rule, TOKENS front, TOKENS end) {
 
 	return true;
 }
-bool Parser::gentable(std::string _stmt, ASTType _prev) {
+bool ParsingTable::gentable(std::string _stmt, ASTType _prev) {
 	bool blRet = false;
 	size_t _weight = 0;
 	std::vector<ASTType> prev;
@@ -259,7 +259,7 @@ END:
 	return blRet;
 }
 
-std::string Parser::stmt(int weight) {
+std::string ParsingTable::stmt(int weight) {
 	/* return the statement name */
 	if (weight >= this->_stmt_.size()) {
 		return "";
@@ -267,8 +267,10 @@ std::string Parser::stmt(int weight) {
 		return this->_stmt_[weight].first;
 	}
 }
-int Parser::weight(ASTType prev, ASTType cur) {
+int ParsingTable::weight(ASTType prev, ASTType cur) {
 	int weight = -1;
+
+	_D(LOG_DEBUG, "get weight %d %d on parsing table", prev, cur);
 
 	if (_table_.end() == _table_.find(prev)) {
 		_D(LOG_WARNING, "`0x%X` -> 0x%X not found in parsing table", prev, cur);
@@ -283,7 +285,7 @@ END:
 	return weight;
 }
 
-std::ostream& operator <<(std::ostream &stream, const Parser &src) {
+std::ostream& operator <<(std::ostream &stream, const ParsingTable &src) {
 	int layout = 14;
 
 	stream << "#ifndef __ZERG_PARSING_TABLE_H__" << std::endl;

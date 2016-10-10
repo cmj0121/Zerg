@@ -64,6 +64,7 @@ typedef enum _ASTType_ {
 class ZergToken : public std::string {
 	public:
 		ZergToken (const char *src);
+		ZergToken (std::string src);
 
 		void setType(ASTType type);
 		ASTType type(void);

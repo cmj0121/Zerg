@@ -1,0 +1,4 @@
+#! /usr/bin/env zerg
+
+VAR = 0
+VAR = VAR + 1 * 2 / 3 % 4

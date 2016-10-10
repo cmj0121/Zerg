@@ -12,7 +12,7 @@
 
 
 typedef std::vector<std::string> TOKENS;
-class Parser {
+class ParsingTable {
 	public:
 		bool load(std::string src, std::string stmt="stmt");
 		bool load(std::string stmt, TOKENS rule, TOKENS front=TOKENS{}, TOKENS ends=TOKENS{});
@@ -21,7 +21,7 @@ class Parser {
 		std::string stmt(int weight);
 		int weight(ASTType prev, ASTType cur);
 
-		friend std::ostream& operator <<(std::ostream &stream, const Parser &src);
+		friend std::ostream& operator <<(std::ostream &stream, const ParsingTable &src);
 	private:
 		std::string _src_;
 		std::vector<std::pair<std::string, std::vector<ASTType>>> _stmt_;
@@ -30,7 +30,7 @@ class Parser {
 		std::map<std::string, std::vector<TOKENS>> _rules_;
 };
 
-class Zerg : public Parser, public IR {
+class Zerg : public ParsingTable, public IR {
 	public:
 		Zerg(std::string dst, off_t entry = 0x1000);
 		virtual ~Zerg();
@@ -40,9 +40,8 @@ class Zerg : public Parser, public IR {
 
 		std::string regalloc(std::string src);
 	protected:
-		void lexer(void);		/* lexer analysis */
-		void parser(void);		/* syntax and semantic analysis */
-		AST *parser(std::vector<ZergToken> tokens);
+		void lexer(std::string src);				/* lexer analysis */
+		AST *parser(std::vector<ZergToken> tokens);	/* syntax and semantic analysis */
 
 		void compileCFG(CFG *node);
 		void DFS(AST *node);
