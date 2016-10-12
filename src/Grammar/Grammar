@@ -8,7 +8,10 @@ stmt   : [ assign | expr ] NEWLINE
 
 assign : IDENTIFIER '=' expr
 
-expr : log_or_expr
+expr : funccall | log_or_expr
+
+funccall : ( IDENTIFIER | 'syscall' ) '(' [ args ] ')'
+args     : expr ( ',' expr )*
 
 log_or_expr   : log_and_expr ( 'or'  log_or_expr  )*
 log_and_expr  : log_xor_expr ( 'and' log_and_expr )*

@@ -39,181 +39,6 @@ void Zerg::compile(std::string src, bool only_ir) {
 		this->emit("LABEL", it.first, it.second);
 	}
 }
-
-/* Private Properties */
-void Zerg::lexer(std::string src) {
-	std::string line;
-	std::fstream fs(src);
-	AST *ast = NULL;
-	CFG *cfg = NULL, *curcfg = NULL;
-
-	if (!fs.is_open()) {
-		/* cannot open the source code */
-		_D(LOG_CRIT, "source file `%s` does NOT exist", src.c_str());
-	}
-
-	while (std::getline(fs, line)) {
-		TOKENS _tokens;
-
-		for (size_t cur = 0; cur <= line.size(); ++cur) {
-			size_t pos;
-			_D(LOG_DEBUG, "read line `%s` on %zu #%zu", line.c_str(), cur, _tokens.size());
-
-			switch(line[cur]) {
-				case '\0':				/* NEWLINE */
-				case '#' :				/* COMMENT */
-					goto NEXT_STEP;
-					break;
-				case ' ': case '\t':	/* SPACE */
-					/* FIXME - Maybe INDENT or DEDENT */
-					break;
-				case '1': case '2': case '3': case '4':
-				case '5': case '6': case '7': case '8':
-				case '9': case '0':
-					for (pos = cur; pos <= line.size(); ++pos) {
-						if (line[pos] >= '0' && line[pos] <= '9') {
-							/* NUMBER */
-							continue;
-						}
-						break;
-					}
-					_tokens.push_back(line.substr(cur, pos-cur));
-					cur = pos - 1;
-					break;
-				case '+': case '-':						/* OPERATOR */
-				case '*': case '/': case '%': case '~':	/* OPERATOR */
-				case '.': case ',': case ':':
-				case '(': case ')': case '[': case ']':
-				case '{': case '}':
-					_tokens.push_back(line.substr(cur, 1));
-					break;
-				case '\'': case '"':					/* STRING */
-					for (pos = cur+1; pos <= line.size(); ++pos) {
-						if (line[pos] == line[cur]) break;
-					}
-
-					if (line[pos] != line[cur]) {
-						_D(LOG_CRIT, "Invalid syntax for string %s", line.c_str());
-					}
-					_tokens.push_back(line.substr(cur, pos-cur+1));
-					cur = pos;
-					break;
-				default:
-					for (pos = cur+1; pos <= line.size(); ++pos) {
-						if ((line[pos] | 0x20) >= 'a' && (line[pos] | 0x20) <= 'z') {
-							/* Alphabet */
-							continue;
-						} else if (line[pos] >= '0' && line[pos] <= '9') {
-							/* NUMBER */
-							continue;
-						} else if (line[pos] == '_') {
-							/* UNDERLINE */
-							continue;
-						}
-						break;
-					}
-					_tokens.push_back(line.substr(cur, pos-cur));
-					cur = pos - 1;
-					break;
-			}
-		}
-
-		NEXT_STEP:
-			std::vector<ZergToken> tokens;
-
-			if (0 != _tokens.size()) {
-				for (auto it : _tokens) {
-					ZergToken tmp(it);
-
-					tokens.push_back(tmp);
-				}
-
-				ALERT(NULL == (ast = this->parser(tokens)));
-
-				cfg = new CFG("");
-				cfg->insert(ast);
-
-				if (0 == this->_root_.size()) {
-					this->_root_[CFG_MAIN] = cfg;
-					curcfg = cfg;
-				} else {
-					curcfg->passto(cfg);
-					curcfg = cfg;
-				}
-			}
-	}
-}
-AST* Zerg::parser(std::vector<ZergToken> tokens) {
-	ZergToken prev = "";
-	AST *ast = NULL, *cur = NULL;
-
-	/* generate the AST via the parsing table */
-	_D(LOG_INFO, "parse with #%zu tokens", tokens.size());
-	for (auto &token : tokens) {
-		int weight = this->weight(prev.type(), token.type());
-
-		if (-1 == weight) {
-			std::string line;
-
-			for (auto &it : tokens) line += it + " ";
-			_D(LOG_CRIT, "Syntax Error `%s` on %s", token.c_str(), line.c_str());
-			delete ast;
-			return NULL;
-		}
-		token.weight(weight);
-
-		_D(LOG_DEBUG, "grammar (W:%d) `%s` -> %s %s",
-					token.weight(),
-					this->stmt(weight).c_str(),
-					prev.c_str(),
-					token.c_str());
-
-		AST *tmp = new AST(token), *prevnode = NULL;
-		do {
-			if (NULL == ast) {							/* first node in AST */
-				ast = tmp;
-				cur = ast;
-				break;
-			} else if (NULL == cur) {					/* trace on the root of AST */
-				tmp->insert(ast);
-				ast = tmp;
-				cur = ast;
-				goto NEXT_STEP;
-			} else if(cur->weight() < tmp->weight()) {	/* found */
-				if (NULL == prevnode || 2 > cur->length()) {
-					cur->insert(tmp);
-					cur = tmp;
-					goto NEXT_STEP;
-				} else {
-					switch(cur->type()) {
-						default:
-							prevnode->replace(tmp);
-							tmp->insert(prevnode);
-							cur = tmp;
-							goto NEXT_STEP;
-							break;
-					}
-					break;
-				}
-				cur->insert(tmp);
-				cur = tmp;
-		NEXT_STEP:
-				break;
-			}
-
-			prevnode = cur;
-			cur = cur->parent();
-		} while (true);
-
-		#ifdef DEBUG
-			std::cout << "point -> `" << cur->data() << "`\n";
-			std::cout << *ast << std::endl;
-		#endif /* DEBUG */
-		prev = token;
-	}
-
-	return ast;
-}
 void Zerg::compileCFG(CFG *node) {
 	CFG *tmp = NULL;
 
@@ -243,7 +68,7 @@ void Zerg::compileCFG(CFG *node) {
 		}
 
 		/* main logical to generate IR */
-		this->DFS(node);
+		this->emitIR(node);
 
 		if (node->isCondit()) {				/* CONDITION NODE */
 			std::string op = node->child(0)->data();
@@ -266,20 +91,33 @@ void Zerg::compileCFG(CFG *node) {
 		this->compileCFG(node->nextCFG(false));
 	}
 }
-void Zerg::DFS(AST *node) {
-	/* main DFS logical */
-	for (ssize_t i = 0; i < node->length(); ++i) {
-		this->DFS(node->child(i));
-	}
-	this->emitIR(node);
-}
 void Zerg::emitIR(AST *node) {
 	static int regs = 0;
 	static std::vector<std::string> stack;
 
 	std::string tmp;
-	AST *x = NULL, *y = NULL;
+	AST *x = NULL, *y = NULL, *cur = NULL;
 
+	/* process first if need */
+	switch(node->type()) {
+		case AST_IDENTIFIER:
+		case AST_SYSCALL:
+			if (2 == node->length() && AST_PARENTHESES_OPEN == node->child(0)->type()) {
+				for (size_t i = 0; i < node->child(0)->length(); ++i) {
+					cur = node->child(0)->child(i);
+					this->emitIR(cur);
+					this->emit("PARAM", cur->data());
+				}
+				this->emit("INTERRUPT");
+				return;
+			}
+		default:
+			/* Run DFS */
+			for (size_t i = 0; i < node->length(); ++i) {
+				this->emitIR(node->child(i));
+			}
+			break;
+	}
 
 	/* translate AST to IR */
 	_D(LOG_DEBUG, "emit IR on %s", node->data().c_str());
@@ -385,6 +223,9 @@ void Zerg::emitIR(AST *node) {
 					exit(-1);
 					break;
 			}
+			break;
+		case AST_SYSCALL:
+			_D(LOG_CRIT, "Not Implemented %zu", node->length());
 			break;
 		default:
 			_D(LOG_CRIT, "Not implemented %s [%X]", node->data().c_str(), node->type());

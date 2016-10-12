@@ -309,42 +309,6 @@ std::ostream& operator <<(std::ostream &stream, const ParsingTable &src) {
 		stream << " */\n" << std::endl;
 	}
 
-#ifdef DEBUG
-	{	/* parsing table with simplify grammar rules */
-		stream << "/* Parsing Table\n *" << std::endl;
-		for (auto it : _relation_) {
-			if (it.first != AST_ROOT) {
-				stream << std::left << std::setw(layout) << it.second.second;
-			} else {
-				stream << " * " << std::left << std::setw(layout) << " ";
-			}
-		}
-
-		stream << std::endl;
-		for (auto it : _relation_) {
-			if (src._table_.end() == src._table_.find(it.first)) {
-				continue;
-			}
-
-			stream << " * " << std::left << std::setw(12) << it.second.second;
-			for (auto cur : _relation_) {
-				std::map<_ASTType_, int> clm = src._table_.find(it.first)->second;
-
-				if (cur.first == AST_ROOT) {
-					continue;
-				} else if (clm.end() == clm.find(cur.first)) {
-					stream << std::left << std::setw(12) << " ";
-				} else {
-					stream << std::left << std::setw(12) << clm.find(cur.first)->second;
-				}
-			}
-			stream << std::endl;
-		}
-
-		stream << " */\n" << std::endl;
-	}
-#endif /* DEBUG */
-
 	{
 		stream << "std::map<ASTType, std::map<ASTType, int>> _table_ = {\n\t";
 		for (auto row : src._table_) {

@@ -64,7 +64,7 @@ hi def link ZERGException     Statement
 hi def link ZERGInclude       Include
 
 " Reserved Function
-syn keyword ZERGReservedFn    print
+syn keyword ZERGReservedFn    print syscall
 hi def link ZERGReservedFn    Function
 
 let &cpo = s:cpo_save

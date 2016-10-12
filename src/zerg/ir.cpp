@@ -178,7 +178,9 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 		(*this) += new Instruction("ret");
 	} else if (op == "PARAM") {			/* (PARAM, DST) */
 		/* Save the parameter */
-		this->_param_[this->_param_nr_ ++] = dst;
+		std::vector<std::string> regs = { "rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"};
+
+		this->emit("COPY", regs[this->_param_nr_++], dst);
 	} else if (op == "LABEL") {			/* (LABEL, DST, SRC) */
 		/* Set label or set variable */
 		if ("" == src) {
@@ -192,11 +194,6 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 		(*this) += new Instruction("nop");
 	} else if (op == "INTERRUPT") {		/* (INTERRUPT) */
 		/* Call system interrupt, and it is platform-dependent */
-		std::vector<std::string> regs = { "rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"};
-
-		for (int i = 0; i < this->_param_nr_; ++i) {
-			this->emit("COPY", regs[i], this->_param_[i]);
-		}
 		(*this) += new Instruction("syscall");
 		this->_param_nr_ = 0;
 	} else if (op == "PROLOGUE") {		/* (PROLOGUE, NR) */

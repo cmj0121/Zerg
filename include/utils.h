@@ -32,6 +32,13 @@ typedef std::string STRING;
 					__FILE__, __LINE__, lv, ##__VA_ARGS__);		\
 		}														\
 	} while (0)
+#define _S(tokens)									\
+	do {											\
+		std::string line;							\
+		for (auto &it : tokens) line += it + " ";	\
+		_D(LOG_CRIT, "Syntax Error `%s` on %s", 	\
+				token.c_str(), line.c_str());		\
+	} while (0)
 #define _DEBUG()	_D(0, "\x1b[1;34m ~ debug ~\x1b[m")
 #define ALERT(expr)								\
 	if (expr) {									\

@@ -44,7 +44,6 @@ class Zerg : public ParsingTable, public IR {
 		AST *parser(std::vector<ZergToken> tokens);	/* syntax and semantic analysis */
 
 		void compileCFG(CFG *node);
-		void DFS(AST *node);
 		void emitIR(AST *node);
 	private:
 		int _labelcnt_;
