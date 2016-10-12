@@ -180,7 +180,13 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 		/* Save the parameter */
 		std::vector<std::string> regs = { "rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"};
 
-		this->emit("COPY", regs[this->_param_nr_++], dst);
+		if ("rsi" == regs[this->_param_nr_] && '&' == dst[0]) {
+			(*this) += new Instruction("lea", regs[this->_param_nr_], dst);
+			(*this) += new Instruction("push", regs[this->_param_nr_]);
+		} else {
+			(*this) += new Instruction("push", dst);
+		}
+		this->_param_nr_ ++;
 	} else if (op == "LABEL") {			/* (LABEL, DST, SRC) */
 		/* Set label or set variable */
 		if ("" == src) {
@@ -194,8 +200,12 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 		(*this) += new Instruction("nop");
 	} else if (op == "INTERRUPT") {		/* (INTERRUPT) */
 		/* Call system interrupt, and it is platform-dependent */
+		std::vector<std::string> regs = { "rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"};
+
+		while (0 != this->_param_nr_) {
+			(*this) += new Instruction("pop", regs[--this->_param_nr_]);
+		}
 		(*this) += new Instruction("syscall");
-		this->_param_nr_ = 0;
 	} else if (op == "PROLOGUE") {		/* (PROLOGUE, NR) */
 		(*this) += new Instruction("push", "rbp");
 		(*this) += new Instruction("mov", "rbp", "rsp");

@@ -42,7 +42,7 @@ std::string AST::data(void) {
 
 	/* formatted data */
 	if (0 != this->_label_) {
-		snprintf(buff, sizeof(buff), "__ZERG_LABEL_%d__", this->_label_);
+		snprintf(buff, sizeof(buff), __IR_LABEL_FMT__, this->_label_);
 		return buff;
 	} else if (0 != this->_reg_) {
 		/* return the register without limited count */

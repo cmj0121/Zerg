@@ -13,6 +13,7 @@ helloWorld.case: helloWorld.zs
 
 exit.case: exit.zg
 	../zerg -o $@ $^
+	test "`./$@ 2>/dev/null`"     == 'Hello World'
 
 
 .PHONY: clean

@@ -106,7 +106,14 @@ void Zerg::emitIR(AST *node) {
 				for (size_t i = 0; i < node->child(0)->length(); ++i) {
 					cur = node->child(0)->child(i);
 					this->emitIR(cur);
-					this->emit("PARAM", cur->data());
+					switch(cur->type()) {
+						case AST_STRING:
+							this->emit("PARAM", "&" + cur->data());
+							break;
+						default:
+							this->emit("PARAM", cur->data());
+							break;
+					}
 				}
 				this->emit("INTERRUPT");
 				return;
@@ -191,23 +198,6 @@ void Zerg::emitIR(AST *node) {
 			y = node->child(1);
 
 			this->emit("STORE", x->data(), y->data(), __IR_LOCAL_VAR__);
-			break;
-		case AST_RESERVED:
-			if (*node == "syscall") {
-				for (ssize_t i = 0; i < node->length(); ++i) {
-					AST *child = node->child(i);
-
-					switch(child->type()) {
-						case AST_STRING:
-							this->emit("PARAM", "&" + node->child(i)->data());
-							break;
-						default:
-							this->emit("PARAM", node->child(i)->data());
-							break;
-					}
-				}
-				this->emit("INTERRUPT");
-			}
 			break;
 		case AST_FUNCCALL:
 			switch (node->length()) {
