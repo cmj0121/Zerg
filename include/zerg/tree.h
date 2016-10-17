@@ -109,4 +109,31 @@ class Tree {
 		}
 };
 
+class STR_TREE : public Tree<STR_TREE> {
+	public:
+		STR_TREE(std::string src) : Tree<STR_TREE>(src), _src_(src) {;}
+
+		STR_TREE *find(std::string src) {
+			STR_TREE *ret = NULL;
+
+			if (src == this->_src_) {
+				return this;
+			}
+
+			for (size_t i = 0; i < this->length(); ++i) {
+				if (NULL != (ret = this->child(i)->find(src))) {
+					return ret;
+				}
+			}
+
+			return NULL;
+		}
+		void insert(std::string src) {
+			STR_TREE *tmp = new STR_TREE(src);
+			return Tree<STR_TREE>::insert(tmp);
+		}
+	private:
+		std::string _src_;
+};
+
 #endif /* __ZERG_TREE_H__ */

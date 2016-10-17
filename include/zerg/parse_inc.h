@@ -1,71 +1,71 @@
-#ifndef __ZERG_PARSING_TABLE_H__
-	#define __ZERG_PARSING_TABLE_H__
 /* GRAMMAR rules
  * 
- * args           -> expr 
- * args           -> expr ',' expr 
+ *       and_test -> xor_test 
+ *       and_test -> xor_test 'and' xor_test 
  *
- * arith_expr     -> pow 
- * arith_expr     -> pow '+' pow 
- * arith_expr     -> pow '-' pow 
+ *           args -> test 
+ *           args -> test ',' test 
  *
- * assign         -> IDENTIFIER '=' expr 
+ *          arith -> pow 
+ *          arith -> pow '+' pow 
+ *          arith -> pow '-' pow 
  *
- * atom           -> NUMBER 
- * atom           -> STRING 
- * atom           -> IDENTIFIER 
- * atom           -> '+' NUMBER 
- * atom           -> '+' STRING 
- * atom           -> '+' IDENTIFIER 
- * atom           -> '-' NUMBER 
- * atom           -> '-' STRING 
- * atom           -> '-' IDENTIFIER 
- * atom           -> '~' NUMBER 
- * atom           -> '~' STRING 
- * atom           -> '~' IDENTIFIER 
+ *         assign -> IDENTIFIER '=' expr 
  *
- * bit_and_expr   -> bit_xor_expr 
- * bit_and_expr   -> bit_xor_expr '&' bit_and_expr 
+ *           atom -> NUMBER 
+ *           atom -> STRING 
+ *           atom -> IDENTIFIER 
+ *           atom -> '+' NUMBER 
+ *           atom -> '+' STRING 
+ *           atom -> '+' IDENTIFIER 
+ *           atom -> '-' NUMBER 
+ *           atom -> '-' STRING 
+ *           atom -> '-' IDENTIFIER 
+ *           atom -> '~' NUMBER 
+ *           atom -> '~' STRING 
+ *           atom -> '~' IDENTIFIER 
  *
- * bit_or_expr    -> bit_and_expr 
- * bit_or_expr    -> bit_and_expr '|' bit_or_expr 
+ *        bit_and -> bit_xor 
+ *        bit_and -> bit_xor '&' bit_xor 
  *
- * bit_xor_expr   -> shift_expr 
- * bit_xor_expr   -> shift_expr '^' bit_xor_expr 
+ *         bit_or -> bit_and 
+ *         bit_or -> bit_and '|' bit_and 
  *
- * expr           -> funccall 
- * expr           -> log_or_expr 
+ *        bit_xor -> shift 
+ *        bit_xor -> shift '^' shift 
  *
- * funccall       -> IDENTIFIER '(' ')' 
- * funccall       -> IDENTIFIER '(' args ')' 
- * funccall       -> 'syscall' '(' ')' 
- * funccall       -> 'syscall' '(' args ')' 
+ *           expr -> funccall 
+ *           expr -> or_test 
  *
- * log_and_expr   -> log_xor_expr 
- * log_and_expr   -> log_xor_expr 'and' log_and_expr 
+ *       funccall -> IDENTIFIER '(' ')' 
+ *       funccall -> IDENTIFIER '(' args ')' 
+ *       funccall -> 'syscall' '(' ')' 
+ *       funccall -> 'syscall' '(' args ')' 
  *
- * log_not_expr   -> bit_xor_expr 
- * log_not_expr   -> 'not' log_not_expr 
+ *       not_test -> bit_or 
+ *       not_test -> 'not' bit_or 
  *
- * log_or_expr    -> log_and_expr 
- * log_or_expr    -> log_and_expr 'or' log_or_expr 
+ *        or_test -> and_test 
+ *        or_test -> and_test 'or' and_test 
  *
- * log_xor_expr   -> log_not_expr 
- * log_xor_expr   -> log_not_expr 'xor' log_xor_expr 
+ *            pow -> atom 
+ *            pow -> atom '*' atom 
+ *            pow -> atom '/' atom 
+ *            pow -> atom '%' atom 
+ *            pow -> atom '~' atom 
  *
- * pow            -> atom 
- * pow            -> atom '*' atom 
- * pow            -> atom '/' atom 
- * pow            -> atom '%' atom 
- * pow            -> atom '~' atom 
+ *          shift -> arith 
+ *          shift -> arith '<<' arith 
+ *          shift -> arith '>>' arith 
  *
- * shift_expr     -> arith_expr 
- * shift_expr     -> arith_expr '<<' arith_expr 
- * shift_expr     -> arith_expr '>>' arith_expr 
+ *           stmt -> NEWLINE 
+ *           stmt -> assign NEWLINE 
+ *           stmt -> expr NEWLINE 
  *
- * stmt           -> NEWLINE 
- * stmt           -> assign NEWLINE 
- * stmt           -> expr NEWLINE 
+ *           test -> or_test 
+ *
+ *       xor_test -> not_test 
+ *       xor_test -> not_test 'xor' not_test 
  *
  */
 
@@ -73,12 +73,12 @@ std::map<ASTType, std::map<ASTType, int>> _table_ = {
 	{
 		AST_ROOT, {
 			{ AST_NEWLINE,	0},
-			{ AST_NUMBER,	13},
-			{ AST_STRING,	13},
-			{ AST_IDENTIFIER,	13},
-			{ AST_ADD,	13},
-			{ AST_SUB,	13},
-			{ AST_LIKE,	13},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
 			{ AST_LOG_NOT,	9},
 			{ AST_SYSCALL,	3},
 		},
@@ -87,15 +87,17 @@ std::map<ASTType, std::map<ASTType, int>> _table_ = {
 			{ AST_NEWLINE,	0},
 			{ AST_PARENTHESES_CLOSE,	3},
 			{ AST_COMMA,	4},
-			{ AST_ADD,	11},
-			{ AST_SUB,	11},
-			{ AST_MUL,	12},
-			{ AST_DIV,	12},
-			{ AST_MOD,	12},
-			{ AST_LIKE,	12},
-			{ AST_LSHT,	10},
-			{ AST_RSHT,	10},
-			{ AST_BIT_XOR,	10},
+			{ AST_ADD,	14},
+			{ AST_SUB,	14},
+			{ AST_MUL,	15},
+			{ AST_DIV,	15},
+			{ AST_MOD,	15},
+			{ AST_LIKE,	15},
+			{ AST_LSHT,	13},
+			{ AST_RSHT,	13},
+			{ AST_BIT_OR,	10},
+			{ AST_BIT_AND,	11},
+			{ AST_BIT_XOR,	12},
 			{ AST_LOG_OR,	6},
 			{ AST_LOG_AND,	7},
 			{ AST_LOG_XOR,	8},
@@ -105,15 +107,17 @@ std::map<ASTType, std::map<ASTType, int>> _table_ = {
 			{ AST_NEWLINE,	0},
 			{ AST_PARENTHESES_CLOSE,	3},
 			{ AST_COMMA,	4},
-			{ AST_ADD,	11},
-			{ AST_SUB,	11},
-			{ AST_MUL,	12},
-			{ AST_DIV,	12},
-			{ AST_MOD,	12},
-			{ AST_LIKE,	12},
-			{ AST_LSHT,	10},
-			{ AST_RSHT,	10},
-			{ AST_BIT_XOR,	10},
+			{ AST_ADD,	14},
+			{ AST_SUB,	14},
+			{ AST_MUL,	15},
+			{ AST_DIV,	15},
+			{ AST_MOD,	15},
+			{ AST_LIKE,	15},
+			{ AST_LSHT,	13},
+			{ AST_RSHT,	13},
+			{ AST_BIT_OR,	10},
+			{ AST_BIT_AND,	11},
+			{ AST_BIT_XOR,	12},
 			{ AST_LOG_OR,	6},
 			{ AST_LOG_AND,	7},
 			{ AST_LOG_XOR,	8},
@@ -125,184 +129,194 @@ std::map<ASTType, std::map<ASTType, int>> _table_ = {
 			{ AST_PARENTHESES_CLOSE,	3},
 			{ AST_COMMA,	4},
 			{ AST_ASSIGN,	1},
-			{ AST_ADD,	11},
-			{ AST_SUB,	11},
-			{ AST_MUL,	12},
-			{ AST_DIV,	12},
-			{ AST_MOD,	12},
-			{ AST_LIKE,	12},
-			{ AST_LSHT,	10},
-			{ AST_RSHT,	10},
-			{ AST_BIT_XOR,	10},
+			{ AST_ADD,	14},
+			{ AST_SUB,	14},
+			{ AST_MUL,	15},
+			{ AST_DIV,	15},
+			{ AST_MOD,	15},
+			{ AST_LIKE,	15},
+			{ AST_LSHT,	13},
+			{ AST_RSHT,	13},
+			{ AST_BIT_OR,	10},
+			{ AST_BIT_AND,	11},
+			{ AST_BIT_XOR,	12},
 			{ AST_LOG_OR,	6},
 			{ AST_LOG_AND,	7},
 			{ AST_LOG_XOR,	8},
 		},
 	}, {
 		AST_PARENTHESES_OPEN, {
-			{ AST_NUMBER,	13},
-			{ AST_STRING,	13},
-			{ AST_IDENTIFIER,	13},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
 			{ AST_PARENTHESES_CLOSE,	3},
-			{ AST_ADD,	13},
-			{ AST_SUB,	13},
-			{ AST_LIKE,	13},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
 			{ AST_LOG_NOT,	9},
-			{ AST_SYSCALL,	3},
 		},
 	}, {
 		AST_PARENTHESES_CLOSE, {
 			{ AST_NEWLINE,	0},
-			{ AST_PARENTHESES_CLOSE,	3},
-			{ AST_COMMA,	4},
 		},
 	}, {
 		AST_COMMA, {
-			{ AST_NUMBER,	13},
-			{ AST_STRING,	13},
-			{ AST_IDENTIFIER,	13},
-			{ AST_ADD,	13},
-			{ AST_SUB,	13},
-			{ AST_LIKE,	13},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
 			{ AST_LOG_NOT,	9},
-			{ AST_SYSCALL,	3},
 		},
 	}, {
 		AST_ASSIGN, {
-			{ AST_NUMBER,	13},
-			{ AST_STRING,	13},
-			{ AST_IDENTIFIER,	13},
-			{ AST_ADD,	13},
-			{ AST_SUB,	13},
-			{ AST_LIKE,	13},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
 			{ AST_LOG_NOT,	9},
 			{ AST_SYSCALL,	3},
 		},
 	}, {
 		AST_ADD, {
-			{ AST_NUMBER,	13},
-			{ AST_STRING,	13},
-			{ AST_IDENTIFIER,	13},
-			{ AST_ADD,	13},
-			{ AST_SUB,	13},
-			{ AST_LIKE,	13},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
 		},
 	}, {
 		AST_SUB, {
-			{ AST_NUMBER,	13},
-			{ AST_STRING,	13},
-			{ AST_IDENTIFIER,	13},
-			{ AST_ADD,	13},
-			{ AST_SUB,	13},
-			{ AST_LIKE,	13},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
 		},
 	}, {
 		AST_MUL, {
-			{ AST_NUMBER,	13},
-			{ AST_STRING,	13},
-			{ AST_IDENTIFIER,	13},
-			{ AST_ADD,	13},
-			{ AST_SUB,	13},
-			{ AST_LIKE,	13},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
 		},
 	}, {
 		AST_DIV, {
-			{ AST_NUMBER,	13},
-			{ AST_STRING,	13},
-			{ AST_IDENTIFIER,	13},
-			{ AST_ADD,	13},
-			{ AST_SUB,	13},
-			{ AST_LIKE,	13},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
 		},
 	}, {
 		AST_MOD, {
-			{ AST_NUMBER,	13},
-			{ AST_STRING,	13},
-			{ AST_IDENTIFIER,	13},
-			{ AST_ADD,	13},
-			{ AST_SUB,	13},
-			{ AST_LIKE,	13},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
 		},
 	}, {
 		AST_LIKE, {
-			{ AST_NUMBER,	13},
-			{ AST_STRING,	13},
-			{ AST_IDENTIFIER,	13},
-			{ AST_ADD,	13},
-			{ AST_SUB,	13},
-			{ AST_LIKE,	13},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
 		},
 	}, {
 		AST_LSHT, {
-			{ AST_NUMBER,	13},
-			{ AST_STRING,	13},
-			{ AST_IDENTIFIER,	13},
-			{ AST_ADD,	13},
-			{ AST_SUB,	13},
-			{ AST_LIKE,	13},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
 		},
 	}, {
 		AST_RSHT, {
-			{ AST_NUMBER,	13},
-			{ AST_STRING,	13},
-			{ AST_IDENTIFIER,	13},
-			{ AST_ADD,	13},
-			{ AST_SUB,	13},
-			{ AST_LIKE,	13},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
+		},
+	}, {
+		AST_BIT_OR, {
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
+		},
+	}, {
+		AST_BIT_AND, {
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
 		},
 	}, {
 		AST_BIT_XOR, {
-			{ AST_ROOT,	10},
-			{ AST_NEWLINE,	0},
-			{ AST_PARENTHESES_OPEN,	10},
-			{ AST_PARENTHESES_CLOSE,	3},
-			{ AST_COMMA,	10},
-			{ AST_ASSIGN,	10},
-			{ AST_LOG_OR,	6},
-			{ AST_LOG_AND,	7},
-			{ AST_LOG_XOR,	8},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
 		},
 	}, {
 		AST_LOG_OR, {
-			{ AST_ROOT,	6},
-			{ AST_NEWLINE,	0},
-			{ AST_PARENTHESES_OPEN,	6},
-			{ AST_PARENTHESES_CLOSE,	3},
-			{ AST_COMMA,	6},
-			{ AST_ASSIGN,	6},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
+			{ AST_LOG_NOT,	9},
 		},
 	}, {
 		AST_LOG_AND, {
-			{ AST_ROOT,	7},
-			{ AST_NEWLINE,	0},
-			{ AST_PARENTHESES_OPEN,	7},
-			{ AST_PARENTHESES_CLOSE,	3},
-			{ AST_COMMA,	7},
-			{ AST_ASSIGN,	7},
-			{ AST_LOG_OR,	6},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
+			{ AST_LOG_NOT,	9},
 		},
 	}, {
 		AST_LOG_XOR, {
-			{ AST_ROOT,	8},
-			{ AST_NEWLINE,	0},
-			{ AST_PARENTHESES_OPEN,	8},
-			{ AST_PARENTHESES_CLOSE,	3},
-			{ AST_COMMA,	8},
-			{ AST_ASSIGN,	8},
-			{ AST_LOG_OR,	6},
-			{ AST_LOG_AND,	7},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
+			{ AST_LOG_NOT,	9},
 		},
 	}, {
 		AST_LOG_NOT, {
-			{ AST_ROOT,	9},
-			{ AST_NEWLINE,	0},
-			{ AST_PARENTHESES_OPEN,	9},
-			{ AST_PARENTHESES_CLOSE,	3},
-			{ AST_COMMA,	9},
-			{ AST_ASSIGN,	9},
-			{ AST_LOG_OR,	6},
-			{ AST_LOG_AND,	7},
-			{ AST_LOG_XOR,	8},
+			{ AST_NUMBER,	16},
+			{ AST_STRING,	16},
+			{ AST_IDENTIFIER,	16},
+			{ AST_ADD,	16},
+			{ AST_SUB,	16},
+			{ AST_LIKE,	16},
 		},
 	}, {
 		AST_SYSCALL, {
@@ -310,4 +324,4 @@ std::map<ASTType, std::map<ASTType, int>> _table_ = {
 		},
 	}, 
 };
-#endif /* __ZERG_PARSING_TABLE_H__ */
+

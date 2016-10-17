@@ -23,9 +23,10 @@ void help(void) {
 }
 int main(int argc, char *argv[]) {
 	int optIdx = -1;
-	char ch, opts[] = "Go:rv";
+	char ch, opts[] = "Go:rvh";
 	struct option options[] = {
 		{"grammar",	no_argument,		0, 'G'},
+		{"help",	no_argument,		0, 'h'},
 		{"output",	required_argument,	0, 'o'},
 		{"ir",		no_argument, 		0, 'r'},
 		{"verbose", optional_argument,	0, 'v'},
@@ -38,6 +39,9 @@ int main(int argc, char *argv[]) {
 			case 'G':
 				_gen_grammar = true;
 				break;
+			case 'h':
+				help();
+				return -1;
 			case 'o':
 				dst = optarg;
 				break;

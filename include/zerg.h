@@ -9,26 +9,7 @@
 #include "utils.h"
 #include "zerg/ir.h"
 #include "zerg/cfg.h"
-
-
-typedef std::vector<std::string> TOKENS;
-class ParsingTable {
-	public:
-		bool load(std::string src, std::string stmt="stmt");
-		bool load(std::string stmt, TOKENS rule, TOKENS front=TOKENS{}, TOKENS ends=TOKENS{});
-		bool gentable(std::string stmt, ASTType type);
-
-		std::string stmt(int weight);
-		int weight(ASTType prev, ASTType cur);
-
-		friend std::ostream& operator <<(std::ostream &stream, const ParsingTable &src);
-	private:
-		std::string _src_;
-		std::vector<std::pair<std::string, std::vector<ASTType>>> _stmt_;
-		std::map<std::string, std::vector<ASTType>> _cached_;
-		#include "zerg/parse_inc.h"
-		std::map<std::string, std::vector<TOKENS>> _rules_;
-};
+#include "zerg/parsingtable.h"
 
 class Zerg : public ParsingTable, public IR {
 	public:

@@ -7,7 +7,6 @@
 #include <set>
 #include "zerg.h"
 
-
 static std::map<ASTType, std::pair<std::string, std::string>> _relation_ = {
 	#define DEF(type, ir)	{ type, { #type, ir } }
 		DEF(AST_UNKNOWN,	""),
@@ -55,6 +54,9 @@ static std::map<ASTType, std::pair<std::string, std::string>> _relation_ = {
 	#undef DEF
 };
 
+ParsingTable::ParsingTable(void) : _stmt_(NULL) {
+	this->_stmt_ = new STR_TREE("stmt");
+}
 
 bool ParsingTable::load(std::string src, std::string stmt) {
 	std::fstream fs(src);
@@ -68,12 +70,10 @@ bool ParsingTable::load(std::string src, std::string stmt) {
 			continue;
 		}
 
-		_D(LOG_DEBUG, "raw grammar - `%s`", line.c_str());
-
 		/* process the grammar rule `stmt : rules` */
 		size_t pos = 0;
 		std::string stmt;
-		std::vector<std::string> rule;
+		TOKENS rule, dummy1, dummy2;
 
 		if (std::string::npos == (pos = line.find(':'))) {
 			_D(LOG_CRIT, "Not Valid - `%s`", line.c_str());
@@ -83,65 +83,73 @@ bool ParsingTable::load(std::string src, std::string stmt) {
 		stmt = strip(line.substr(0, pos));
 		rule = split(strip(line.substr(pos+1)), " ");
 
-		if (false == load(stmt, rule)) {
+		if (false == load(stmt, rule, dummy1, dummy2)) {
+			/* grammar rule is not valid */
 			_D(LOG_CRIT, "Invalid grammar rule - `%s`", line.c_str());
-			exit(-1);
 		}
 	}
 
-	return this->gentable(stmt, AST_ROOT);
+	this->gentable(stmt, AST_ROOT);
+	return true;
 }
 bool ParsingTable::load(std::string stmt, TOKENS rule, TOKENS front, TOKENS end) {
-	TOKENS sub, tmp, ret;
-	std::string line;
+	TOKENS dummy;
 
+	/* remove all GROUP and OR */
 	for (size_t i = 0; i < rule.size(); ++i) {
 		switch(rule[i][0]) {
-			case '(':	/* GROUP */
-				for (size_t j = rule.size()-1; j > i; --j) {
-					if (')' == rule[j][0]) {
-						/* update the front, cur, remainder parts */
-						tmp = TOKENS(rule.begin(), rule.begin()+i);
-						front.insert(front.end(), tmp.begin(), tmp.end());
-
-						sub = TOKENS(rule.begin()+i+1, rule.begin()+j);
-
-						tmp = TOKENS(rule.begin()+j+1, rule.end());
-						end.insert(end.end(), tmp.begin(), tmp.end());
-
-						switch(rule[j][rule[j].size()-1]) {
-							case ')':	/* GROUP */
-								return load(stmt, sub, front, end);
-							case '*':	/* ANY - FIXME */
-								return load(stmt, TOKENS{}, front, end) && load(stmt, sub, front, end);
-							default:
-								_D(LOG_WARNING, "Not Implemented");
-								return false;
-						}
-					}
-				}
-				_D(LOG_WARNING, "parentheses are not paired");
-				return false;
-			case '|':	/* OR */
-				{
+			case '|':
+				do {
 					TOKENS	sub1(rule.begin(), rule.begin()+i),
 							sub2(rule.begin()+i+1, rule.end());
 
 					return load(stmt, sub1, front, end) && load(stmt, sub2, front, end);
-				}
-			case '[':	/* OR GROUP */
+				} while (0);
+			case '(':
 				for (size_t j = rule.size()-1; j > i; --j) {
-					if ("]" == rule[j]) {
+					if (')' == rule[j][0]) {
+						TOKENS	tmp = TOKENS(rule.begin(), rule.begin()+i),
+								sub = TOKENS(rule.begin()+i+1, rule.begin()+j);
+
 						/* update the front, cur, remainder parts */
-						tmp = TOKENS(rule.begin(), rule.begin()+i);
 						front.insert(front.end(), tmp.begin(), tmp.end());
 
-						sub = TOKENS(rule.begin()+i+1, rule.begin()+j);
+						tmp = TOKENS(rule.begin()+j+1, rule.end());
+						tmp.insert(tmp.end(), end.begin(), end.end());
+
+						bool blRet = false;
+						switch(rule[j][rule[j].size()-1]) {
+							case ')':
+								blRet = load(stmt, sub, front, tmp);
+								break;
+							case '*':
+								ALERT(rule[j-1] != (i == 0 ? front[front.size()-1] : rule[j-1]));
+
+								blRet = load(stmt, dummy, front, tmp) && load(stmt, sub, front, tmp);
+								break;
+							default:
+								blRet = false;
+								break;
+						}
+
+						return blRet;
+					}
+				}
+				_D(LOG_WARNING, "parentheses are not paired");
+				return false;
+			case '[':
+				for (size_t j = rule.size()-1; j > i; --j) {
+					if ("]" == rule[j] && "[" == rule[i]) {
+						TOKENS	tmp = TOKENS(rule.begin(), rule.begin()+i),
+								sub = TOKENS(rule.begin()+i+1, rule.begin()+j),
+								dummy;
+
+						/* update the front, cur, remainder parts */
+						front.insert(front.end(), tmp.begin(), tmp.end());
 
 						tmp = TOKENS(rule.begin()+j+1, rule.end());
-						end.insert(end.end(), tmp.begin(), tmp.end());
-
-						return load(stmt, TOKENS{}, front, end) && load(stmt, sub, front, end);
+						tmp.insert(tmp.end(), end.begin(), end.end());
+						return load(stmt, dummy, front, tmp) && load(stmt, sub, front, tmp);
 					}
 				}
 				_D(LOG_WARNING, "parentheses are not paired");
@@ -151,125 +159,100 @@ bool ParsingTable::load(std::string stmt, TOKENS rule, TOKENS front, TOKENS end)
 		}
 	}
 
-	/* concatenate into one rule */
-	ret.insert(ret.end(), front.begin(), front.end());
-	ret.insert(ret.end(), rule.begin(), rule.end());
 	if (0 != end.size()) {
 		/* NOTE - Handle the end part */
-		return load(stmt, end, ret, TOKENS{});
+		TOKENS dummy;
+
+		front.insert(front.end(), rule.begin(), rule.end());
+		return load(stmt, end, front, dummy);
 	}
+	front.insert(front.end(), rule.begin(), rule.end());
+	front.insert(front.end(), end.begin(), end.end());
 
-
-	for (auto it : ret) line += it + " ";
-	_D(LOG_INFO, "set grammar - %-12s -> %s", stmt.c_str(), line.c_str());
+	std::string line;
+	for (auto it : front) line += it + " ";
+	_D(LOG_DEBUG, "set grammar - %12s -> %s", stmt.c_str(), line.c_str());
 
 	/* save into rule map */
 	if (this->_rules_.end() == this->_rules_.find(stmt)) {
-		std::vector<TOKENS> cur = { ret };
-		this->_rules_[stmt] = cur;
+		this->_rules_[stmt] = { front };
 	} else {
-		this->_rules_[stmt].push_back(ret);
+		this->_rules_[stmt].push_back(front);
 	}
 
 	return true;
 }
-bool ParsingTable::gentable(std::string _stmt, ASTType _prev) {
-	bool blRet = false;
-	size_t _weight = 0;
-	std::vector<ASTType> prev;
+void ParsingTable::gentable(std::string stmt, ASTType _prev) {
+	int weight = -1, cnt = 0;
+	std::vector<ASTType> cached;
+	STR_TREE *curstmt = this->_stmt_->find(stmt);
 
-	/* check this grammar rule is processed or not */
-	for (auto &it : this->_stmt_) {
-		if (it.first == _stmt) {
-			for (auto p : it.second) {
-				if (p == _prev) {
-					blRet = true;
-					goto END;
+	for (auto it : this->_processed_) {
+		if (it.first == stmt && it.second == _prev) {
+			return ;
+		}
+	}
+
+	ALERT(NULL == curstmt || -1 == (weight = curstmt->height()));
+	for (auto rule : this->_rules_[stmt]) {
+		std::string line;
+		std::vector<ASTType> cur = { _prev };
+
+		for (auto it : rule) line += it + " ";
+		_D(LOG_INFO, "#%2d/%2zu (F:0x%02X, W:%02d) %12s -> %s",
+						++cnt, this->_rules_[stmt].size(),
+						_prev, weight,
+						stmt.c_str(), line.c_str());
+
+		for (auto token : rule) {
+			_D(LOG_DEBUG, "process %s", token.c_str());
+			ALERT(token == stmt);
+
+			if ('+' == token[token.size()-1]) {			/* MORE */
+				_D(LOG_CRIT, "Not Implemented");
+				gentable(token.substr(0, token.size()-1), _prev);
+				continue;
+			} else if ('a' <= token[0] && 'z' >= token[0]) {	/* NEXT */
+				curstmt->insert(token);
+				for (auto _p : cur) {
+					gentable(token, _p);
 				}
-			}
-
-			it.second.push_back(_prev);
-			break;
-		}
-		_weight ++;
-	}
-
-	/* first-blood */
-	if (_weight == this->_stmt_.size()) {
-		std::vector<ASTType> tmp = { _prev };
-		this->_stmt_.push_back(std::make_pair(_stmt, tmp));
-	}
-
-	_D(LOG_DEBUG, "gentable on `%s` (W:%zu) with #%zu rules",
-					_stmt.c_str(),
-					_weight,
-					this->_rules_[_stmt].size());
-	for (auto rule : this->_rules_[_stmt]) {
-		#ifdef DEBUG
-			std::string line;
-
-			for (auto it : rule) line += it + " ";
-			_D(LOG_DEBUG, "grammar : %-8s -> %s", _stmt.c_str(), strip(line).c_str());
-		#endif
-		int weight = _weight;
-
-		for (auto grammar : rule) {
-			if (grammar == _stmt) {
-				weight ++;
-				break;
-			}
-		}
-
-		prev.clear();
-		prev.push_back(_prev);
-		for (auto grammar : rule) {
-			if (_stmt == grammar) {
-				/* loop */
-				for (auto _p : prev)
-					this->_table_[_p][_prev] = weight;
-			} else if ('a' <= grammar[0] && 'z' >= grammar[0]) {
-				/* another grammar */
-				for (auto _p: prev)
-					gentable(grammar, _p);
-				prev = this->_cached_[grammar];
-			} else {
+				cur = this->_cache_[token];
+				continue;
+			} else {											/* SYNTAX */
 				bool blFound = false;
 
 				for (auto it : _relation_) {
-					if (it.second.second == grammar) {
-						for (auto _p : prev) {
-							this->_table_[_p][it.first] = weight;
-						}
+					if (it.second.second != token) continue;
 
-						prev.clear();
-						prev.push_back(it.first);
-						blFound = true;
-						break;
+					for (auto _p : cur) {
+						this->_table_[_p][it.first] = weight;
 					}
+
+					cur.clear();
+					cur.push_back(it.first);
+					blFound = true;
+					break;
 				}
 
 				if (false == blFound) {
-					_D(LOG_CRIT, "Not define `%s`", grammar.c_str());
-					goto END;
+					/* special token not defined */
+					_D(LOG_CRIT, "grammar `%s` not define", token.c_str());
 				}
 			}
 		}
-		this->_cached_[_stmt].insert(this->_cached_[_stmt].end(), prev.begin(), prev.end());
+
+		for (auto it : cur) {
+			if (cached.end() == std::find(cached.begin(), cached.end(), it)) {
+				cached.push_back(it);
+			}
+		}
 	}
 
-	blRet = true;
-END:
-	return blRet;
+	this->_cache_[stmt] = cached;
+	this->_processed_.push_back(std::make_pair(stmt, _prev));
 }
 
-std::string ParsingTable::stmt(int weight) {
-	/* return the statement name */
-	if (weight >= this->_stmt_.size()) {
-		return "";
-	} else {
-		return this->_stmt_[weight].first;
-	}
-}
 int ParsingTable::weight(ASTType prev, ASTType cur) {
 	int weight = -1;
 
@@ -291,17 +274,14 @@ END:
 std::ostream& operator <<(std::ostream &stream, const ParsingTable &src) {
 	int layout = 14;
 
-	stream << "#ifndef __ZERG_PARSING_TABLE_H__" << std::endl;
-	stream << "\t#define __ZERG_PARSING_TABLE_H__" << std::endl;
-
 	{	/* original grammar rules */
 		stream << "/* GRAMMAR rules\n * " << std::endl;
-		for (const auto stmt : src._rules_) {
+		for (auto stmt : src._rules_) {
 			for (auto rule : stmt.second) {
 				std::string line = "";
 
 				for (auto it : rule) line += it + " ";
-				stream << " * "<< std::left << std::setw(layout) << stmt.first;
+				stream << " * " << std::setw(layout) << stmt.first;
 				stream << " -> " << line << "\n";
 			}
 			stream << " *\n";
@@ -320,8 +300,6 @@ std::ostream& operator <<(std::ostream &stream, const ParsingTable &src) {
 		}
 		stream << "\n};\n";
 	}
-
-	stream << "#endif /* __ZERG_PARSING_TABLE_H__ */";
 	return stream;
 }
 
