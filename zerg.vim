@@ -47,8 +47,8 @@ syn keyword ZERGConstant      none true false
 syn keyword ZERGIdentifier    this
 syn keyword ZERGStatement     nop as return yield
 syn keyword ZERGStatement     func class nextgroup=ZERGFunction skipwhite
-syn keyword ZERGLogical       eq le ls ge gr not in and or not xor
-syn keyword ZERGCondition     if else
+syn keyword ZERGLogical       or and xor not
+syn keyword ZERGCondition     if elif else
 syn keyword ZERGRepeat        while break continue
 syn match   ZERGFunction      "\%(\(func\|class\)\s\+\)\@<=\w\+" contained
 syn keyword ZERGException     try except finally raise
