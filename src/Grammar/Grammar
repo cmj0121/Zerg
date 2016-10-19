@@ -1,19 +1,36 @@
 # Grmmar for Zerg
 #
 # Author  : cmj <cmj@cmj.tw>
-# Date    : 2016/10/06
-# Version : 0.2
+# Date    : 2016/10/19
+# Version : 1
 
-stmt   : [ assign | expr ] NEWLINE
+# statement - start from 'stmt'
+stmt          : [ simple_stmt | compount_stmt ] NEWLINE
+simple_stmt   : assign | counter | import | print | return
+compount_stmt : if_stmt | while_stmt | func_stmt | class_stmt
 
-assign : IDENTIFIER '=' expr
+# special case - sets of statement
+scope         : INDENT stmt+ DEDENT
 
-expr : funccall | or_test
+# simple statement
+#   only describe a simple logical in only one-line
+assign  : [ wordlist '=' ] test
+counter : atom ( '++' | '--' )
+import  : [ 'from' namelist ] 'import' namelist [ 'as' WORD ]
+return  : 'nop' | 'break' | 'continue' | [ 'return' | 'yield' ] test
+print   : 'print' test
 
-funccall : ( IDENTIFIER | 'syscall' ) '(' [ args ] ')'
-args     : test ( ',' test )*
-test     : or_test
+# compount statement
+#    need more than one-line for a complexity logical
+if_stmt    : 'if' test ':' scope ( 'elif' test ':' scope )* [ 'else' ':' scope ]
+while_stmt : 'while' test ':' scope
+func_stmt  : 'func' WORD '(' [ args ] ')' ':' scope
+class_stmt : 'class' WORD '(' [ wordlist ] ')' ':' scope
 
+# expression
+test  : or_test
+
+# comparison or arithmetic and for keep the priority of the operators
 or_test   : and_test ( 'or'  and_test )*
 and_test  : xor_test ( 'and' xor_test )*
 xor_test  : not_test ( 'xor' not_test )*
@@ -27,4 +44,12 @@ shift : arith ( ( '<<' | '>>' ) arith )*
 arith : pow   ( ( '+' | '-' )   pow   )*
 pow   : atom  ( ( '*' | '/' | '%' | '~' )  atom )*
 
-atom   : [ '+' | '-' | '~' ] ( NUMBER | STRING | IDENTIFIER )
+wordlist : WORD ( ',' WORD )*
+namelist : WORD ( '.' WORD )*
+args     : test ( ',' test )*
+call     : ( WORD  | 'syscall' ) '(' [ args ] ')'
+# minimal variable
+#     NUMBER - all valid digit and float
+#     STRING - all alphabet in the pair of signal-quote or double-quote
+#     WORD   - all alphabet not starts with digit and not contain whitespace
+atom     : [ '+' | '-' | '~' ] ( NUMBER | STRING | WORD | call | '(' test ')' )
