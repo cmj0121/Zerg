@@ -7,7 +7,6 @@ ZERG_SRC=$(wildcard zerg/*.cpp)
 ZERG_OBJ=$(subst .cpp,.o,$(ZERG_SRC))
 
 GRAMMAR=Grammar/Grammar
-PARSING_TABLE=../include/zerg/parse_inc.h
 
 BIN=zasm.inst zerg.inst
 
@@ -21,7 +20,7 @@ zasm.inst: zasm.cpp $(ZASM_OBJ)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 	$(STRIP) $@
 
-zerg.inst: zerg.cpp $(ZASM_OBJ) $(ZERG_OBJ) $(PARSING_TABLE)
+zerg.inst: zerg.cpp $(ZASM_OBJ) $(ZERG_OBJ)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ zerg.cpp $(ZASM_OBJ) $(ZERG_OBJ)
 	$(STRIP) $@
 
@@ -32,7 +31,3 @@ install: $(BIN)
 	install -m755 zasm.inst /usr/local/bin/zasm
 	install -m755 zerg.inst /usr/local/bin/zerg
 
-.PHONY: grammar
-
-grammar: zerg.inst $(GRAMMAR)
-	./$^ -G $(GRAMMAR) > $(PARSING_TABLE)

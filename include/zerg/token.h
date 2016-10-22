@@ -77,6 +77,6 @@ class ZergToken : public std::string {
 		int _weight_;
 		ASTType _type_;
 };
-
+typedef std::vector<ZergToken> TOKENS;
 
 #endif /* __ZERG_TOKEN_H__ */

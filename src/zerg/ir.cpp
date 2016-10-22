@@ -219,6 +219,7 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 			(*this) += new Instruction("add", "rsp", dst);
 		}
 		(*this) += new Instruction("pop", "rbp");
+		(*this) += new Instruction("ret");
 	} else {
 		_D(LOG_CRIT, "Not Implemented operators `%s`", op.c_str());
 		exit(-1);

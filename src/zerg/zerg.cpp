@@ -3,7 +3,7 @@
 #include <iomanip>
 #include "zerg.h"
 
-Zerg::Zerg(std::string dst, off_t entry) : ParsingTable(), IR(dst, entry) {
+Zerg::Zerg(std::string dst, off_t entry) : IR(dst, entry) {
 	this->_labelcnt_ = 0;
 }
 Zerg::~Zerg() {
@@ -18,6 +18,7 @@ void Zerg::compile(std::string src, bool only_ir) {
 
 	this->lexer(src);
 
+	this->emit("# ZERG IR - v" __IR_VERSION__);
 	this->emit("PROLOGUE");
 	this->compileCFG(this->_root_[CFG_MAIN]);
 	for (auto it : this->_root_) {
@@ -32,11 +33,12 @@ void Zerg::compile(std::string src, bool only_ir) {
 	}
 	this->emit("EPILOGUE");
 
-	/* Dump all symbol at end of CFG */
 	_D(LOG_INFO, "dump all symbols");
-	this->emit("# Dump all symbols");
-	for (auto it : this->_symb_) {
-		this->emit("LABEL", it.first, it.second);
+	if (0 != this->_symb_.size()) {
+		this->emit("# Dump all symbols");
+		for (auto it : this->_symb_) {
+			this->emit("LABEL", it.first, it.second);
+		}
 	}
 }
 void Zerg::compileCFG(CFG *node) {
@@ -229,13 +231,13 @@ void Zerg::emitIR(AST *node) {
 void Zerg::emit(std::string op, std::string dst, std::string src, std::string extra) {
 	if ('#' == op[0]) {
 		/* dump the comment */
-		if (this->_only_ir_) std::cout << "\n" << op << std::endl;
+		if (this->_only_ir_) std::cout << op << "\n" << std::endl;
 	} else if (this->_only_ir_) {
-		std::cout << "(" << std::left << std::setw(10) <<op;
+		std::cout << std::left << std::setw(10) <<op;
 		if ("" != dst)   std::cout << ", " << dst;
 		if ("" != src)   std::cout << ", " << src;
 		if ("" != extra) std::cout << ", " << extra;
-		std::cout << ")" << std::endl;
+		std::cout << std::endl;
 	} else {
 		/* call the IR emitter */
 		IR::emit(op, dst, src, extra);
