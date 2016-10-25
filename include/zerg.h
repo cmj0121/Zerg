@@ -21,8 +21,8 @@ class Zerg : public IR {
 
 		std::string regalloc(std::string src);
 	protected:
-		void lexer(std::string src);				/* lexer analysis */
-		AST *parser(TOKENS tokens);	/* syntax and semantic analysis */
+		void lexer(std::string src);						/* lexer analysis */
+		ZergToken& parser(ZergToken &cur, ZergToken &prev);	/* syntax and semantic analysis */
 
 		void compileCFG(CFG *node);
 		void emitIR(AST *node);

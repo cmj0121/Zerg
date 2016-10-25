@@ -7,6 +7,7 @@
 void Zerg::lexer(std::string src) {
 	std::string line;
 	std::fstream fs(src);
+	ZergToken token, prev("\n");
 
 	if (!fs.is_open()) {
 		/* cannot open the source code */
@@ -14,16 +15,15 @@ void Zerg::lexer(std::string src) {
 	}
 
 	while (std::getline(fs, line)) {
-		TOKENS tokens;
-
 		for (size_t cur = 0; cur <= line.size(); ++cur) {
 			size_t pos;
 
-			_D(LOG_DEBUG, "read line `%s` on %zu #%zu", line.c_str(), cur, tokens.size());
 			switch(line[cur]) {
 				case '\0':				/* NEWLINE */
 				case '#' :				/* COMMENT */
 					cur = line.size();
+					token = "\n";
+					prev  = this->parser(token, prev);
 					break;
 				case ' ': case '\t':	/* SPACE */
 					/* FIXME - Maybe INDENT or DEDENT */
@@ -44,7 +44,8 @@ void Zerg::lexer(std::string src) {
 						}
 						break;
 					}
-					tokens.push_back(line.substr(cur, pos-cur));
+					token = line.substr(cur, pos-cur);
+					prev = this->parser(token, prev);
 					cur = pos - 1;
 					break;
 				case '+': case '-':						/* OPERATOR */
@@ -52,7 +53,8 @@ void Zerg::lexer(std::string src) {
 				case '.': case ',': case ':':
 				case '(': case ')': case '[': case ']':
 				case '{': case '}':
-					tokens.push_back(line.substr(cur, 1));
+					token = line.substr(cur, 1);
+					prev = this->parser(token, prev);
 					break;
 				case '\'': case '"':					/* STRING */
 					for (pos = cur+1; pos <= line.size(); ++pos) {
@@ -62,7 +64,8 @@ void Zerg::lexer(std::string src) {
 					if (line[pos] != line[cur]) {
 						_D(LOG_CRIT, "Invalid syntax for string %s", line.c_str());
 					}
-					tokens.push_back(line.substr(cur, pos-cur+1));
+					token = line.substr(cur, pos-cur+1);
+					prev = this->parser(token, prev);
 					cur = pos;
 					break;
 				default:
@@ -79,14 +82,11 @@ void Zerg::lexer(std::string src) {
 						}
 						break;
 					}
-					tokens.push_back(line.substr(cur, pos-cur));
+					token = line.substr(cur, pos-cur);
+					prev = this->parser(token, prev);
 					cur = pos - 1;
 					break;
 			}
-		}
-
-		if (tokens.size()) {
-			this->parser(tokens);
 		}
 	}
 }

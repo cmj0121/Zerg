@@ -63,7 +63,7 @@ typedef enum _ASTType_ {
 /* token used in Zerg for lexer analysis */
 class ZergToken : public std::string {
 	public:
-		ZergToken (const char *src);
+		ZergToken (const char *src="");
 		ZergToken (std::string src);
 
 		void setType(ASTType type);
@@ -77,6 +77,5 @@ class ZergToken : public std::string {
 		int _weight_;
 		ASTType _type_;
 };
-typedef std::vector<ZergToken> TOKENS;
 
 #endif /* __ZERG_TOKEN_H__ */
