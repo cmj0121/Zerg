@@ -4,17 +4,6 @@
 
 #include <string>
 
-#define RESERVED_IF			"if"
-#define RESERVED_FUNC		"func"
-#define RESERVED_SYSCALL	"syscall"
-
-#define CHECK_RESERVED_TYPE(token, type)	\
-	do {									\
-		if (RESERVED_##type == token) {		\
-			this->_type_ = AST_##type;		\
-		}									\
-	} while (0)
-
 typedef enum _ASTType_ {
 	AST_UNKNOWN			= 0x00,
 	AST_ROOT,
@@ -58,6 +47,7 @@ typedef enum _ASTType_ {
 	AST_IF,
 	AST_FUNC,
 	AST_SYSCALL,
+	AST_PRINT,
 } ASTType;
 
 /* token used in Zerg for lexer analysis */

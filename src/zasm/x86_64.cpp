@@ -33,6 +33,9 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 		if (this->dst().isREG() && (this->src().isREG() || this->src().isIMM())) {
 			if (this->dst().isEXT())
 				REX_B = 1;
+		} else if (this->dst().isREG() && "" == this->src().raw()) {
+			if (this->dst().isEXT())
+				REX_B = 1;
 		} else if (this->dst().isMEM() && this->dst().isEXT()) {
 			REX_B = 1;
 		} else if (this->src().isMEM() && this->dst().isREG() &&this->src().isEXT()) {
@@ -175,6 +178,12 @@ void Instruction::modRW(X86_64_INST &inst) {
 			rm = 0x05;	/* EIP / RIP / R13 */
 		} else if (this->dst().isMEM() || this->src().isMEM()) {
 			rm = this->dst().isMEM() ? this->dst().asInt() : this->src().asInt();
+		}
+
+		if (this->dst().isREG() && 1 == this->dst().size() && 'h' == this->dst().raw()[1]) {
+			reg |= 0x04;
+		} else if (this->src().isREG() && 1 == this->src().size() && 'h' == this->src().raw()[1]) {
+			reg |= 0x04;
 		}
 
 		_payload_[_length_++] = (mod & 0x3) << 6 | (reg & 0x7) << 3 | (rm & 0x7);

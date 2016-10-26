@@ -38,10 +38,7 @@ class Tree {
 			return this->_parent_;
 		}
 		T* root(void) {
-			T* tmp = this->_parent_;
-			/* return the root of the tree */
-			if (NULL != tmp && NULL != tmp->parent()) tmp = tmp->parent();
-			return NULL == tmp ? (T *)this : tmp;
+			return NULL == this->parent() ? (T *) this : this->parent()->root();
 		}
 		T* child(int nr) {
 			ALERT(nr >= this->length());

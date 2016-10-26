@@ -4,25 +4,28 @@
 
 static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 	#define DEF(key, value, weight)	{key, {value, weight}}
-		DEF("*",	AST_MUL,		1),
-		DEF("/",	AST_DIV,		1),
-		DEF("%",	AST_MOD,		1),
-		DEF("~",	AST_LIKE,		1),
+		DEF("*",	AST_MUL,		2),
+		DEF("/",	AST_DIV,		2),
+		DEF("%",	AST_MOD,		2),
+		DEF("~",	AST_LIKE,		2),
 
-		DEF("+",	AST_ADD,		2),
-		DEF("-",	AST_SUB,		2),
+		DEF("+",	AST_ADD,		3),
+		DEF("-",	AST_SUB,		3),
 
-		DEF("<<",	AST_LSHT,		3),
-		DEF(">>",	AST_RSHT,		3),
+		DEF("<<",	AST_LSHT,		4),
+		DEF(">>",	AST_RSHT,		4),
 
-		DEF("|",	AST_BIT_OR,		4),
-		DEF("&",	AST_BIT_AND,	5),
-		DEF("^",	AST_BIT_XOR,	6),
+		DEF("|",	AST_BIT_OR,		5),
+		DEF("&",	AST_BIT_AND,	6),
+		DEF("^",	AST_BIT_XOR,	7),
 
-		DEF("not",	AST_LOG_NOT,	7),
-		DEF("xor",	AST_LOG_XOR,	8),
-		DEF("and",	AST_LOG_AND,	9),
-		DEF("or",	AST_LOG_OR,		10),
+		DEF("not",	AST_LOG_NOT,	8),
+		DEF("xor",	AST_LOG_XOR,	9),
+		DEF("and",	AST_LOG_AND,	10),
+		DEF("or",	AST_LOG_OR,		11),
+
+		/* reserved words */
+		DEF("print",	AST_PRINT,	0),
 	#undef DEF
 };
 
@@ -89,18 +92,28 @@ void ZergToken::classify(std::string src) {
 					break;
 				}
 			}
+			if (AST_OPERATORS == this->_type_) {
+				_D(LOG_CRIT, "Not defile operator `%s`", src.c_str());
+				break;
+			}
 			break;
 		case '1': case '2': case '3': case '4':		/* NUMBER */
 		case '5': case '6': case '7': case '8':
 		case '9': case '0':
-			this->_type_ = AST_NUMBER;
+			this->_type_   = AST_NUMBER;
+			this->_weight_ = 1;
 			break;
 		default:									/* IDENTIFIER */
-			this->_type_ = AST_IDENTIFIER;
+			this->_type_   = AST_IDENTIFIER;
+			this->_weight_ = 1;
 			/* force check the identifier is reserved word or not */
-			CHECK_RESERVED_TYPE(src, IF);
-			CHECK_RESERVED_TYPE(src, FUNC);
-			CHECK_RESERVED_TYPE(src, SYSCALL);
+			for (auto it : _map_) {
+				if (it.first == src) {
+					this->_type_   = it.second.first;
+					this->_weight_ = it.second.second;
+					break;
+				}
+			}
 			break;
 	}
 

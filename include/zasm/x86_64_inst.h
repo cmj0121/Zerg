@@ -96,5 +96,5 @@ static X86_64_INST InstructionSets[] = {
 #define REG_EXTENSION		REG_EXTENSION_64, REG_EXTENSION_32, REG_EXTENSION_16, REG_EXTENSION_8
 
 #define REGISTERS			REG_EXTENSION, REG_GENERAL
-#define USED_REGISTERS		"r8", "r9", "r10", "r11", "rax", "rcx", "rdx", "rbx"
+#define USED_REGISTERS		"rcx", "rbx", "r8", "r9", "r10", "r11", 
 #endif /* __ZASM_X86_64_INST_H__ */

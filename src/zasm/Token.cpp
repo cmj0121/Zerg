@@ -246,6 +246,8 @@ int ZasmToken::size(void) {
 			size = 8;
 		}
 	}
+
+	_D(ZASM_LOG_DEBUG, "`%s` size %d", this->_src_.c_str(), size);
 	return size;
 }
 std::string ZasmToken::raw(void) {
@@ -277,7 +279,7 @@ std::string ZasmToken::unescape(void) {
 bool ZasmToken::match(unsigned int flag) {
 	bool blRet = false;
 
-	_D(ZASM_LOG_INFO, "check %s vs %X", this->_src_.c_str(), flag);
+	_D(ZASM_LOG_DEBUG, "check %s vs %X", this->_src_.c_str(), flag);
 	if (INST_NONE == flag && *this == "") {
 		blRet = true;
 		goto END;
@@ -318,10 +320,11 @@ bool ZasmToken::match(unsigned int flag) {
 	}
 #endif /* __x86_64__ */
 	goto END;
+
 CHECK_SIZE:
 	switch (flag & INST_SIZE_ALL) {
 		case INST_SIZE8:
-			blRet = this->size() == 1 && 0 == (~0x7F & this->asInt());
+			blRet = ! this->isREG() || (this->size() == 1 && 0 == (~0x7F & this->asInt()));
 			break;
 		case INST_SIZE16:
 			blRet = this->size() <= 2;
@@ -333,7 +336,7 @@ CHECK_SIZE:
 			blRet = this->size() <= 4;
 			break;
 		case INST_SIZE16_32_64:
-			blRet = true;
+			blRet = this->isIMM() ||  1 != this->size();
 			break;
 		case INST_SIZE64:
 			blRet = this->size() <= 8;

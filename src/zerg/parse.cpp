@@ -16,6 +16,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_LIKE:
 			switch(prev.type()) {
 				case AST_NEWLINE:
+				case AST_PRINT:
 				case AST_NUMBER:
 					tmp = new AST(cur);
 					node->insert(tmp);
@@ -30,6 +31,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_NUMBER:
 			switch(prev.type()) {
 				case AST_NEWLINE:
+				case AST_PRINT:
 				case AST_ADD:
 				case AST_SUB:
 				case AST_MUL:
@@ -49,12 +51,28 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_NEWLINE:
 			node = node->root();
 			if (0 != node->length()) {
-				/* process */
-				std::cout << *node << std::endl;
+				/* process AST */
+				if (0 == this->_root_.count(CFG_MAIN)) {
+					CFG *cfg = new CFG("");
+
+					cfg->insert(node);
+					this->_root_[CFG_MAIN] = cfg;
+				}
 			}
 
-			delete node;
 			node = new AST("");
+			break;
+		case AST_PRINT:
+			switch(prev.type()) {
+				case AST_NEWLINE:
+					tmp = new AST(cur);
+					node->insert(tmp);
+					node = tmp;
+					break;
+				default:
+					_D(LOG_CRIT, "`print` should be the first token in the statement");
+					break;
+			}
 			break;
 		default:
 			_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",

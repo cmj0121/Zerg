@@ -13,7 +13,7 @@ void AST::insert(ZergToken src) {
 	return this->insert(node);
 }
 void AST::insert(AST *node) {
-	AST *cur = NULL;
+	AST *cur = this;
 
 	ALERT(node == NULL);
 	switch(node->type()) {
@@ -23,10 +23,13 @@ void AST::insert(AST *node) {
 		case AST_DIV:
 		case AST_MOD:
 		case AST_LIKE:
-			cur = this;
-			if (cur->weight() < node->weight()) {
-				while (NULL != cur->parent() && cur->parent()->weight() <= node->weight()) {
-					cur = cur->parent();
+			if (0 != cur->weight() && cur->weight() < node->weight()) {
+				while (NULL != cur->parent() && 0 != cur->parent()->weight()) {
+					if (cur->parent()->weight() <= node->weight()) {
+						cur = cur->parent();
+						continue;
+					}
+					break;
 				}
 
 				cur->replace(node);

@@ -146,7 +146,13 @@ void Instruction::assemble(void) {
 		for (idx = 0; idx < ARRAY_SIZE(InstructionSets); ++idx) {
 			inst = InstructionSets[idx];
 
-			if (this->cmd() != inst.cmd || ! this->dst().match(inst.op1)|| ! this->src().match(inst.op2)) {
+			if (this->cmd() != inst.cmd) {
+				continue;
+			} else if (! this->dst().match(inst.op1) || ! this->src().match(inst.op2)) {
+				_D(ZASM_LOG_INFO, "%s 0x%02X not match %d %d",
+								inst.cmd, inst.opcode,
+								this->dst().match(inst.op1),
+								this->src().match(inst.op2));
 				continue;
 			}
 
