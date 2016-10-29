@@ -33,6 +33,20 @@ void Zasm::compile(std::fstream &src) {
 				case 3:
 					(*this) += new Instruction(line[0], line[1], line[2]);
 					break;
+				case 4:
+					if (*line[1] == ZASM_MEM_BYTE  || *line[1] == ZASM_MEM_WORD ||
+						*line[1] == ZASM_MEM_DWORD || *line[1] == ZASM_MEM_QWORD) {
+						line[1] = new ZasmToken(line[1]->raw() + " " + line[2]->raw());
+						line.erase(line.begin()+2);
+						(*this) += new Instruction(line[0], line[1], line[2]);
+						break;
+					} else if ( *line[2] == ZASM_MEM_BYTE  || *line[2] == ZASM_MEM_WORD ||
+								*line[2] == ZASM_MEM_DWORD || *line[2] == ZASM_MEM_QWORD) {
+						line[2] = new ZasmToken(line[2]->raw() + " " + line[3]->raw());
+						line.erase(line.begin()+3);
+						(*this) += new Instruction(line[0], line[1], line[2]);
+						break;
+					}
 				default:
 					_D(LOG_CRIT, "Not Implemented %zu", line.size());
 					exit(-1);

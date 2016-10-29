@@ -223,7 +223,7 @@ void Instruction::immediate(X86_64_INST &inst) {
 			size = size == 2 ? 4 : size;
 			if (0xB8 == inst.opcode && 1 == size) size = 4;
 			if (0xF7 == inst.opcode && 1 == size) size = 4;
-			if (this->dst().isMEM() && 1 == size) size = 4;
+			if (this->dst().isMEM() && 1 == size && INST_SIZE8 != (inst.op2 & INST_SIZE_ALL)) size = 4;
 			if (this->dst().isIMM() && 1 == size) size = 4;
 		}
 		ret  = this->setIMM(token.asInt(), size);
