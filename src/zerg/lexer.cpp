@@ -17,6 +17,7 @@ void Zerg::lexer(std::string src) {
 	while (std::getline(fs, line)) {
 		for (size_t cur = 0; cur <= line.size(); ++cur) {
 			size_t pos;
+			int base = 10;
 
 			switch(line[cur]) {
 				case '\0':				/* NEWLINE */
@@ -32,13 +33,28 @@ void Zerg::lexer(std::string src) {
 				case '5': case '6': case '7': case '8':
 				case '9': case '0':
 					for (pos = cur; pos <= line.size(); ++pos) {
-						if (line[pos] >= '0' && line[pos] <= '9') {
+						if (10 == base && line[pos] >= '0' && line[pos] <= '9') {
+							/* NUMBER */
+							continue;
+						} else if (2 == base && line[pos] >= '0' && line[pos] <= '1') {
+							/* NUMBER */
+							continue;
+						} else if (8 == base && line[pos] >= '0' && line[pos] <= '7') {
+							/* NUMBER */
+							continue;
+						} else if (16 == base && ((line[pos] >= '0' && line[pos] <= '9') ||
+										((line[pos] | 0x20) >= 'a' && (line[pos] | 0x20) <= 'f'))) {
 							/* NUMBER */
 							continue;
 						} else if (pos == cur+1) {
 							if (line[pos] == 'x' || line[pos] == 'X') {
+								base = 16;
+								continue;
+							} else if (line[pos] == 'b' || line[pos] == 'B') {
+								base = 2;
 								continue;
 							} else if (line[pos] == 'o' || line[pos] == 'O') {
+								base = 8;
 								continue;
 							}
 						}
