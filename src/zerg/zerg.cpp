@@ -107,12 +107,18 @@ void Zerg::emitIR(AST *node) {
 			if (2 == node->length() && AST_PARENTHESES_OPEN == node->child(0)->type()) {
 				for (size_t i = 0; i < node->child(0)->length(); ++i) {
 					cur = node->child(0)->child(i);
-					this->emitIR(cur);
+
 					switch(cur->type()) {
+						case AST_NUMBER:
+							/* HACK - direct save into stack without save as register */
+							this->emit("PARAM", cur->data());
+							break;
 						case AST_STRING:
+							this->emitIR(cur);
 							this->emit("PARAM", "&" + cur->data());
 							break;
 						default:
+							this->emitIR(cur);
 							this->emit("PARAM", cur->data());
 							break;
 					}
@@ -332,9 +338,10 @@ std::string Zerg::regalloc(std::string src) {
 
 	/* FIXME - the algo. is not correct! */
 	/* FIXME - need more robust */
-	sscanf(src.c_str(), __IR_REG_FMT__, &cnt);
-	ALERT(0 != cnt && cnt > regs.size());
-	if (0 != cnt) {
+	if (1 ==  sscanf(src.c_str(), __IR_REG_FMT__, &cnt)) {
+		_D(LOG_DEBUG, "re-allocate register - `%s`", src.c_str());
+
+		cnt = cnt % regs.size() + (cnt >= regs.size() ? 1 : 0);
 		return regs[cnt-1];
 	}
 

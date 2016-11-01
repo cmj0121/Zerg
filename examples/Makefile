@@ -15,6 +15,10 @@ arithmetic.case: arithmetic.zg
 	../zerg -o $@ $^
 	test "`./$@                   == -1`"
 
+exit.case: exit.zg
+	../zerg -o $@ $^
+	./$@ || test "$$?"            == 4
+
 
 .PHONY: clean
 

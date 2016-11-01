@@ -32,6 +32,8 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			switch(prev.type()) {
 				case AST_NEWLINE:
 				case AST_PRINT:
+				case AST_PARENTHESES_OPEN:
+				case AST_COMMA:
 				case AST_ADD:
 				case AST_SUB:
 				case AST_MUL:
@@ -55,6 +57,10 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				if (0 == this->_root_.count(CFG_MAIN)) {
 					CFG *cfg = new CFG("");
 
+					#ifdef DEBUG
+						std::cout << *node << std::endl;
+					#endif /* DEBUG */
+
 					cfg->insert(node);
 					this->_root_[CFG_MAIN] = cfg;
 				}
@@ -73,6 +79,74 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					_D(LOG_CRIT, "`print` should be the first token in the statement");
 					break;
 			}
+			break;
+		case AST_SYSCALL:
+			switch (prev.type()) {
+				case AST_NEWLINE:
+					tmp = new AST(cur);
+					node->insert(tmp);
+					node = tmp;
+					break;
+				default:
+					_D(LOG_CRIT, "`syscall` should be the first token in the statement");
+					break;
+			}
+			break;
+		case AST_COMMA:
+			switch(prev.type()) {
+				case AST_NUMBER:
+					do {
+						if (NULL == node->parent()) {
+							std::cout << *node << std::endl;
+							_D(LOG_CRIT, "Not Implemented");
+							break;
+						} else if (AST_PARENTHESES_OPEN == node->parent()->child(0)->type()) {
+							/* Found */
+							break;
+						}
+
+						node = node->parent();
+					} while (true);
+					break;
+				default:
+					_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",
+							prev.c_str(), prev.type(), cur.c_str(), cur.type());
+					break;
+			}
+			break;
+		case AST_PARENTHESES_OPEN:
+			switch(prev.type()) {
+				case AST_SYSCALL:
+					tmp = new AST(cur);
+					node->insert(tmp);
+					node = tmp;
+					break;
+				default:
+					_D(LOG_CRIT, "`(` should be the first token in the statement");
+					break;
+			}
+			break;
+		case AST_PARENTHESES_CLOSE:
+			do {
+				if (NULL == node->parent()) {
+					std::cout << *node << std::endl;
+					_D(LOG_CRIT, "Syntax error - parentheses does NOT pair");
+					break;
+				} else if (0 == node->length()) {
+					node = node->parent();
+					continue;
+				} else if (AST_PARENTHESES_OPEN == node->child(0)->type()) {
+					/* Found */
+					break;
+				}
+
+				node = node->parent();
+			} while (true);
+
+			tmp = new AST(cur);
+			node->insert(tmp);
+			node = tmp;
+
 			break;
 		default:
 			_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",
