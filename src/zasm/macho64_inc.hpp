@@ -147,6 +147,48 @@ void dyld_info (std::fstream &src) {
 	src.write((char *)&dyld, sizeof(struct dyld_info_command));
 }
 
+void seg_symtab(std::fstream &src) {
+	struct symtab_command  symtab;
+
+	symtab.cmd			= LC_SYMTAB;
+	symtab.cmdsize		= sizeof(struct symtab_command);
+
+	symtab.symoff		= 0x1000;	/* Don't know why need large than __LINKEDIT */
+	symtab.nsyms		= 0x0;
+	symtab.stroff		= 0x1000;
+	symtab.strsize		= 0x0;
+
+	src.write((char *)&symtab, sizeof(struct symtab_command));
+}
+
+void seg_dysymtab(std::fstream &src) {
+	struct dysymtab_command dysymtab;
+
+	dysymtab.cmd			= LC_DYSYMTAB;
+	dysymtab.cmdsize		= sizeof(struct dysymtab_command);
+
+	dysymtab.ilocalsym		= 0x0;
+	dysymtab.nlocalsym		= 0x0;
+	dysymtab.iextdefsym		= 0x0;
+	dysymtab.nextdefsym		= 0x0;
+	dysymtab.iundefsym		= 0x0;
+	dysymtab.nundefsym		= 0x0;
+	dysymtab.tocoff			= 0x0;
+	dysymtab.ntoc			= 0x0;
+	dysymtab.modtaboff		= 0x0;
+	dysymtab.nmodtab		= 0x0;
+	dysymtab.extrefsymoff	= 0x0;
+	dysymtab.nextrefsyms	= 0x0;
+	dysymtab.indirectsymoff	= 0x0;
+	dysymtab.nindirectsyms	= 0x0;
+	dysymtab.extreloff		= 0x0;
+	dysymtab.nextrel		= 0x0;
+	dysymtab.locreloff		= 0x0;
+	dysymtab.nlocrel		= 0x0;
+
+	src.write((char *)&dysymtab, sizeof(struct dysymtab_command));
+}
+
 #define DYDL	"/usr/lib/dyld\00\00\x00\x00\x00\x00"
 void dyld_link (std::fstream &src) {
 	struct dylinker_command dylink;
