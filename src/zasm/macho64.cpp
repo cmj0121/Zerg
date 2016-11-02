@@ -57,11 +57,13 @@ off_t Binary::dump(off_t entry) {
 
 	/* Create necessary header, dummy first */
 	for (int i = 0; i < 2; ++i) {
-		header(_bin_, 4, header_offset);
+		header(_bin_, 6, header_offset);
 
 		seg_pagezero(_bin_);
 		seg_text(_bin_, size, entry, header_offset);
 		seg_linkedit(_bin_);
+		dyld_info(_bin_);
+		dyld_link(_bin_);
 		seg_unixthread(_bin_, entry, header_offset);
 
 		header_offset = _bin_.tellg();
