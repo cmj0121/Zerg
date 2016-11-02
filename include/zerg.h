@@ -7,11 +7,11 @@
 #include <map>
 
 #include "utils.h"
+#include "zerg/token.h"
 #include "zerg/ir.h"
 #include "zerg/cfg.h"
-#include "zerg/parsingtable.h"
 
-class Zerg : public ParsingTable, public IR {
+class Zerg : public IR {
 	public:
 		Zerg(std::string dst, off_t entry = 0x1000);
 		virtual ~Zerg();
@@ -21,8 +21,8 @@ class Zerg : public ParsingTable, public IR {
 
 		std::string regalloc(std::string src);
 	protected:
-		void lexer(std::string src);				/* lexer analysis */
-		AST *parser(std::vector<ZergToken> tokens);	/* syntax and semantic analysis */
+		void lexer(std::string src);						/* lexer analysis */
+		ZergToken& parser(ZergToken &cur, ZergToken &prev);	/* syntax and semantic analysis */
 
 		void compileCFG(CFG *node);
 		void emitIR(AST *node);

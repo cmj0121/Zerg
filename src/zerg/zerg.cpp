@@ -3,7 +3,7 @@
 #include <iomanip>
 #include "zerg.h"
 
-Zerg::Zerg(std::string dst, off_t entry) : ParsingTable(), IR(dst, entry) {
+Zerg::Zerg(std::string dst, off_t entry) : IR(dst, entry) {
 	this->_labelcnt_ = 0;
 }
 Zerg::~Zerg() {
@@ -18,6 +18,7 @@ void Zerg::compile(std::string src, bool only_ir) {
 
 	this->lexer(src);
 
+	this->emit("# ZERG IR - v" __IR_VERSION__);
 	this->emit("PROLOGUE");
 	this->compileCFG(this->_root_[CFG_MAIN]);
 	for (auto it : this->_root_) {
@@ -32,11 +33,12 @@ void Zerg::compile(std::string src, bool only_ir) {
 	}
 	this->emit("EPILOGUE");
 
-	/* Dump all symbol at end of CFG */
 	_D(LOG_INFO, "dump all symbols");
-	this->emit("# Dump all symbols");
-	for (auto it : this->_symb_) {
-		this->emit("LABEL", it.first, it.second);
+	if (0 != this->_symb_.size()) {
+		this->emit("# Dump all symbols");
+		for (auto it : this->_symb_) {
+			this->emit("LABEL", it.first, it.second);
+		}
 	}
 }
 void Zerg::compileCFG(CFG *node) {
@@ -157,18 +159,42 @@ void Zerg::emitIR(AST *node) {
 			}
 			break;
 		case AST_ADD:
-			ALERT(2 > node->length())
-			x = node->child(0);
-			y = node->child(1);
-			this->emit("ADD", x->data(), y->data());
-			node->setReg(x->getReg());
+			ALERT(2 < node->length() || 0 == node->length());
+
+			switch(node->length()) {
+				case 1:
+					/* NOP */
+					break;
+				case 2:
+					x = node->child(0);
+					y = node->child(1);
+					this->emit("ADD", x->data(), y->data());
+					node->setReg(x->getReg());
+					break;
+				default:
+					_D(LOG_CRIT, "Not Support ADD with #%zu", node->length());
+					break;
+			}
 			break;
 		case AST_SUB:
-			ALERT(2 > node->length())
-			x = node->child(0);
-			y = node->child(1);
-			this->emit("SUB", x->data(), y->data());
-			node->setReg(x->getReg());
+			ALERT(2 < node->length() || 0 == node->length());
+
+			switch(node->length()) {
+				case 1:
+					x = node->child(0);
+					this->emit("NEG", x->data());
+					node->setReg(x->getReg());
+					break;
+				case 2:
+					x = node->child(0);
+					y = node->child(1);
+					this->emit("SUB", x->data(), y->data());
+					node->setReg(x->getReg());
+					break;
+				default:
+					_D(LOG_CRIT, "Not Support SUB with #%zu", node->length());
+					break;
+			}
 			break;
 		case AST_MUL:
 			ALERT(2 > node->length())
@@ -198,6 +224,56 @@ void Zerg::emitIR(AST *node) {
 			y = node->child(1);
 
 			this->emit("STORE", x->data(), y->data(), __IR_LOCAL_VAR__);
+			break;
+		case AST_PRINT:
+			/* FIXME - hardcode for build-in funciton: str() */
+			this->emit("ASM", "mov", "rax", node->child(0)->data());
+
+			this->emit("ASM", "asm", "__INT_TO_STR__:");
+			this->emit("ASM", "mov", "rsi", "rsp");
+			this->emit("ASM", "mov", "rdi", "rsi");
+			this->emit("ASM", "mov", "rcx", "0x0A");	/* DIVISOR */
+
+			this->emit("ASM", "cmp", "rax", "0x0");
+			this->emit("ASM", "jge", "&__INT_TO_STR_INNER_LOOP__");
+			this->emit("ASM", "neg", "rax");
+			this->emit("ASM", "mov", "[rsi]", "0x2D");
+			this->emit("ASM", "inc", "rsi");
+			this->emit("ASM", "inc", "rdi");
+
+			this->emit("ASM", "asm", "__INT_TO_STR_INNER_LOOP__:");
+			this->emit("ASM", "xor", "rdx", "rdx");
+			this->emit("ASM", "div", "rcx");
+			this->emit("ASM", "add", "rdx", "0x30");
+			this->emit("ASM", "mov", "[rdi]", "rdx");
+			this->emit("ASM", "inc", "rdi");
+			this->emit("ASM", "cmp", "rax", "0x0");
+			this->emit("ASM", "jne", "&__INT_TO_STR_INNER_LOOP__");
+
+			/* FIXME - hardcode for the build-in function: reserved() */
+			this->emit("ASM", "asm", "__RESERVED__:");
+			this->emit("ASM", "mov", "[rdi]", "0x0");
+
+			this->emit("ASM", "mov", "rdx", "rdi");
+			this->emit("ASM", "sub", "rdx", "rsp");
+			this->emit("ASM", "mov", "rax", "rdi");
+			this->emit("ASM", "mov", "rbx", "rsi");
+			this->emit("ASM", "dec", "rax");
+			this->emit("ASM", "asm", "__RESERVED_INNER_LOOP__:");
+			this->emit("ASM", "mov", "cl", "[rax]");
+			this->emit("ASM", "mov", "ch", "[rbx]");
+			this->emit("ASM", "mov", "[rax]", "ch");
+			this->emit("ASM", "mov", "[rbx]", "cl");
+			this->emit("ASM", "dec", "rax");
+			this->emit("ASM", "inc", "rbx");
+			this->emit("ASM", "cmp", "rax", "rbx");
+			this->emit("ASM", "jge", "&__RESERVED_INNER_LOOP__");
+
+			/* FIXME - `print` INTERRUPT */
+			this->emit("ASM", "mov", "rax", "0x2000004");
+			this->emit("ASM", "mov", "rdi", "0x01");
+			this->emit("ASM", "mov", "rsi", "rsp");
+			this->emit("INTERRUPT");
 			break;
 		case AST_FUNCCALL:
 			switch (node->length()) {
@@ -229,13 +305,20 @@ void Zerg::emitIR(AST *node) {
 void Zerg::emit(std::string op, std::string dst, std::string src, std::string extra) {
 	if ('#' == op[0]) {
 		/* dump the comment */
-		if (this->_only_ir_) std::cout << "\n" << op << std::endl;
+		if (this->_only_ir_) std::cout << op << "\n" << std::endl;
 	} else if (this->_only_ir_) {
-		std::cout << "(" << std::left << std::setw(10) <<op;
-		if ("" != dst)   std::cout << ", " << dst;
-		if ("" != src)   std::cout << ", " << src;
-		if ("" != extra) std::cout << ", " << extra;
-		std::cout << ")" << std::endl;
+		if ("ASM" == op) {
+			std::cout << std::setw(5) << "->";
+			std::cout << std::left << std::setw(10) << dst;
+			std::cout << std::left << std::setw(6) << src;
+			std::cout << extra;
+		} else {
+			std::cout << std::left << std::setw(10) <<op;
+			if ("" != dst)   std::cout << ", " << dst;
+			if ("" != src)   std::cout << ", " << src;
+			if ("" != extra) std::cout << ", " << extra;
+		}
+		std::cout << std::endl;
 	} else {
 		/* call the IR emitter */
 		IR::emit(op, dst, src, extra);
@@ -245,11 +328,12 @@ void Zerg::emit(std::string op, std::string dst, std::string src, std::string ex
 /* register allocation algo. */
 std::string Zerg::regalloc(std::string src) {
 	int cnt = 0;
-	std::vector<std::string> regs = {"rax", "rcx", "rdx", "rbx", "rdi", "rsi"};
+	std::vector<std::string> regs = { USED_REGISTERS };
 
 	/* FIXME - the algo. is not correct! */
 	/* FIXME - need more robust */
 	sscanf(src.c_str(), __IR_REG_FMT__, &cnt);
+	ALERT(0 != cnt && cnt > regs.size());
 	if (0 != cnt) {
 		return regs[cnt-1];
 	}

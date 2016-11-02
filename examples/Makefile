@@ -11,9 +11,9 @@ helloWorld.case: helloWorld.zs
 	test "`./$@ 2>&1 >/dev/null`" == 'Welcome to ZASM - A prototype for a simple assembler'
 	test "`./$@ 2>/dev/null`"     == 'Hello World'
 
-exit.case: exit.zg
+arithmetic.case: arithmetic.zg
 	../zerg -o $@ $^
-	test "`./$@ 2>/dev/null`"     == 'Hello World'
+	test "`./$@                   == -1`"
 
 
 .PHONY: clean

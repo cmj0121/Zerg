@@ -7,8 +7,7 @@
 void Zerg::lexer(std::string src) {
 	std::string line;
 	std::fstream fs(src);
-	AST *ast = NULL;
-	CFG *cfg = NULL, *curcfg = NULL;
+	ZergToken token, prev("\n");
 
 	if (!fs.is_open()) {
 		/* cannot open the source code */
@@ -16,16 +15,16 @@ void Zerg::lexer(std::string src) {
 	}
 
 	while (std::getline(fs, line)) {
-		TOKENS _tokens;
-
 		for (size_t cur = 0; cur <= line.size(); ++cur) {
 			size_t pos;
-			_D(LOG_DEBUG, "read line `%s` on %zu #%zu", line.c_str(), cur, _tokens.size());
+			int base = 10;
 
 			switch(line[cur]) {
 				case '\0':				/* NEWLINE */
 				case '#' :				/* COMMENT */
-					goto NEXT_STEP;
+					cur = line.size();
+					token = "\n";
+					prev  = this->parser(token, prev);
 					break;
 				case ' ': case '\t':	/* SPACE */
 					/* FIXME - Maybe INDENT or DEDENT */
@@ -34,27 +33,60 @@ void Zerg::lexer(std::string src) {
 				case '5': case '6': case '7': case '8':
 				case '9': case '0':
 					for (pos = cur; pos <= line.size(); ++pos) {
-						if (line[pos] >= '0' && line[pos] <= '9') {
+						if (10 == base && line[pos] >= '0' && line[pos] <= '9') {
+							/* NUMBER */
+							continue;
+						} else if (2 == base && line[pos] >= '0' && line[pos] <= '1') {
+							/* NUMBER */
+							continue;
+						} else if (8 == base && line[pos] >= '0' && line[pos] <= '7') {
+							/* NUMBER */
+							continue;
+						} else if (16 == base && ((line[pos] >= '0' && line[pos] <= '9') ||
+										((line[pos] | 0x20) >= 'a' && (line[pos] | 0x20) <= 'f'))) {
 							/* NUMBER */
 							continue;
 						} else if (pos == cur+1) {
 							if (line[pos] == 'x' || line[pos] == 'X') {
+								base = 16;
+								continue;
+							} else if (line[pos] == 'b' || line[pos] == 'B') {
+								base = 2;
 								continue;
 							} else if (line[pos] == 'o' || line[pos] == 'O') {
+								base = 8;
 								continue;
 							}
 						}
 						break;
 					}
-					_tokens.push_back(line.substr(cur, pos-cur));
+					token = line.substr(cur, pos-cur);
+					prev = this->parser(token, prev);
 					cur = pos - 1;
 					break;
-				case '+': case '-':						/* OPERATOR */
-				case '*': case '/': case '%': case '~':	/* OPERATOR */
-				case '.': case ',': case ':':
+				case '+': case '-':	case '>': case '<':	/* OPERATOR */
+				case '*': case '/': case '%': case '~':
+					for (pos = cur; pos <= line.size(); ++pos) {
+						if ('+' == line[pos] || '-' == line[pos]) {
+							continue;
+						} else if ('<' == line[pos] || '>' == line[pos]) {
+							continue;
+						} else if ('*' == line[pos] || '/' == line[pos]) {
+							continue;
+						} else if ('%' == line[pos] || '~' == line[pos]) {
+							continue;
+						}
+						break;
+					}
+					token = line.substr(cur, pos-cur);
+					prev = this->parser(token, prev);
+					cur = pos - 1;
+					break;
+				case '.': case ',': case ':':			/* OPERATOR */
 				case '(': case ')': case '[': case ']':
 				case '{': case '}':
-					_tokens.push_back(line.substr(cur, 1));
+					token = line.substr(cur, 1);
+					prev = this->parser(token, prev);
 					break;
 				case '\'': case '"':					/* STRING */
 					for (pos = cur+1; pos <= line.size(); ++pos) {
@@ -64,7 +96,8 @@ void Zerg::lexer(std::string src) {
 					if (line[pos] != line[cur]) {
 						_D(LOG_CRIT, "Invalid syntax for string %s", line.c_str());
 					}
-					_tokens.push_back(line.substr(cur, pos-cur+1));
+					token = line.substr(cur, pos-cur+1);
+					prev = this->parser(token, prev);
 					cur = pos;
 					break;
 				default:
@@ -81,34 +114,11 @@ void Zerg::lexer(std::string src) {
 						}
 						break;
 					}
-					_tokens.push_back(line.substr(cur, pos-cur));
+					token = line.substr(cur, pos-cur);
+					prev = this->parser(token, prev);
 					cur = pos - 1;
 					break;
 			}
 		}
-
-		NEXT_STEP:
-			std::vector<ZergToken> tokens;
-
-			if (0 != _tokens.size()) {
-				for (auto it : _tokens) {
-					ZergToken tmp(it);
-
-					tokens.push_back(tmp);
-				}
-
-				ALERT(NULL == (ast = this->parser(tokens)));
-
-				cfg = new CFG("");
-				cfg->insert(ast);
-
-				if (0 == this->_root_.size()) {
-					this->_root_[CFG_MAIN] = cfg;
-					curcfg = cfg;
-				} else {
-					curcfg->passto(cfg);
-					curcfg = cfg;
-				}
-			}
 	}
 }

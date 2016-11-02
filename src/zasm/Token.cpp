@@ -16,7 +16,25 @@ bool ZasmToken::isREG(void) {
 	return idx != regs.size();
 }
 bool ZasmToken::isMEM(void) {
-	return this->isREF() || ("" != this->_src_ && '[' == this->_src_[0]);
+	bool blRet = false;
+
+	if (true == (blRet = this->isREF())) {
+		_D(ZASM_LOG_INFO, "treat reference as memory space");
+		goto END;
+	} else if ("" != this->_src_ && '[' == this->_src_[0]) {
+		_D(ZASM_LOG_DEBUG, "simple memory space without size specified");
+		blRet = true;
+		goto END;
+	} else if ( (0 == this->_src_.find(ZASM_MEM_BYTE)  && '[' == this->_src_[5]) ||
+				(0 == this->_src_.find(ZASM_MEM_WORD)  && '[' == this->_src_[5]) ||
+				(0 == this->_src_.find(ZASM_MEM_DWORD) && '[' == this->_src_[6]) ||
+				(0 == this->_src_.find(ZASM_MEM_QWORD) && '[' == this->_src_[6])) {
+		_D(ZASM_LOG_DEBUG, "simple memory space with size specified");
+		blRet = true;
+		goto END;
+	}
+END:
+	return blRet;
 }
 bool ZasmToken::isMEM2(void) {
 	ZasmToken *token = NULL;
@@ -231,8 +249,20 @@ int ZasmToken::size(void) {
 		} else if (regs64.end() != std::find(regs64.begin(), regs64.end(), this->_src_)) {
 			size = 4;
 		}
-	} else if (this->isMEM()) {
+	} else if (this->isMEM() && ('&' == this->_src_[0] || '[' == this->_src_[0])) {
 		size = 4;
+	} else if (this->isMEM()) {
+		if (0 == this->_src_.find(ZASM_MEM_BYTE)) {
+			size = 1;
+		} else if (0 == this->_src_.find(ZASM_MEM_WORD)) {
+			size = 2;
+		} else if (0 == this->_src_.find(ZASM_MEM_DWORD)) {
+			size = 3;
+		} else if (0 == this->_src_.find(ZASM_MEM_QWORD)) {
+			size = 4;
+		} else {
+			_D(LOG_CRIT, "Not Implemented `%s`", this->_src_.c_str());
+		}
 	} else if (this->isIMM()) {
 		off_t len = this->asInt();
 
@@ -246,6 +276,8 @@ int ZasmToken::size(void) {
 			size = 8;
 		}
 	}
+
+	_D(ZASM_LOG_DEBUG, "`%s` size %d", this->_src_.c_str(), size);
 	return size;
 }
 std::string ZasmToken::raw(void) {
@@ -277,7 +309,7 @@ std::string ZasmToken::unescape(void) {
 bool ZasmToken::match(unsigned int flag) {
 	bool blRet = false;
 
-	_D(ZASM_LOG_INFO, "check %s vs %X", this->_src_.c_str(), flag);
+	_D(ZASM_LOG_DEBUG, "check %s vs %X", this->_src_.c_str(), flag);
 	if (INST_NONE == flag && *this == "") {
 		blRet = true;
 		goto END;
@@ -318,10 +350,11 @@ bool ZasmToken::match(unsigned int flag) {
 	}
 #endif /* __x86_64__ */
 	goto END;
+
 CHECK_SIZE:
 	switch (flag & INST_SIZE_ALL) {
 		case INST_SIZE8:
-			blRet = this->size() == 1 && 0 == (~0x7F & this->asInt());
+			blRet = ! this->isREG() || (this->size() == 1 && 0 == (~0x7F & this->asInt()));
 			break;
 		case INST_SIZE16:
 			blRet = this->size() <= 2;
@@ -333,7 +366,7 @@ CHECK_SIZE:
 			blRet = this->size() <= 4;
 			break;
 		case INST_SIZE16_32_64:
-			blRet = true;
+			blRet = this->isIMM() ||  1 != this->size();
 			break;
 		case INST_SIZE64:
 			blRet = this->size() <= 8;

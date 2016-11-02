@@ -34,8 +34,9 @@ void IR::emit(IRToken token) {
 void IR::emit(std::string op, std::string dst, std::string src, std::string extra) {
 	static std::vector<std::string> stack;
 
-	dst = this->regalloc(dst);
-	src = this->regalloc(src);
+	dst   = this->regalloc(dst);
+	src   = this->regalloc(src);
+	extra = this->regalloc(extra);
 
 	_D(LOG_INFO, "IR emit - %s %s %s %s",
 			op.c_str(), dst.c_str(), src.c_str(), extra.c_str());
@@ -66,7 +67,7 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 		} else if (__IR_GLOBAL_VAR__ == extra) {
 			/* save global variable */
 			_D(LOG_CRIT, "Not Implemented");
-		} else {
+		} else if (dst != src) {
 			(*this) += new Instruction("mov", dst, src);
 		}
 	} else if (op == "STORE") {			/* (STORE, DST, SRC, EXTRA) */
@@ -89,7 +90,7 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 		} else if (__IR_GLOBAL_VAR__ == extra) {
 			/* save global variable */
 			_D(LOG_CRIT, "Not Implemented");
-		} else {
+		} else if (dst != src) {
 			(*this) += new Instruction("mov", dst, src);
 		}
 	} else if (op == "ADD") {			/* (ADD,   DST, SRC) */
@@ -103,16 +104,31 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 		(*this) += new Instruction("mul", dst, src);
 	} else if (op == "DIV") {			/* (DIV,   DST, SRC) */
 		/* dst = dst / src */
-		(*this) += new Instruction("mov", "rax", dst);
+		(*this) += new Instruction("push", "rdx");
+		(*this) += new Instruction("push", "rax");
+
+		if (dst != "rax") {
+			(*this) += new Instruction("mov", "rax", dst);
+		}
 		(*this) += new Instruction("xor", "rdx", "rdx");
 		(*this) += new Instruction("div", src);
 		(*this) += new Instruction("mov", dst, "rax");
+
+		(*this) += new Instruction("pop", "rax");
+		(*this) += new Instruction("pop", "rdx");
 	} else if (op == "REM") {			/* (REM,   DST, SRC) */
 		/* dst = dst / src */
-		(*this) += new Instruction("mov", "rax", dst);
+		(*this) += new Instruction("push", "rdx");
+		(*this) += new Instruction("push", "rax");
+
+		if (dst != "rax")
+			(*this) += new Instruction("mov", "rax", dst);
 		(*this) += new Instruction("xor", "rdx", "rdx");
 		(*this) += new Instruction("div", src);
 		(*this) += new Instruction("mov", dst, "rdx");
+
+		(*this) += new Instruction("pop", "rax");
+		(*this) += new Instruction("pop", "rdx");
 	} else if (op == "INC") {			/* (ADD,   DST) */
 		/* dst = dst + 1 */
 		(*this) += new Instruction("inc", dst);
@@ -219,6 +235,14 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 			(*this) += new Instruction("add", "rsp", dst);
 		}
 		(*this) += new Instruction("pop", "rbp");
+
+		/* FIXME */
+		(*this) += new Instruction("mov", "rax", "0x2000001");
+		(*this) += new Instruction("syscall");
+
+		(*this) += new Instruction("ret");
+	} else if (op == "ASM") {
+		(*this) += new Instruction(dst, src, extra);
 	} else {
 		_D(LOG_CRIT, "Not Implemented operators `%s`", op.c_str());
 		exit(-1);

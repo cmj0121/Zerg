@@ -33,6 +33,9 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 		if (this->dst().isREG() && (this->src().isREG() || this->src().isIMM())) {
 			if (this->dst().isEXT())
 				REX_B = 1;
+		} else if (this->dst().isREG() && "" == this->src().raw()) {
+			if (this->dst().isEXT())
+				REX_B = 1;
 		} else if (this->dst().isMEM() && this->dst().isEXT()) {
 			REX_B = 1;
 		} else if (this->src().isMEM() && this->dst().isREG() &&this->src().isEXT()) {
@@ -177,6 +180,12 @@ void Instruction::modRW(X86_64_INST &inst) {
 			rm = this->dst().isMEM() ? this->dst().asInt() : this->src().asInt();
 		}
 
+		if (this->dst().isREG() && 1 == this->dst().size() && 'h' == this->dst().raw()[1]) {
+			reg |= 0x04;
+		} else if (this->src().isREG() && 1 == this->src().size() && 'h' == this->src().raw()[1]) {
+			reg |= 0x04;
+		}
+
 		_payload_[_length_++] = (mod & 0x3) << 6 | (reg & 0x7) << 3 | (rm & 0x7);
 		_D(ZASM_LOG_WARNING, "Mod R/W       - %02X", _payload_[_length_-1]);
 
@@ -214,7 +223,7 @@ void Instruction::immediate(X86_64_INST &inst) {
 			size = size == 2 ? 4 : size;
 			if (0xB8 == inst.opcode && 1 == size) size = 4;
 			if (0xF7 == inst.opcode && 1 == size) size = 4;
-			if (this->dst().isMEM() && 1 == size) size = 4;
+			if (this->dst().isMEM() && 1 == size && INST_SIZE8 != (inst.op2 & INST_SIZE_ALL)) size = 4;
 			if (this->dst().isIMM() && 1 == size) size = 4;
 		}
 		ret  = this->setIMM(token.asInt(), size);

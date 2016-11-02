@@ -13,8 +13,33 @@ void AST::insert(ZergToken src) {
 	return this->insert(node);
 }
 void AST::insert(AST *node) {
-	assert(node != NULL);
-	return Tree<AST>::insert(node);
+	AST *cur = this;
+
+	ALERT(node == NULL);
+	switch(node->type()) {
+		case AST_ADD:
+		case AST_SUB:
+		case AST_MUL:
+		case AST_DIV:
+		case AST_MOD:
+		case AST_LIKE:
+			if (0 != cur->weight() && cur->weight() < node->weight()) {
+				while (NULL != cur->parent() && 0 != cur->parent()->weight()) {
+					if (cur->parent()->weight() <= node->weight()) {
+						cur = cur->parent();
+						continue;
+					}
+					break;
+				}
+
+				cur->replace(node);
+				node->insert(cur);
+				break;
+			}
+		default:
+			Tree<AST>::insert(node);
+			break;
+	}
 }
 void AST::setLabel(int nr) {
 	/* Set as label */

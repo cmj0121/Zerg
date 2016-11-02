@@ -37,6 +37,9 @@ class Tree {
 			/* return the parent node */
 			return this->_parent_;
 		}
+		T* root(void) {
+			return NULL == this->parent() ? (T *) this : this->parent()->root();
+		}
 		T* child(int nr) {
 			ALERT(nr >= this->length());
 

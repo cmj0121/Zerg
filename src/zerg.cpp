@@ -62,10 +62,7 @@ int main(int argc, char *argv[]) {
 	if (0 == argc) {
 		help();
 	} else if (_gen_grammar) {
-		ParsingTable parser;
-
-		parser.load(argv[0]);
-		std::cout << parser << std::endl;
+		_D(LOG_CRIT, "Not Implemented");
 	} else {
 		Zerg zerg(dst);
 		zerg.compile(argv[0], _only_ir_);

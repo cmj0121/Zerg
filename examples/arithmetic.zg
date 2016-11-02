@@ -1,0 +1,3 @@
+#! /usr/bin/env zerg
+
+print -1-3+2*6/4%5

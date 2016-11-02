@@ -1,18 +1,15 @@
-# Grmmar for Zerg
+# Grammar for Zerg
 #
 # Author  : cmj <cmj@cmj.tw>
-# Date    : 2016/10/06
-# Version : 0.2
+# Date    : 2016/10/21
+# Version : 0.2.1
+#
+# SPEC - provide minimal usage arithmetic with variable assignment
 
-stmt   : [ assign | expr ] NEWLINE
-
-assign : IDENTIFIER '=' expr
-
-expr : funccall | or_test
-
-funccall : ( IDENTIFIER | 'syscall' ) '(' [ args ] ')'
-args     : test ( ',' test )*
-test     : or_test
+stmt   : [ assign | print ] NEWLINE
+assign : [ WORD '=' ] test
+print  : 'print' test
+test   : or_test
 
 or_test   : and_test ( 'or'  and_test )*
 and_test  : xor_test ( 'and' xor_test )*
@@ -26,5 +23,4 @@ bit_xor  : shift   ( '^' shift   )*
 shift : arith ( ( '<<' | '>>' ) arith )*
 arith : pow   ( ( '+' | '-' )   pow   )*
 pow   : atom  ( ( '*' | '/' | '%' | '~' )  atom )*
-
-atom   : [ '+' | '-' | '~' ] ( NUMBER | STRING | IDENTIFIER )
+atom  : [ '+' | '-' | '~' ] ( NUMBER | WORD )

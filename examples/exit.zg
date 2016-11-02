@@ -1,4 +1,0 @@
-#! /usr/bin/env zerg
-
-syscall(0x2000004, 0x01, "Hello World\n", 14)
-syscall(0x2000001, 0x04)
