@@ -16,6 +16,8 @@ CXXFLAGS:=$(CXXFLAGS) -I../include
 
 all: $(BIN)
 
+zasm/macho64.o: zasm/macho64_inc.hpp
+
 zasm.inst: zasm.cpp $(ZASM_OBJ)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 	$(STRIP) $@
