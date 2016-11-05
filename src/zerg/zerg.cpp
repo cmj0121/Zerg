@@ -277,10 +277,11 @@ void Zerg::emitIR(AST *node) {
 
 			/* FIXME - hardcode for the build-in function: reserved() */
 			this->emit("ASM", "asm", "__RESERVED__:");
-			this->emit("ASM", "mov", "[rdi]", "0x0");
+			this->emit("ASM", "mov", "[rdi]", "0x0A");
 
 			this->emit("ASM", "mov", "rdx", "rdi");
 			this->emit("ASM", "sub", "rdx", "rsp");
+			this->emit("ASM", "inc", "rdx");
 			this->emit("ASM", "mov", "rax", "rdi");
 			this->emit("ASM", "mov", "rbx", "rsi");
 			this->emit("ASM", "dec", "rax");

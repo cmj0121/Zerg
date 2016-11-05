@@ -9,21 +9,16 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 	switch(cur.type()) {
 		case AST_NEWLINE:
 			node = node->root();
-			if (0 != node->length()) {
-				/* process AST */
-				if (0 == this->_root_.count(CFG_MAIN)) {
-					CFG *cfg = new CFG("");
+			if (0 != node->length() && 0 == this->_root_.count(CFG_MAIN)) {
+				CFG *cfg = new CFG("");
 
-					#ifdef DEBUG
-						std::cout << *node << std::endl;
-					#endif /* DEBUG */
+				#ifdef DEBUG
+					std::cout << *node << std::endl;
+				#endif /* DEBUG */
 
-					cfg->insert(node);
-					this->_root_[CFG_MAIN] = cfg;
-				}
+				cfg->insert(node);
+				this->_root_[CFG_MAIN] = cfg;
 			}
-
-			node = new AST("");
 			break;
 
 		case AST_ADD:
