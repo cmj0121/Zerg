@@ -7,12 +7,13 @@ AST::AST(ZergToken src) : Tree<AST>(src), _emitted_(false), _raw_(src) {
 	this->_type_  = src.type();
 }
 
-void AST::insert(ZergToken src) {
+AST* AST::insert(ZergToken src) {
 	AST *node = new AST(src);
+
 	_D(LOG_INFO, "AST insert %s", src.c_str());
 	return this->insert(node);
 }
-void AST::insert(AST *node) {
+AST* AST::insert(AST *node) {
 	AST *cur = this;
 
 	ALERT(node == NULL);
@@ -36,10 +37,22 @@ void AST::insert(AST *node) {
 				node->insert(cur);
 				break;
 			}
+			Tree<AST>::insert(node);
+			break;
+		case AST_ASSIGN:
+			cur = cur->root();
+
+			ALERT(1 != cur->length());
+			cur = cur->child(0);
+			cur->replace(node);
+			node->insert(cur);
+			break;
 		default:
 			Tree<AST>::insert(node);
 			break;
 	}
+
+	return node;
 }
 void AST::setLabel(int nr) {
 	/* Set as label */

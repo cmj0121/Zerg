@@ -5,51 +5,8 @@
 
 ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 	static AST* node = new AST("");
-	AST *tmp = NULL;
 
 	switch(cur.type()) {
-		case AST_ADD:
-		case AST_SUB:
-		case AST_MUL:
-		case AST_DIV:
-		case AST_MOD:
-		case AST_LIKE:
-			switch(prev.type()) {
-				case AST_NEWLINE:
-				case AST_PRINT:
-				case AST_NUMBER:
-					tmp = new AST(cur);
-					node->insert(tmp);
-					node = tmp;
-					break;
-				default:
-					_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",
-							prev.c_str(), prev.type(), cur.c_str(), cur.type());
-					break;
-			}
-			break;
-		case AST_NUMBER:
-			switch(prev.type()) {
-				case AST_NEWLINE:
-				case AST_PRINT:
-				case AST_PARENTHESES_OPEN:
-				case AST_COMMA:
-				case AST_ADD:
-				case AST_SUB:
-				case AST_MUL:
-				case AST_DIV:
-				case AST_MOD:
-				case AST_LIKE:
-					tmp = new AST(cur);
-					node->insert(tmp);
-					node = tmp;
-					break;
-				default:
-					_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",
-							prev.c_str(), prev.type(), cur.c_str(), cur.type());
-					break;
-			}
-			break;
 		case AST_NEWLINE:
 			node = node->root();
 			if (0 != node->length()) {
@@ -68,30 +25,43 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 
 			node = new AST("");
 			break;
-		case AST_PRINT:
+
+		case AST_ADD:
+		case AST_SUB:
+		case AST_LIKE:
 			switch(prev.type()) {
 				case AST_NEWLINE:
-					tmp = new AST(cur);
-					node->insert(tmp);
-					node = tmp;
+				case AST_PRINT:
+				case AST_ASSIGN:
+				case AST_NUMBER:
+				case AST_ADD:
+				case AST_SUB:
+				case AST_LIKE:
+				case AST_MUL:
+				case AST_DIV:
+				case AST_MOD:
+					node = node->insert(cur);
 					break;
 				default:
-					_D(LOG_CRIT, "`print` should be the first token in the statement");
+					_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",
+							prev.c_str(), prev.type(), cur.c_str(), cur.type());
 					break;
 			}
 			break;
-		case AST_SYSCALL:
-			switch (prev.type()) {
-				case AST_NEWLINE:
-					tmp = new AST(cur);
-					node->insert(tmp);
-					node = tmp;
+		case AST_MUL:
+		case AST_DIV:
+		case AST_MOD:
+			switch(prev.type()) {
+				case AST_NUMBER:
+					node = node->insert(cur);
 					break;
 				default:
-					_D(LOG_CRIT, "`syscall` should be the first token in the statement");
+					_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",
+							prev.c_str(), prev.type(), cur.c_str(), cur.type());
 					break;
 			}
 			break;
+
 		case AST_COMMA:
 			switch(prev.type()) {
 				case AST_NUMBER:
@@ -114,12 +84,76 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					break;
 			}
 			break;
+		case AST_ASSIGN:
+			switch(prev.type()) {
+				case AST_IDENTIFIER:
+					node = node->insert(cur);
+					break;
+				default:
+					_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",
+							prev.c_str(), prev.type(), cur.c_str(), cur.type());
+					break;
+			}
+			break;
+
+		case AST_NUMBER:
+			switch(prev.type()) {
+				case AST_NEWLINE:
+				case AST_PRINT:
+				case AST_PARENTHESES_OPEN:
+				case AST_COMMA:
+				case AST_ASSIGN:
+				case AST_ADD:
+				case AST_SUB:
+				case AST_MUL:
+				case AST_DIV:
+				case AST_MOD:
+				case AST_LIKE:
+					node = node->insert(cur);
+					break;
+				default:
+					_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",
+							prev.c_str(), prev.type(), cur.c_str(), cur.type());
+					break;
+			}
+			break;
+		case AST_IDENTIFIER:
+			switch(prev.type()) {
+				case AST_NEWLINE:
+					node = node->insert(cur);
+					break;
+				default:
+					_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",
+							prev.c_str(), prev.type(), cur.c_str(), cur.type());
+					break;
+			}
+			break;
+
+		case AST_PRINT:
+			switch(prev.type()) {
+				case AST_NEWLINE:
+					node = node->insert(cur);
+					break;
+				default:
+					_D(LOG_CRIT, "`print` should be the first token in the statement");
+					break;
+			}
+			break;
+		case AST_SYSCALL:
+			switch (prev.type()) {
+				case AST_NEWLINE:
+					node = node->insert(cur);
+					break;
+				default:
+					_D(LOG_CRIT, "`syscall` should be the first token in the statement");
+					break;
+			}
+			break;
+
 		case AST_PARENTHESES_OPEN:
 			switch(prev.type()) {
 				case AST_SYSCALL:
-					tmp = new AST(cur);
-					node->insert(tmp);
-					node = tmp;
+					node = node->insert(cur);
 					break;
 				default:
 					_D(LOG_CRIT, "`(` should be the first token in the statement");
@@ -143,16 +177,18 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				node = node->parent();
 			} while (true);
 
-			tmp = new AST(cur);
-			node->insert(tmp);
-			node = tmp;
-
+			node = node->insert(cur);
 			break;
 		default:
 			_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",
 							prev.c_str(), prev.type(), cur.c_str(), cur.type());
 			break;
 	}
+
+	#ifdef DEBUG
+		AST* tmp = node->root();
+		std::cout << *tmp << std::endl;
+	#endif /* DEBUG */
 
 	return cur;
 }

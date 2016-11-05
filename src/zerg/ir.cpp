@@ -82,11 +82,9 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 			if (stack.size() == pos) {
 				/* save into stack */
 				stack.push_back(dst);
-				(*this) += new Instruction("push", src);
-			} else {
-				snprintf(buff, sizeof(buff), "[rbp-0X%X]", pos * 0x08);
-				(*this) += new Instruction("mov", src, buff);
 			}
+			snprintf(buff, sizeof(buff), "[rbp-0X%X]", pos * 0x08);
+			(*this) += new Instruction("mov", src, buff);
 		} else if (__IR_GLOBAL_VAR__ == extra) {
 			/* save global variable */
 			_D(LOG_CRIT, "Not Implemented");
