@@ -10,6 +10,14 @@ template<class T>
 class Tree {
 	public:
 		Tree(std::string src) : _src_(src), _parent_(NULL) {};
+		Tree(T* node) {
+			ALERT(node == NULL);
+
+			this->_src_		= node->_src_;
+			this->_parent_	= node->_parent_;
+			this->_childs_	= node->_childs_;
+		}
+
 		virtual ~Tree() {
 			for (unsigned int i = 0; i < this->length(); ++i) {
 				delete this->_childs_[i];

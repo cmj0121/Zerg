@@ -28,6 +28,9 @@ class CFG : public AST {
 		void branch(CFG *truecase, CFG *falsecase);
 		std::string label(void);
 
+		CFG* insert(ZergToken dst);
+		CFG* parent(void);
+		CFG* root(void);
 		CFG *nextCFG(bool branch=true);
 
 		friend std::ostream& operator <<(std::ostream &stream, const CFG &src);

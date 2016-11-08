@@ -10,13 +10,14 @@ AST::AST(ZergToken src) : Tree<AST>(src), _emitted_(false), _raw_(src) {
 AST* AST::insert(ZergToken src) {
 	AST *node = new AST(src);
 
-	_D(LOG_INFO, "AST insert %s", src.c_str());
 	return this->insert(node);
 }
 AST* AST::insert(AST *node) {
 	AST *cur = this;
 
 	ALERT(node == NULL);
+
+	_D(LOG_INFO, "AST insert %s", node->data().c_str());
 	switch(node->type()) {
 		case AST_ADD:
 		case AST_SUB:
@@ -42,8 +43,8 @@ AST* AST::insert(AST *node) {
 		case AST_ASSIGN:
 			cur = cur->root();
 
-			ALERT(1 != cur->length());
-			cur = cur->child(0);
+			ALERT(0 == cur->length());
+			cur = cur->child(cur->length()-1);
 			cur->replace(node);
 			node->insert(cur);
 			break;

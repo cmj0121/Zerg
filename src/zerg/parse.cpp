@@ -4,20 +4,15 @@
 #include "zerg.h"
 
 ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
-	static AST* node = new AST("");
+	static CFG* node = new CFG(CFG_MAIN);
 
+	_D(LOG_DEBUG, "parse %s (%X) -> %s (%X)",
+		prev.c_str(), prev.type(), cur.c_str(), cur.type());
 	switch(cur.type()) {
 		case AST_NEWLINE:
 			node = node->root();
 			if (0 != node->length() && 0 == this->_root_.count(CFG_MAIN)) {
-				CFG *cfg = new CFG("");
-
-				#ifdef DEBUG
-					std::cout << *node << std::endl;
-				#endif /* DEBUG */
-
-				cfg->insert(node);
-				this->_root_[CFG_MAIN] = cfg;
+				this->_root_[CFG_MAIN] = node;
 			}
 			break;
 
@@ -29,6 +24,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_PRINT:
 				case AST_ASSIGN:
 				case AST_NUMBER:
+				case AST_IDENTIFIER:
 				case AST_ADD:
 				case AST_SUB:
 				case AST_LIKE:
@@ -48,6 +44,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_MOD:
 			switch(prev.type()) {
 				case AST_NUMBER:
+				case AST_IDENTIFIER:
 					node = node->insert(cur);
 					break;
 				default:
@@ -115,6 +112,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_IDENTIFIER:
 			switch(prev.type()) {
 				case AST_NEWLINE:
+				case AST_ASSIGN:
 					node = node->insert(cur);
 					break;
 				default:
@@ -182,6 +180,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 
 	#ifdef DEBUG
 		AST* tmp = node->root();
+
 		std::cout << *tmp << std::endl;
 	#endif /* DEBUG */
 

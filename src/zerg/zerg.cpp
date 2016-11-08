@@ -72,8 +72,8 @@ void Zerg::compileCFG(CFG *node) {
 	}
 
 	/* PROLOGUE */
-	for (size_t i = 0; i < ((AST *)node)->child(0)->length(); ++i) {
-		AST *child = (AST *)node->child(0)->child(i);
+	for (size_t i = 0; i < ((AST *)node)->length(); ++i) {
+		AST *child = (AST *)node->child(i);
 
 		if (AST_ASSIGN == child->type()) cnt ++;
 	}
