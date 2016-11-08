@@ -15,8 +15,8 @@ class AST : public Tree<AST> {
 	public:
 		AST(ZergToken src="");
 
-		void insert(ZergToken dst);
-		void insert(AST *node);
+		AST* insert(ZergToken dst);
+		AST* insert(AST *node);
 		void setLabel(int nr);
 		void setReg(int nr);
 		int  getReg(void);

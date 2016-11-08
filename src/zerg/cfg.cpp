@@ -9,6 +9,7 @@ CFG::CFG(std::string name) : AST(""), _name_(name), _parent_(NULL) {
 	this->_condi_   = false;
 	this->_next_[0] = NULL;
 	this->_next_[1] = NULL;
+
 	#ifdef DEBUG
 		/* only used on CFG relationship graph */
 		this->_map_ = NULL;
@@ -76,6 +77,18 @@ std::string CFG::label(void) {
 	return this->_name_;
 }
 
+CFG* CFG::insert(ZergToken dst) {
+	CFG *tmp = (CFG *)AST::insert(dst);
+	return tmp;
+}
+CFG* CFG::parent(void) {
+	CFG* tmp = (CFG *)AST::parent();
+	return tmp;
+}
+CFG* CFG::root(void) {
+	CFG *tmp = (CFG *)AST::root();
+	return tmp;
+}
 CFG* CFG::nextCFG(bool branch) {
 	/* return the next CFG stage */
 	return this->_next_[branch ? 0 : 1];

@@ -3,6 +3,8 @@
 #include <iomanip>
 #include "zerg.h"
 
+#define PARAM_SIZE	0x08
+
 Zerg::Zerg(std::string dst, off_t entry) : IR(dst, entry) {
 	this->_labelcnt_ = 0;
 }
@@ -19,7 +21,6 @@ void Zerg::compile(std::string src, bool only_ir) {
 	this->lexer(src);
 
 	this->emit("# ZERG IR - v" __IR_VERSION__);
-	this->emit("PROLOGUE");
 	this->compileCFG(this->_root_[CFG_MAIN]);
 	for (auto it : this->_root_) {
 		if (it.first != CFG_MAIN) {
@@ -31,7 +32,6 @@ void Zerg::compile(std::string src, bool only_ir) {
 			this->emit("RET");
 		}
 	}
-	this->emit("EPILOGUE");
 
 	_D(LOG_INFO, "dump all symbols");
 	if (0 != this->_symb_.size()) {
@@ -42,56 +42,75 @@ void Zerg::compile(std::string src, bool only_ir) {
 	}
 }
 void Zerg::compileCFG(CFG *node) {
+	int cnt = 0;
+	char cntvar[64] = {0};
 	CFG *tmp = NULL;
 
-	if (NULL != node && ! node->isEmmited()) {
-		#ifdef DEBUG
-		std::cout << *node << std::endl;
-		#endif
+	#ifdef DEBUG
+	std::cout << *node << std::endl;
+	#endif
 
-		/*
-		 *         +---+
-		 *         |   |           CONDITION NODE          test expression
-		 *         +---+                                   JMP to [BRANCH FALSE] if false
-		 *          / \
-		 *         /   \
-		 *     +---+  +---+                                statement for true branch
-		 *     | T |  | F |        BRANCH NODE             , and then JMP to [NORMAL NODE]
-		 *     +---+  +---+
-		 *       \     /                                   statement for false branch
-		 *         \ /
-		 *        +---+
-		 *        |   |            NORMAL NODE             statement for normal expression
-		 *        +---+
-		 */
-		if (node->isCondit() || node->isRefed()){
-			/* set label if need */
-			this->emit("LABEL", node->label());
-		}
+	/*
+	 *         +---+
+	 *         |   |           CONDITION NODE          test expression
+	 *         +---+                                   JMP to [BRANCH FALSE] if false
+	 *          / \
+	 *         /   \
+	 *     +---+  +---+                                statement for true branch
+	 *     | T |  | F |        BRANCH NODE             , and then JMP to [NORMAL NODE]
+	 *     +---+  +---+
+	 *       \     /                                   statement for false branch
+	 *         \ /
+	 *        +---+
+	 *        |   |            NORMAL NODE             statement for normal expression
+	 *        +---+
+	 */
 
-		/* main logical to generate IR */
-		this->emitIR(node);
-
-		if (node->isCondit()) {				/* CONDITION NODE */
-			std::string op = node->child(0)->data();
-
-			tmp = node->nextCFG(false);
-			if ("<" == op) {
-				/* if x < y not not established*/
-				this->emit("JGTE", "&" + tmp->label());
-			} else {
-				_D(LOG_CRIT, "Not Implemented `%s`", op.c_str());
-				exit(-1);
-			}
-		} else if (node->isBranch() && NULL != (tmp = node->nextCFG(true))) {
-			/* end of branch node, jump to next stage */
-			this->emit("JMP","&" + tmp->label());
-		}
-
-		/* process other stage in CFG */
-		this->compileCFG(node->nextCFG(true));
-		this->compileCFG(node->nextCFG(false));
+	if (NULL == node || node->isEmmited()) {
+		_D(LOG_DEBUG, "already processed");
+		return ;
 	}
+
+	/* PROLOGUE */
+	for (size_t i = 0; i < ((AST *)node)->length(); ++i) {
+		AST *child = (AST *)node->child(i);
+
+		if (AST_ASSIGN == child->type()) cnt ++;
+	}
+
+	if (0 != cnt) snprintf(cntvar, sizeof(cntvar), "0x%X", cnt*PARAM_SIZE);
+	this->emit("PROLOGUE", cntvar);
+
+	if (node->isCondit() || node->isRefed()){
+		/* set label if need */
+		this->emit("LABEL", node->label());
+	}
+
+	/* main logical to generate IR */
+	this->emitIR(node);
+
+	if (node->isCondit()) {				/* CONDITION NODE */
+		std::string op = node->child(0)->data();
+
+		tmp = node->nextCFG(false);
+		if ("<" == op) {
+			/* if x < y not not established*/
+			this->emit("JGTE", "&" + tmp->label());
+		} else {
+			_D(LOG_CRIT, "Not Implemented `%s`", op.c_str());
+			exit(-1);
+		}
+	} else if (node->isBranch() && NULL != (tmp = node->nextCFG(true))) {
+		/* end of branch node, jump to next stage */
+		this->emit("JMP","&" + tmp->label());
+	}
+
+	/* process other stage in CFG */
+	this->compileCFG(node->nextCFG(true));
+	this->compileCFG(node->nextCFG(false));
+
+	/* EPILOGUE */
+	this->emit("EPILOGUE", cntvar);
 }
 void Zerg::emitIR(AST *node) {
 	static int regs = 0;
@@ -107,12 +126,18 @@ void Zerg::emitIR(AST *node) {
 			if (2 == node->length() && AST_PARENTHESES_OPEN == node->child(0)->type()) {
 				for (size_t i = 0; i < node->child(0)->length(); ++i) {
 					cur = node->child(0)->child(i);
-					this->emitIR(cur);
+
 					switch(cur->type()) {
+						case AST_NUMBER:
+							/* HACK - direct save into stack without save as register */
+							this->emit("PARAM", cur->data());
+							break;
 						case AST_STRING:
+							this->emitIR(cur);
 							this->emit("PARAM", "&" + cur->data());
 							break;
 						default:
+							this->emitIR(cur);
 							this->emit("PARAM", cur->data());
 							break;
 					}
@@ -252,10 +277,11 @@ void Zerg::emitIR(AST *node) {
 
 			/* FIXME - hardcode for the build-in function: reserved() */
 			this->emit("ASM", "asm", "__RESERVED__:");
-			this->emit("ASM", "mov", "[rdi]", "0x0");
+			this->emit("ASM", "mov", "[rdi]", "0x0A");
 
 			this->emit("ASM", "mov", "rdx", "rdi");
 			this->emit("ASM", "sub", "rdx", "rsp");
+			this->emit("ASM", "inc", "rdx");
 			this->emit("ASM", "mov", "rax", "rdi");
 			this->emit("ASM", "mov", "rbx", "rsi");
 			this->emit("ASM", "dec", "rax");
@@ -332,9 +358,10 @@ std::string Zerg::regalloc(std::string src) {
 
 	/* FIXME - the algo. is not correct! */
 	/* FIXME - need more robust */
-	sscanf(src.c_str(), __IR_REG_FMT__, &cnt);
-	ALERT(0 != cnt && cnt > regs.size());
-	if (0 != cnt) {
+	if (1 ==  sscanf(src.c_str(), __IR_REG_FMT__, &cnt)) {
+		_D(LOG_DEBUG, "re-allocate register - `%s`", src.c_str());
+
+		cnt = cnt % regs.size() + (cnt >= regs.size() ? 1 : 0);
 		return regs[cnt-1];
 	}
 
