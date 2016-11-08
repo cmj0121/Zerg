@@ -55,6 +55,13 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 			REX_W = 1;
 		}
 
+		/* HACK - Do NOT know why, but multiple is strange in legacy  */
+		if (0 == strncmp("mul", inst.cmd, 3) && 0xAF == inst.opcode) {
+			REX_R = REX_R ^ REX_B;
+			REX_B = REX_R ^ REX_B;
+			REX_R = REX_R ^ REX_B;
+		}
+
 
 		if (REX_B || REX_X || REX_R || REX_W) {
 			_payload_[_length_++] = 0x40 | (REX_W << 3) | (REX_R << 2) | (REX_X << 1) | REX_B;
