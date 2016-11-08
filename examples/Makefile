@@ -13,7 +13,7 @@ helloWorld.case: helloWorld.zs
 
 arithmetic.case: arithmetic.zg
 	../zerg -o $@ $^
-	test "`./$@                   == -1`"
+	test "`./$@                   == -29`"
 
 exit.case: exit.zg
 	../zerg -o $@ $^

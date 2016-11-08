@@ -252,7 +252,10 @@ void Zerg::emitIR(AST *node) {
 			break;
 		case AST_PRINT:
 			/* FIXME - hardcode for build-in funciton: str() */
-			this->emit("ASM", "mov", "rax", node->child(0)->data());
+
+			ALERT(0 == node->length());
+			x= node->child(0);
+			this->emit("ASM", "mov", "rax", x->data());
 
 			this->emit("ASM", "asm", "__INT_TO_STR__:");
 			this->emit("ASM", "mov", "rsi", "rsp");
