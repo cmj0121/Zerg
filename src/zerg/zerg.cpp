@@ -221,6 +221,21 @@ void Zerg::emitIR(AST *node) {
 					break;
 			}
 			break;
+		case AST_LIKE:
+			ALERT(2 < node->length() || 0 == node->length());
+
+			switch(node->length()) {
+				case 1:
+					x = node->child(0);
+					this->emit("NOT", x->data());
+					node->setReg(x->getReg());
+					break;
+				default:
+					_D(LOG_CRIT, "Not Support SUB with #%zu", node->length());
+					break;
+			}
+			break;
+
 		case AST_MUL:
 			ALERT(2 > node->length())
 			x = node->child(0);
@@ -242,6 +257,49 @@ void Zerg::emitIR(AST *node) {
 			this->emit("REM", x->data(), y->data());
 			node->setReg(x->getReg());
 			break;
+
+		case AST_LSHT:
+			ALERT(2 != node->length())
+
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("SHL", x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case AST_RSHT:
+			ALERT(2 != node->length())
+
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("SHR", x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+
+		case AST_BIT_OR:
+			ALERT(2 != node->length())
+
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("OR", x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case AST_BIT_AND:
+			ALERT(2 != node->length())
+
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("AND", x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case AST_BIT_XOR:
+			ALERT(2 != node->length())
+
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("XOR", x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+
 		case AST_ASSIGN:
 			ALERT(2 != node->length());
 

@@ -135,10 +135,22 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 		(*this) += new Instruction("dec", dst);
 	} else if (op == "SHL") {			/* (SHL,   DST, SRC) */
 		/* dst = dst << src */
-		(*this) += new Instruction("shl", dst, src);
+		if ("rcx" == dst) {
+			(*this) += new Instruction("xchg", dst, src);
+			(*this) += new Instruction("shl", src, "cl");
+			(*this) += new Instruction("xchg", dst, src);
+		} else {
+			(*this) += new Instruction("shl", dst, src);
+		}
 	} else if (op == "SHR") {			/* (SHR,   DST, SRC) */
 		/* dst = dst >> src */
-		(*this) += new Instruction("shr", dst, src);
+		if ("rcx" == dst) {
+			(*this) += new Instruction("xchg", dst, src);
+			(*this) += new Instruction("shr", src, "cl");
+			(*this) += new Instruction("xchg", dst, src);
+		} else {
+			(*this) += new Instruction("shr", dst, src);
+		}
 	} else if (op == "AND") {			/* (AND,   DST, SRC) */
 		/* dst = dst & src */
 		(*this) += new Instruction("and", dst, src);

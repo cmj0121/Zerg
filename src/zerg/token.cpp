@@ -25,9 +25,14 @@ static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 		DEF("or",	AST_LOG_OR,		11),
 
 		/* reserved words */
-		DEF("=",		AST_ASSIGN,		0),
-		DEF("print",	AST_PRINT,		0),
-		DEF("syscall",	AST_SYSCALL,	0),
+		DEF("=",		AST_ASSIGN,			0),
+		DEF("print",	AST_PRINT,			0),
+		DEF("syscall",	AST_SYSCALL,		0),
+		DEF("eq",		AST_EQUAL,			0),
+		DEF("ls",		AST_LESS,			0),
+		DEF("le",		AST_LESS_OR_EQUAL,	0),
+		DEF("ge",		AST_GRATE_OR_EQUAL,	0),
+		DEF("gr",		AST_GRATE,			0),
 	#undef DEF
 };
 
