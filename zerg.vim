@@ -34,13 +34,16 @@ syn match   ZERGNumber        "\<\d\+[e]-\=\d+\>"
 syn match   ZERGNumber        "\<0[oO]\=\o\+\>"
 syn match   ZERGNumber        "\<0[xX]\x\+\>"
 syn match   ZERGNumber        "\<0[bB][01]\+\>"
-hi def link ZERGNumber         Number
+syn match   ZERGFloat         "\<\d\+\.\=\%([eE][+-]\=\d\+\)\="
+hi def link ZERGNumber        Number
+hi def link ZERGFloat         Number
 
 " Reserved token - STRING
 syn region  ZERGString        start=+\z(['"]\)+ end="\z1" skip="\\\z1" contains=ZERGEscape,ZERGToDo
 syn match   ZERGEscape        +\\[abfnrtv'"\\]+ contained
-hi def link ZERGString         String
-hi def link ZERGEscape         Special
+syn match   ZERGEscape        +\\x\x\{2}+ contained
+hi def link ZERGString        String
+hi def link ZERGEscape        Special
 
 " Reserved words
 syn keyword ZERGConstant      none true false
