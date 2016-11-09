@@ -13,7 +13,7 @@ bool ZasmToken::isREG(void) {
 	const std::vector<std::string> regs = { REGISTERS };
 	int idx = std::find(regs.begin(), regs.end(), this->_src_) - regs.begin();
 
-	return idx != regs.size();
+	return idx != regs.size() || this->isSSE();
 }
 bool ZasmToken::isMEM(void) {
 	bool blRet = false;
@@ -95,10 +95,19 @@ bool ZasmToken::isREF(void) {
 	/* Check is reference or not */
 	return '&' == this->_src_[0];
 }
+bool ZasmToken::isSSE(void) {
+	/* Streaming SIMD Extensions Register */
+
+	return 0 == this->_src_.find("xmm");
+}
 
 off_t ZasmToken::asInt(void) {
 	if ('&' == this->_src_[0]) {
 		return (off_t)-1;
+	} else if (this->isSSE()) {
+		std::string off = this->_src_.substr(3);
+
+		return atoi(off.c_str());
 	} else if (this->isREG() || this->isMEM()) {
 		const std::vector<std::string> regs = { REGISTERS };
 		int idx = 0;

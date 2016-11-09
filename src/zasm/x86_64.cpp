@@ -16,6 +16,15 @@
 
 void Instruction::legacyPrefix(X86_64_INST &inst) {
 	/* NOTE - Legacy Prefix (0~4) */
+	if (0 != (inst.flags & INST_SINGLE_FP)) {
+		/* single float */
+		_payload_[_length_++] = 0xF3;
+	}
+	if (0 != (inst.flags & INST_DOUBLE_FP)) {
+		/* double float */
+		_payload_[_length_++] = 0xF2;
+	}
+
 	if (4 == this->dst().size() || 4 == this->src().size()) {
 		int REX_B = 0, REX_X = 0, REX_R = 0, REX_W = 0;
 
@@ -137,6 +146,12 @@ void Instruction::modRW(X86_64_INST &inst) {
 		reg = this->src().asInt();
 		rm  = this->dst().asInt();
 
+		/* HACK */
+		if ((this->dst().isSSE() && !this->src().isSSE()) ||
+			(this->src().isSSE() && !this->dst().isSSE())) {
+			mod = 0x0;
+		}
+
 		if (inst.flags & INST_REG_SWAP) {
 			reg ^= rm;
 			rm  ^= reg;
@@ -222,6 +237,7 @@ void Instruction::immediate(X86_64_INST &inst) {
 
 	if (this->src().isREF()) {
 		ret = this->setIMM(-1, size);
+		_D(ZASM_LOG_WARNING, "Immediate     - reference");
 	} else if (this->dst().isIMM() || this->src().isIMM()) {
 		ZasmToken token = this->dst().isIMM() ? this->dst() : this->src();
 
@@ -234,7 +250,7 @@ void Instruction::immediate(X86_64_INST &inst) {
 			if (this->dst().isIMM() && 1 == size) size = 4;
 		}
 		ret  = this->setIMM(token.asInt(), size);
+		_D(ZASM_LOG_WARNING, "Immediate     - %llX", ret);
 	}
-	if (ret) _D(ZASM_LOG_WARNING, "Immediate     - %llX", ret);
 }
 #endif /* __x86_64__ */

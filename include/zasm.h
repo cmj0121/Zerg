@@ -42,6 +42,7 @@ class ZasmToken {
 		bool isIMM(void);
 		bool isEXT(void);
 		bool isREF(void);
+		bool isSSE(void);	/* Streaming SIMD Extensions */
 
 		ZasmToken* asReg(void);
 		ZasmToken* indexReg(void);

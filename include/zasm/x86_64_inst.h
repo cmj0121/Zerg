@@ -24,6 +24,9 @@ enum _x86_64_inst_type_ {
 	INST_SIZE16		= 0x0020,
 	INST_SIZE32		= 0x0040,
 	INST_SIZE64		= 0x0080,
+	INST_SIZE128	= 0x0100,	/* XMM - 128-bit registers */
+	INST_SIZE256	= 0x0200,	/* YMM - 256-bit registers */
+	INST_SIZE512	= 0x0400,	/* ZMM - 512-bit registers */
 	INST_SIZE_ALL	= INST_SIZE8 | INST_SIZE16 | INST_SIZE32 | INST_SIZE64,
 
 	INST_SIZE16_32		= INST_SIZE16 | INST_SIZE32,
@@ -37,6 +40,7 @@ enum _x86_64_inst_type_ {
 
 	INST_MEM8			= INST_MEM | INST_SIZE8,
 	INST_MEM16			= INST_MEM | INST_SIZE16,
+	INST_MEM32			= INST_MEM | INST_SIZE32,
 	INST_MEM64			= INST_MEM | INST_SIZE64,
 	INST_MEM16_32		= INST_MEM | INST_SIZE16_32,
 	INST_MEM16_32_64	= INST_MEM | INST_SIZE16_32_64,
@@ -46,6 +50,9 @@ enum _x86_64_inst_type_ {
 	INST_REG64			= INST_REG | INST_SIZE64,
 	INST_REG16_32		= INST_REG | INST_SIZE16_32,
 	INST_REG16_32_64	= INST_REG | INST_SIZE16_32_64,
+	INST_XMM			= INST_REG | INST_SIZE128,
+	INST_YMM			= INST_REG | INST_SIZE256,
+	INST_ZMM			= INST_REG | INST_SIZE512,
 
 	INST_REG_MEM16_32_64	= INST_REG16_32_64 | INST_MEM16_32_64,
 
@@ -56,6 +63,8 @@ enum _x86_64_inst_type_ {
 
 	INST_OPCODE_MULTI	= 0x10000,
 	INST_REG_SWAP		= 0x20000,
+	INST_SINGLE_FP		= 0x40000,
+	INST_DOUBLE_FP		= 0x80000,
 
 #ifdef __x86_64__		/* Special src */
 	INST_REG_RAX		= 0x100000,
@@ -69,11 +78,11 @@ enum _x86_64_inst_type_ {
 };
 
 static X86_64_INST InstructionSets[] = {
-	#define INST_ASM_OP(cmd, op, x, y, flag) { #cmd, op, x, y, flag },
-	#define INST_ASM_OP_TWOBYTE(cmd, op, x, y, flag) { #cmd, op, x, y, flag | INST_TWO_BYTE},
-	#define INST_ASM_OP0(cmd, op) 			INST_ASM_OP( cmd, op, INST_NONE, INST_NONE, INST_NONE)
-	#define INST_ASM_OP1(cmd, op, x)		INST_ASM_OP( cmd, op, x,         INST_NONE, INST_NONE)
-	#define INST_ASM_OP2(cmd, op, x, y)		INST_ASM_OP( cmd, op, x,         y,		    INST_NONE)
+	#define INST_ASM_OP(cmd, op, x, y, flag) 			{ #cmd, op, x, y, flag },
+	#define INST_ASM_OP_TWOBYTE(cmd, op, x, y, flag)	INST_ASM_OP( cmd, op, x, y, flag | INST_TWO_BYTE)
+	#define INST_ASM_OP0(cmd, op) 						INST_ASM_OP( cmd, op, INST_NONE, INST_NONE, INST_NONE)
+	#define INST_ASM_OP1(cmd, op, x)					INST_ASM_OP( cmd, op, x,         INST_NONE, INST_NONE)
+	#define INST_ASM_OP2(cmd, op, x, y)					INST_ASM_OP( cmd, op, x,         y,		    INST_NONE)
 
 	#  include "x86_64_opcodes.h"
 	#undef INST_ASM_OP
