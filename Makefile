@@ -27,3 +27,8 @@ install: $(SUBDIR)
 	install -m644 $(VIMRC) ~/.vim/syntax/
 
 grammar: $(SUBDIR)
+
+.PHONY: CI
+
+CI:
+	install -m755 CI/* .git/hooks/
