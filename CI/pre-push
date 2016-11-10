@@ -1,0 +1,10 @@
+#! /bin/sh
+
+# Allow Non-ASCII file name
+allownonascii="true"
+# Redirect output to stderr.
+exec 1>&2
+
+
+make clean && make -j
+make -C examples/ clean && make -C examples
