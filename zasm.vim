@@ -29,10 +29,12 @@ syn match   ZASMNumber        "\<0[oO]\=\o\+[Ll]\=\>"
 syn match   ZASMNumber        "\<0[xX]\x\+[Ll]\=\>"
 syn match   ZASMNumber        "\<0[bB][01]\+[Ll]\=\>"
 syn match   ZASMNumber        "\<\%([1-9]\d*\|0\)[Ll]\=\>"
+syn match   ZASMFloat         "\<\d\+\.\=\%([eE][+-]\=\d\+\)\="
 syn match   ZASMOperator      "\w\+" contains=ZASMReserved,ZASMComment,ZASMNumber,ZASMString
 syn match   ZASMIdentifier    "&\w\+"
 syn region  ZASMString        start=+\z(['"]\)+ end="\z1" skip="\\\z1" contains=ZASMEscape
 syn match   ZASMEscape        +\\[abfnrtv'"\\]+ contained
+syn match   ZASMEscape        +\\x\x\{2}+ contained
 syn keyword ZASMStructure     byte word dword qword
 
 
@@ -43,6 +45,7 @@ hi def link ZASMToDo            Todo
 hi def link ZASMReserved        Statement
 hi def link ZASMLabel           Function
 hi def link ZASMNumber          Number
+hi def link ZASMFloat           Number
 hi def link ZASMOperator        Function
 hi def link ZASMIdentifier      Type
 hi def link ZASMString          String

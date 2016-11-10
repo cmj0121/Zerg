@@ -13,7 +13,7 @@ bool ZasmToken::isREG(void) {
 	const std::vector<std::string> regs = { REGISTERS };
 	int idx = std::find(regs.begin(), regs.end(), this->_src_) - regs.begin();
 
-	return idx != regs.size();
+	return idx != regs.size() || this->isSSE();
 }
 bool ZasmToken::isMEM(void) {
 	bool blRet = false;
@@ -95,10 +95,19 @@ bool ZasmToken::isREF(void) {
 	/* Check is reference or not */
 	return '&' == this->_src_[0];
 }
+bool ZasmToken::isSSE(void) {
+	/* Streaming SIMD Extensions Register */
+
+	return 0 == this->_src_.find("xmm");
+}
 
 off_t ZasmToken::asInt(void) {
 	if ('&' == this->_src_[0]) {
 		return (off_t)-1;
+	} else if (this->isSSE()) {
+		std::string off = this->_src_.substr(3);
+
+		return atoi(off.c_str());
 	} else if (this->isREG() || this->isMEM()) {
 		const std::vector<std::string> regs = { REGISTERS };
 		int idx = 0;
@@ -286,24 +295,69 @@ std::string ZasmToken::raw(void) {
 }
 std::string ZasmToken::unescape(void) {
 	std::string dst = "";
+	char tmp = 0x0;
 
+	ALERT('"' != this->_src_[0] || '"' != this->_src_[this->_src_.size()-1]);
 	for (int i = 1; i < this->_src_.size()-1; ++i) {
-		if ('\\' != this->_src_[i]) {
-			dst += this->_src_[i];
-		} else {
+		if ('\\' == this->_src_[i]) {
 			switch (this->_src_[++i]) {
 				case 'a':
 					dst += '\a';
 					break;
+				case 'b':
+					dst += '\b';
+					break;
+				case 't':
+					dst += '\t';
+					break;
 				case 'n':
 					dst += '\n';
+					break;
+				case 'v':
+					dst += '\v';
+					break;
+				case 'f':
+					dst += '\f';
+					break;
+				case 'r':
+					dst += '\r';
+					break;
+				case 'x':
+					ALERT(i+2 >= this->_src_.size());
+
+					tmp = 0x0;
+					for (int j = i+1; j < i+3; ++j) {
+						if ('0' <= this->_src_[j] && '9' >= this->_src_[j]) {
+							/* digit */
+							tmp = (tmp << 4) + this->_src_[j] - '0';
+						} else if ('a' <= this->_src_[j] && 'f' >= this->_src_[j]) {
+							/* lower case */
+							tmp = (tmp << 4) + this->_src_[j] - 'a' + 0x0A;
+						} else if ('A' <= this->_src_[j] && 'F' >= this->_src_[j]) {
+							/* upper case */
+							tmp = (tmp << 4) + this->_src_[j] - 'A' + 0x0A;
+						} else {
+							_D(LOG_CRIT, "Not support %c in HEX", this->_src_[j]);
+						}
+					}
+
+					dst += tmp;
+					i += 2;
+					break;
+				case '\\':
+					dst += '\\';
 					break;
 				default:
 					dst += '\\' + this->_src_[i];
 					break;
 			}
+			continue;
 		}
+
+		dst += this->_src_[i];
 	}
+
+	_D(ZASM_LOG_DEBUG, "escape `%s` -> `%s`", this->_src_.c_str(), dst.c_str());
 	return dst;
 };
 bool ZasmToken::match(unsigned int flag) {
