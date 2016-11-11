@@ -8,7 +8,7 @@ BIN=zasm zerg
 
 .PHONY: all clean install $(SUBDIR) examples
 
-all: $(BIN) examples
+all: $(BIN) examples CI
 
 $(BIN): $(SUBDIR)
 	ln -sf src/$@.inst $@
