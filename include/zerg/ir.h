@@ -41,7 +41,7 @@ class IR : public Binary {
 		~IR(void);
 
 		void emit(IRToken token);
-		void emit(std::string op, std::string dst="", std::string src="", std::string extra="");
+		void emit(std::string op, std::string &dst, std::string &src, std::string &extra);
 
 		virtual std::string regalloc(std::string src) = 0;
 	protected:

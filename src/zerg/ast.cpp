@@ -19,12 +19,10 @@ AST* AST::insert(AST *node) {
 
 	_D(LOG_INFO, "AST insert %s", node->data().c_str());
 	switch(node->type()) {
-		case AST_ADD:
-		case AST_SUB:
-		case AST_MUL:
-		case AST_DIV:
-		case AST_MOD:
-		case AST_LIKE:
+		case AST_ADD:    case AST_SUB:     case AST_LIKE:
+		case AST_MUL:    case AST_DIV:     case AST_MOD:
+		case AST_LSHT:   case AST_RSHT:
+		case AST_BIT_OR: case AST_BIT_AND: case AST_BIT_XOR:
 			if (0 != cur->weight() && cur->weight() < node->weight()) {
 				while (NULL != cur->parent() && 0 != cur->parent()->weight()) {
 					if (cur->parent()->weight() <= node->weight()) {

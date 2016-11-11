@@ -31,6 +31,8 @@ class Zerg : public IR {
 		std::map<std::string, CFG *>_root_;
 
 		std::vector<std::pair<std::string, std::string>> _symb_;
+		std::vector<std::string> _alloc_regs_ = { USED_REGISTERS };
+		std::map<std::string, std::string> _alloc_regs_map_;
 };
 
 #endif /* __ZERG_H__ */

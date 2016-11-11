@@ -29,9 +29,11 @@ IR::~IR(void) {
 
 void IR::emit(IRToken token) {
 	/* wrapper for the emmitter using IR token */
-	return this->emit(token.op(), token.dst(), token.src(), token.extra());
+	std::string dst = token.dst(), src = token.src(), extra = token.extra();
+
+	return this->emit(token.op(), dst, src, extra);
 }
-void IR::emit(std::string op, std::string dst, std::string src, std::string extra) {
+void IR::emit(std::string op, std::string &dst, std::string &src, std::string &extra) {
 	static std::vector<std::string> stack;
 
 	dst   = this->regalloc(dst);
@@ -84,7 +86,7 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 				stack.push_back(dst);
 			}
 			snprintf(buff, sizeof(buff), "[rbp-0X%X]", pos * 0x08);
-			(*this) += new Instruction("mov", src, buff);
+			(*this) += new Instruction("mov", buff, src);
 		} else if (__IR_GLOBAL_VAR__ == extra) {
 			/* save global variable */
 			_D(LOG_CRIT, "Not Implemented");
@@ -135,10 +137,28 @@ void IR::emit(std::string op, std::string dst, std::string src, std::string extr
 		(*this) += new Instruction("dec", dst);
 	} else if (op == "SHL") {			/* (SHL,   DST, SRC) */
 		/* dst = dst << src */
-		(*this) += new Instruction("shl", dst, src);
+		if ("rcx" == dst) {
+			(*this) += new Instruction("xchg", dst, src);
+			(*this) += new Instruction("sal", src, "cl");
+			(*this) += new Instruction("xchg", dst, src);
+		} else {
+			(*this) += new Instruction("push", "rcx");
+			(*this) += new Instruction("mov", "rcx", src);
+			(*this) += new Instruction("sal", dst, "cl");
+			(*this) += new Instruction("pop", "rcx");
+		}
 	} else if (op == "SHR") {			/* (SHR,   DST, SRC) */
 		/* dst = dst >> src */
-		(*this) += new Instruction("shr", dst, src);
+		if ("rcx" == dst) {
+			(*this) += new Instruction("xchg", dst, src);
+			(*this) += new Instruction("sar", src, "cl");
+			(*this) += new Instruction("xchg", dst, src);
+		} else {
+			(*this) += new Instruction("push", "rcx");
+			(*this) += new Instruction("mov", "rcx", src);
+			(*this) += new Instruction("sar", dst, "cl");
+			(*this) += new Instruction("pop", "rcx");
+		}
 	} else if (op == "AND") {			/* (AND,   DST, SRC) */
 		/* dst = dst & src */
 		(*this) += new Instruction("and", dst, src);

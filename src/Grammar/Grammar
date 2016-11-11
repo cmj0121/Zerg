@@ -11,14 +11,17 @@ assign : [ WORD '=' ] test
 print  : 'print' test
 test   : or_test
 
-or_test   : and_test ( 'or'  and_test )*
-and_test  : xor_test ( 'and' xor_test )*
-xor_test  : not_test ( 'xor' not_test )*
+or_test   : xor_test ( 'or'  xor_test )*
+xor_test  : and_test ( 'xor' and_test )*
+and_test  : not_test ( 'and' not_test )*
 not_test  : [ 'not' ] bit_or 
 
-bit_or   : bit_and ( '|' bit_and )*
-bit_and  : bit_xor ( '&' bit_xor )*
-bit_xor  : shift   ( '^' shift   )*
+bit_or   : bit_xor ( '|' bit_xor )*
+bit_xor  : bit_and ( '^' bit_and )*
+bit_and  : eq_test ( '&' eq_test )*
+
+eq_test  : cmp_test ( ( 'eq' | 'not' 'eq' ) cmp_test )*
+cmp_test : shift    ( ( 'ls' | 'le' | 'ge' | 'gr') shift )*
 
 shift : arith ( ( '<<' | '>>' ) arith )*
 arith : pow   ( ( '+' | '-' )   pow   )*
