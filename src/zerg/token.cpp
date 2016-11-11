@@ -15,9 +15,9 @@ static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 		DEF("<<",	AST_LSHT,		4),
 		DEF(">>",	AST_RSHT,		4),
 
-		DEF("|",	AST_BIT_OR,		5),
-		DEF("&",	AST_BIT_AND,	6),
-		DEF("^",	AST_BIT_XOR,	7),
+		DEF("&",	AST_BIT_AND,	5),
+		DEF("^",	AST_BIT_XOR,	6),
+		DEF("|",	AST_BIT_OR,		7),
 
 		DEF("not",	AST_LOG_NOT,	8),
 		DEF("xor",	AST_LOG_XOR,	9),
