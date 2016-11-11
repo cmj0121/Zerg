@@ -46,10 +46,6 @@ void Zerg::compileCFG(CFG *node) {
 	char cntvar[64] = {0};
 	CFG *tmp = NULL;
 
-	#ifdef DEBUG
-	std::cout << *node << std::endl;
-	#endif
-
 	/*
 	 *         +---+
 	 *         |   |           CONDITION NODE          test expression
@@ -70,6 +66,10 @@ void Zerg::compileCFG(CFG *node) {
 		_D(LOG_DEBUG, "already processed");
 		return ;
 	}
+
+	#ifdef DEBUG
+	std::cout << *node << std::endl;
+	#endif
 
 	/* PROLOGUE */
 	for (size_t i = 0; i < ((AST *)node)->length(); ++i) {
@@ -237,21 +237,21 @@ void Zerg::emitIR(AST *node) {
 			break;
 
 		case AST_MUL:
-			ALERT(2 > node->length())
+			ALERT(2 != node->length())
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("MUL", x->data(), y->data());
 			node->setReg(x->getReg());
 			break;
 		case AST_DIV:
-			ALERT(2 > node->length())
+			ALERT(2 != node->length())
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("DIV", x->data(), y->data());
 			node->setReg(x->getReg());
 			break;
 		case AST_MOD:
-			ALERT(2 > node->length())
+			ALERT(2 != node->length())
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("REM", x->data(), y->data());
@@ -407,23 +407,39 @@ void Zerg::emit(std::string op, std::string dst, std::string src, std::string ex
 		}
 		std::cout << std::endl;
 	} else {
+		std::vector<std::string> regs = { USED_REGISTERS };
+
 		/* call the IR emitter */
 		IR::emit(op, dst, src, extra);
+
+		if (regs.end() != std::find(regs.begin(), regs.end(), src)) {
+			_D(LOG_INFO, "restore register %s", src.c_str());
+			this->_alloc_regs_.push_back(src);
+		} else if (regs.end() != std::find(regs.begin(), regs.end(), extra)) {
+			_D(LOG_INFO, "restore register %s", extra.c_str());
+			this->_alloc_regs_.push_back(extra);
+		}
 	}
 }
 
 /* register allocation algo. */
 std::string Zerg::regalloc(std::string src) {
 	int cnt = 0;
-	std::vector<std::string> regs = { USED_REGISTERS };
+	std::string tmp;
 
-	/* FIXME - the algo. is not correct! */
-	/* FIXME - need more robust */
 	if (1 ==  sscanf(src.c_str(), __IR_REG_FMT__, &cnt)) {
-		_D(LOG_DEBUG, "re-allocate register - `%s`", src.c_str());
+		if (0 != _alloc_regs_map_.count(src)) {
+			/* HACK - Found in cache */
+			tmp = _alloc_regs_map_[src];
+		} else {
+			ALERT(0 == _alloc_regs_.size());
+			tmp = _alloc_regs_[0];
+			_alloc_regs_.erase(_alloc_regs_.begin());
+		}
 
-		cnt = cnt % regs.size() + (cnt >= regs.size() ? 1 : 0);
-		return regs[cnt-1];
+		_D(LOG_INFO, "re-allocate register - %s -> %s", src.c_str(), tmp.c_str());
+		_alloc_regs_map_[src] = tmp;
+		return tmp;
 	}
 
 	return src;
