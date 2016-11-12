@@ -56,6 +56,9 @@ typedef enum _ASTType_ {
 	AST_PRINT,
 } ASTType;
 
+#define IS_OPERATOR(type)	(AST_OPERATORS < type && AST_RESERVED > type)
+#define IS_ATOM(node)		(AST_NUMBER == (node)->type() || AST_IDENTIFIER == (node)->type())
+
 /* token used in Zerg for lexer analysis */
 class ZergToken : public std::string {
 	public:

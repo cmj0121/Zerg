@@ -111,7 +111,7 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 			(*this) += new Instruction("mov", "rax", dst);
 		}
 		(*this) += new Instruction("xor", "rdx", "rdx");
-		(*this) += new Instruction("div", src);
+		(*this) += new Instruction("idiv", src);
 		(*this) += new Instruction("mov", dst, "rax");
 
 		(*this) += new Instruction("pop", "rax");
@@ -124,7 +124,7 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 		if (dst != "rax")
 			(*this) += new Instruction("mov", "rax", dst);
 		(*this) += new Instruction("xor", "rdx", "rdx");
-		(*this) += new Instruction("div", src);
+		(*this) += new Instruction("idiv", src);
 		(*this) += new Instruction("mov", dst, "rdx");
 
 		(*this) += new Instruction("pop", "rax");

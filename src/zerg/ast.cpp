@@ -5,6 +5,7 @@ AST::AST(ZergToken src) : Tree<AST>(src), _emitted_(false), _raw_(src) {
 	this->_label_ = 0;
 	this->_reg_   = 0;
 	this->_type_  = src.type();
+	this->_weight_ = this->_raw_.weight();
 }
 
 AST* AST::insert(ZergToken src) {
@@ -20,6 +21,11 @@ AST* AST::insert(AST *node) {
 	_D(LOG_INFO, "AST insert %s", node->data().c_str());
 	switch(node->type()) {
 		case AST_ADD:    case AST_SUB:     case AST_LIKE:
+			if (!IS_ATOM(cur)) {
+				/* Set the operator is the SIGN (w:1) */
+				_D(LOG_DEBUG, "%s is treated as sign", node->data().c_str());
+				node->weight(1);
+			}
 		case AST_MUL:    case AST_DIV:     case AST_MOD:
 		case AST_LSHT:   case AST_RSHT:
 		case AST_BIT_OR: case AST_BIT_AND: case AST_BIT_XOR:
@@ -32,6 +38,7 @@ AST* AST::insert(AST *node) {
 					break;
 				}
 
+				_D(LOG_DEBUG, "insert operator on %s", cur->data().c_str());
 				cur->replace(node);
 				node->insert(cur);
 				break;
@@ -68,7 +75,11 @@ int AST::getReg(void) {
 }
 int AST::weight(void) {
 	/* reply the weight of the node in AST */
-	return this->_raw_.weight();
+	return this->_weight_;
+}
+void AST::weight(int src) {
+	/* reset the weight of the node in AST */
+	this->_weight_ = src;
 }
 ASTType AST::type(void) {
 	/* category of the node in AST */

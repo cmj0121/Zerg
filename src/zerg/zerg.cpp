@@ -189,6 +189,9 @@ void Zerg::emitIR(AST *node) {
 			switch(node->length()) {
 				case 1:
 					/* NOP */
+					x = node->child(0);
+					node->setReg(x->getReg());
+					break;
 					break;
 				case 2:
 					x = node->child(0);
