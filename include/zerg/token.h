@@ -25,7 +25,7 @@ typedef enum _ASTType_ {
 	AST_COMMA,
 	AST_ASSIGN,
 
-	AST_ADD,
+	AST_ADD					= 0x30,
 	AST_SUB,
 	AST_MUL,
 	AST_DIV,
@@ -34,13 +34,13 @@ typedef enum _ASTType_ {
 	AST_LSHT,
 	AST_RSHT,
 
-	AST_EQUAL,
+	AST_EQUAL				= 0x40,
 	AST_LESS,
 	AST_LESS_OR_EQUAL,
 	AST_GRATE_OR_EQUAL,
 	AST_GRATE,
 
-	AST_BIT_OR,
+	AST_BIT_OR				= 0x50,
 	AST_BIT_AND,
 	AST_BIT_XOR,
 	AST_LOG_OR,

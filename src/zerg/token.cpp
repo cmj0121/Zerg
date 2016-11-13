@@ -4,35 +4,36 @@
 
 static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 	#define DEF(key, value, weight)	{key, {value, weight}}
-		DEF("*",	AST_MUL,		2),
-		DEF("/",	AST_DIV,		2),
-		DEF("%",	AST_MOD,		2),
-		DEF("~",	AST_LIKE,		2),
+		DEF("*",	AST_MUL,			2),
+		DEF("/",	AST_DIV,			2),
+		DEF("%",	AST_MOD,			2),
+		DEF("~",	AST_LIKE,			2),
 
-		DEF("+",	AST_ADD,		3),
-		DEF("-",	AST_SUB,		3),
+		DEF("+",	AST_ADD,			3),
+		DEF("-",	AST_SUB,			3),
 
-		DEF("<<",	AST_LSHT,		4),
-		DEF(">>",	AST_RSHT,		4),
+		DEF("<<",	AST_LSHT,			4),
+		DEF(">>",	AST_RSHT,			4),
 
-		DEF("&",	AST_BIT_AND,	5),
-		DEF("^",	AST_BIT_XOR,	6),
-		DEF("|",	AST_BIT_OR,		7),
+		DEF("<",	AST_LESS,			5),
+		DEF("<=",	AST_LESS_OR_EQUAL,	5),
+		DEF(">",	AST_GRATE_OR_EQUAL,	5),
+		DEF(">=",	AST_GRATE,			5),
+		DEF("eq",	AST_EQUAL,			6),
 
-		DEF("not",	AST_LOG_NOT,	8),
-		DEF("xor",	AST_LOG_XOR,	9),
-		DEF("and",	AST_LOG_AND,	10),
-		DEF("or",	AST_LOG_OR,		11),
+		DEF("&",	AST_BIT_AND,		7),
+		DEF("^",	AST_BIT_XOR,		8),
+		DEF("|",	AST_BIT_OR,			9),
+
+		DEF("not",	AST_LOG_NOT,		10),
+		DEF("xor",	AST_LOG_XOR,		11),
+		DEF("and",	AST_LOG_AND,		12),
+		DEF("or",	AST_LOG_OR,			13),
 
 		/* reserved words */
 		DEF("=",		AST_ASSIGN,			0),
 		DEF("print",	AST_PRINT,			0),
 		DEF("syscall",	AST_SYSCALL,		0),
-		DEF("eq",		AST_EQUAL,			0),
-		DEF("ls",		AST_LESS,			0),
-		DEF("le",		AST_LESS_OR_EQUAL,	0),
-		DEF("ge",		AST_GRATE_OR_EQUAL,	0),
-		DEF("gr",		AST_GRATE,			0),
 	#undef DEF
 };
 

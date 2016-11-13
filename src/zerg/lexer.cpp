@@ -67,7 +67,7 @@ void Zerg::lexer(std::string src) {
 				case '+': case '-':	case '>': case '<':	/* OPERATOR */
 				case '*': case '/': case '%': case '~':
 					for (pos = cur; pos <= line.size(); ++pos) {
-						if ('+' == line[pos] || '-' == line[pos]) {
+						if ('+' == line[pos] || '-' == line[pos] || '=' == line[pos]) {
 							continue;
 						} else if ('<' == line[pos] || '>' == line[pos]) {
 							continue;

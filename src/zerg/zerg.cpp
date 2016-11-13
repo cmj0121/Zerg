@@ -34,6 +34,8 @@ void Zerg::compile(std::string src, bool only_ir) {
 	}
 
 	_D(LOG_INFO, "dump all symbols");
+	this->_symb_.push_back(std::make_pair("TRUE",  "True\\n"));
+	this->_symb_.push_back(std::make_pair("FALSE", "False\\n"));
 	if (0 != this->_symb_.size()) {
 		this->emit("# Dump all symbols");
 		for (auto it : this->_symb_) {
@@ -278,20 +280,61 @@ void Zerg::emitIR(AST *node) {
 			node->setReg(x->getReg());
 			break;
 
-		case AST_BIT_OR:
+		case AST_LESS:
 			ALERT(2 != node->length())
 
 			x = node->child(0);
 			y = node->child(1);
-			this->emit("OR", x->data(), y->data());
+			this->emit("LS", x->data(), y->data());
 			node->setReg(x->getReg());
 			break;
+		case AST_LESS_OR_EQUAL:
+			ALERT(2 != node->length())
+
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("LE", x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case AST_GRATE:
+			ALERT(2 != node->length())
+
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("GT", x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case AST_GRATE_OR_EQUAL:
+			ALERT(2 != node->length())
+
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("GE", x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case AST_EQUAL:
+			ALERT(2 != node->length())
+
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("EQ", x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+
 		case AST_BIT_AND:
 			ALERT(2 != node->length())
 
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("AND", x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case AST_BIT_OR:
+			ALERT(2 != node->length())
+
+			x = node->child(0);
+			y = node->child(1);
+			this->emit("OR", x->data(), y->data());
 			node->setReg(x->getReg());
 			break;
 		case AST_BIT_XOR:
@@ -316,54 +359,77 @@ void Zerg::emitIR(AST *node) {
 
 			ALERT(0 == node->length());
 			x= node->child(0);
-			this->emit("ASM", "mov", "rax", x->data());
 
-			this->emit("ASM", "asm", "__INT_TO_STR__:");
-			this->emit("ASM", "mov", "rsi", "rsp");
-			this->emit("ASM", "mov", "rdi", "rsi");
-			this->emit("ASM", "mov", "rcx", "0x0A");	/* DIVISOR */
+			switch(x->type()) {
+				case AST_LESS:   case AST_LESS_OR_EQUAL:
+				case AST_GRATE:  case AST_GRATE_OR_EQUAL:
+				case AST_EQUAL:
+					this->emit("ASM", "cmp", x->data(), "0x0");
+					this->emit("ASM", "jz", "&__SHOW_FALSE__");
+					this->emit("ASM", "lea", "rsi", "&TRUE");
+					this->emit("ASM", "mov", "rdx", "0x06");
+					this->emit("ASM", "jmp", "&__SHOW_TRUE__");
+					this->emit("ASM", "asm", "__SHOW_FALSE__:");
+					this->emit("ASM", "lea", "rsi", "&FALSE");
+					this->emit("ASM", "mov", "rdx", "0x07");
+					this->emit("ASM", "asm", "__SHOW_TRUE__:");
 
-			this->emit("ASM", "cmp", "rax", "0x0");
-			this->emit("ASM", "jge", "&__INT_TO_STR_INNER_LOOP__");
-			this->emit("ASM", "neg", "rax");
-			this->emit("ASM", "mov", "[rsi]", "0x2D");
-			this->emit("ASM", "inc", "rsi");
-			this->emit("ASM", "inc", "rdi");
+					this->emit("ASM", "mov", "rax", "0x2000004");
+					this->emit("ASM", "mov", "rdi", "0x01");
+					this->emit("INTERRUPT");
+					break;
+				default:
+					this->emit("ASM", "mov", "rax", x->data());
 
-			this->emit("ASM", "asm", "__INT_TO_STR_INNER_LOOP__:");
-			this->emit("ASM", "xor", "rdx", "rdx");
-			this->emit("ASM", "div", "rcx");
-			this->emit("ASM", "add", "rdx", "0x30");
-			this->emit("ASM", "mov", "[rdi]", "rdx");
-			this->emit("ASM", "inc", "rdi");
-			this->emit("ASM", "cmp", "rax", "0x0");
-			this->emit("ASM", "jne", "&__INT_TO_STR_INNER_LOOP__");
+					this->emit("ASM", "asm", "__INT_TO_STR__:");
+					this->emit("ASM", "mov", "rsi", "rsp");
+					this->emit("ASM", "mov", "rdi", "rsi");
+					this->emit("ASM", "mov", "rcx", "0x0A");	/* DIVISOR */
 
-			/* FIXME - hardcode for the build-in function: reserved() */
-			this->emit("ASM", "asm", "__RESERVED__:");
-			this->emit("ASM", "mov", "[rdi]", "0x0A");
+					this->emit("ASM", "cmp", "rax", "0x0");
+					this->emit("ASM", "jge", "&__INT_TO_STR_INNER_LOOP__");
+					this->emit("ASM", "neg", "rax");
+					this->emit("ASM", "mov", "[rsi]", "0x2D");
+					this->emit("ASM", "inc", "rsi");
+					this->emit("ASM", "inc", "rdi");
 
-			this->emit("ASM", "mov", "rdx", "rdi");
-			this->emit("ASM", "sub", "rdx", "rsp");
-			this->emit("ASM", "inc", "rdx");
-			this->emit("ASM", "mov", "rax", "rdi");
-			this->emit("ASM", "mov", "rbx", "rsi");
-			this->emit("ASM", "dec", "rax");
-			this->emit("ASM", "asm", "__RESERVED_INNER_LOOP__:");
-			this->emit("ASM", "mov", "cl", "[rax]");
-			this->emit("ASM", "mov", "ch", "[rbx]");
-			this->emit("ASM", "mov", "[rax]", "ch");
-			this->emit("ASM", "mov", "[rbx]", "cl");
-			this->emit("ASM", "dec", "rax");
-			this->emit("ASM", "inc", "rbx");
-			this->emit("ASM", "cmp", "rax", "rbx");
-			this->emit("ASM", "jge", "&__RESERVED_INNER_LOOP__");
+					this->emit("ASM", "asm", "__INT_TO_STR_INNER_LOOP__:");
+					this->emit("ASM", "xor", "rdx", "rdx");
+					this->emit("ASM", "div", "rcx");
+					this->emit("ASM", "add", "rdx", "0x30");
+					this->emit("ASM", "mov", "[rdi]", "rdx");
+					this->emit("ASM", "inc", "rdi");
+					this->emit("ASM", "cmp", "rax", "0x0");
+					this->emit("ASM", "jne", "&__INT_TO_STR_INNER_LOOP__");
+
+					/* FIXME - hardcode for the build-in function: reserved() */
+					this->emit("ASM", "asm", "__RESERVED__:");
+					this->emit("ASM", "mov", "[rdi]", "0x0A");
+
+					this->emit("ASM", "mov", "rdx", "rdi");
+					this->emit("ASM", "sub", "rdx", "rsp");
+					this->emit("ASM", "inc", "rdx");
+					this->emit("ASM", "mov", "rax", "rdi");
+					this->emit("ASM", "mov", "rbx", "rsi");
+					this->emit("ASM", "dec", "rax");
+					this->emit("ASM", "asm", "__RESERVED_INNER_LOOP__:");
+					this->emit("ASM", "mov", "cl", "[rax]");
+					this->emit("ASM", "mov", "ch", "[rbx]");
+					this->emit("ASM", "mov", "[rax]", "ch");
+					this->emit("ASM", "mov", "[rbx]", "cl");
+					this->emit("ASM", "dec", "rax");
+					this->emit("ASM", "inc", "rbx");
+					this->emit("ASM", "cmp", "rax", "rbx");
+					this->emit("ASM", "jge", "&__RESERVED_INNER_LOOP__");
+
+					this->emit("ASM", "mov", "rax", "0x2000004");
+					this->emit("ASM", "mov", "rdi", "0x01");
+					this->emit("ASM", "mov", "rsi", "rsp");
+					this->emit("INTERRUPT");
+					break;
+			}
 
 			/* FIXME - `print` INTERRUPT */
-			this->emit("ASM", "mov", "rax", "0x2000004");
-			this->emit("ASM", "mov", "rdi", "0x01");
-			this->emit("ASM", "mov", "rsi", "rsp");
-			this->emit("INTERRUPT");
 			break;
 		case AST_FUNCCALL:
 			switch (node->length()) {

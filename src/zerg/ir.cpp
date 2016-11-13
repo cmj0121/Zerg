@@ -180,30 +180,69 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 
 		(*this) += new Instruction("xor", dst, tmp);
 		(*this) += new Instruction("sub", dst, tmp);
-	} else if (op == "CMP") {			/* (CMP,   VAR, VAR) */
-		/* raw compare */
+	} else if (op == "EQ")  {			/* (EQ,    DST, SRC) */
+		/* dst = dst eq src */
+		std::string tmp;
+		std::vector<std::string> regs = { REGISTERS };
+		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+
+		ALERT(pos == regs.size());
+		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
+
 		(*this) += new Instruction("cmp", dst, src);
+		(*this) += new Instruction("setz", tmp);
+		(*this) += new Instruction("and",  tmp, "0x1");
+	} else if (op == "LS")  {			/* (EQ,    DST, SRC) */
+		/* dst = dst < src */
+		std::string tmp;
+		std::vector<std::string> regs = { REGISTERS };
+		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+
+		ALERT(pos == regs.size());
+		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
+
+		(*this) += new Instruction("cmp", dst, src);
+		(*this) += new Instruction("setl", tmp);
+		(*this) += new Instruction("and",  tmp, "0x1");
+	} else if (op == "LE")  {			/* (EQ,    DST, SRC) */
+		/* dst = dst <= src */
+		std::string tmp;
+		std::vector<std::string> regs = { REGISTERS };
+		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+
+		ALERT(pos == regs.size());
+		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
+
+		(*this) += new Instruction("cmp", dst, src);
+		(*this) += new Instruction("setle", tmp);
+		(*this) += new Instruction("and",   tmp, "0x1");
+	} else if (op == "GE")  {			/* (EQ,    DST, SRC) */
+		/* dst = dst >= src */
+		std::string tmp;
+		std::vector<std::string> regs = { REGISTERS };
+		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+
+		ALERT(pos == regs.size());
+		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
+
+		(*this) += new Instruction("cmp", dst, src);
+		(*this) += new Instruction("setge", tmp);
+		(*this) += new Instruction("and",   tmp, "0x1");
+	} else if (op == "GT")  {			/* (EQ,    DST, SRC) */
+		/* dst = dst > src */
+		std::string tmp;
+		std::vector<std::string> regs = { REGISTERS };
+		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+
+		ALERT(pos == regs.size());
+		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
+
+		(*this) += new Instruction("cmp", dst, src);
+		(*this) += new Instruction("setg", tmp);
+		(*this) += new Instruction("and",  tmp, "0x1");
 	} else if (op == "JMP") {			/* (JMP,   DST) */
 		/* directly jump */
 		(*this) += new Instruction("jmp", dst);
-	} else if (op == "JEQ") {			/* (JEQ,   DST) */
-		/* directly jump */
-		(*this) += new Instruction("je", dst);
-	} else if (op == "JNEQ") {			/* (JNEQ,  DST) */
-		/* directly jump */
-		(*this) += new Instruction("jne", dst);
-	} else if (op == "JLS") {			/* (JLS,   DST) */
-		/* directly jump */
-		(*this) += new Instruction("jl", dst);
-	} else if (op == "JLSE") {			/* (JLSE,  DST) */
-		/* directly jump */
-		(*this) += new Instruction("jle", dst);
-	} else if (op == "JGT") {			/* (JGT,   DST) */
-		/* directly jump */
-		(*this) += new Instruction("jg", dst);
-	} else if (op == "JGTE") {			/* (JGTE,  DST) */
-		/* jump if greater or equal */
-		(*this) += new Instruction("jge", dst);
 	} else if (op == "CALL") {			/* (CALL,  DST) */
 		/* call produce */
 		(*this) += new Instruction("call", dst);

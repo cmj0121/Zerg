@@ -17,6 +17,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			break;
 
 		case AST_ADD:    case AST_SUB:     case AST_LIKE:
+		case AST_LOG_NOT:
 			switch(prev.type()) {
 				case AST_NEWLINE:
 				case AST_PRINT:
@@ -40,6 +41,10 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_MUL:    case AST_DIV:     case AST_MOD:
 		case AST_LSHT:   case AST_RSHT:
 		case AST_BIT_OR: case AST_BIT_AND: case AST_BIT_XOR:
+		case AST_LESS:   case AST_LESS_OR_EQUAL:
+		case AST_GRATE:  case AST_GRATE_OR_EQUAL:
+		case AST_EQUAL:
+		case AST_LOG_OR: case AST_LOG_AND: case AST_LOG_XOR:
 			switch(prev.type()) {
 				case AST_NUMBER:
 				case AST_IDENTIFIER:
@@ -95,9 +100,14 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_COMMA:
 				case AST_ASSIGN:
 				case AST_ADD:    case AST_SUB:     case AST_LIKE:
+				case AST_LOG_NOT:
 				case AST_MUL:    case AST_DIV:     case AST_MOD:
 				case AST_LSHT:   case AST_RSHT:
 				case AST_BIT_OR: case AST_BIT_AND: case AST_BIT_XOR:
+				case AST_LESS:   case AST_LESS_OR_EQUAL:
+				case AST_GRATE:  case AST_GRATE_OR_EQUAL:
+				case AST_EQUAL:
+				case AST_LOG_OR: case AST_LOG_AND: case AST_LOG_XOR:
 					node = node->insert(cur);
 					break;
 				default:
