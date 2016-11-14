@@ -408,7 +408,12 @@ bool ZasmToken::match(unsigned int flag) {
 CHECK_SIZE:
 	switch (flag & INST_SIZE_ALL) {
 		case INST_SIZE8:
-			blRet = ! this->isREG() || (this->size() == 1 && 0 == (~0x7F & this->asInt()));
+			if (this->isREG() || this->isIMM()) {
+				blRet = this->size() == 1 && 0 == (~0x7F & this->asInt());
+			} else {
+				/* FIXME */
+				blRet = true;
+			}
 			break;
 		case INST_SIZE16:
 			blRet = this->size() <= 2;
