@@ -123,6 +123,50 @@ void Zerg::emitIR(AST *node) {
 
 	/* process first if need */
 	switch(node->type()) {
+		case AST_LOG_AND:
+			ALERT(2 != node->length());
+
+			tmp = IR::randstr();
+			x = node->child(0);
+			y = node->child(1);
+			this->emitIR(x);
+			this->emit("JMP_FALSE", tmp, x->data());
+			this->emitIR(y);
+			this->emit("STORE", x->data(), y->data());
+			this->emit("LABEL", tmp);
+			node->setReg(x->getReg());
+			return;
+		case AST_LOG_OR:
+			ALERT(2 != node->length());
+
+			tmp = IR::randstr();
+			x = node->child(0);
+			y = node->child(1);
+			this->emitIR(x);
+			this->emit("JMP_TRUE", tmp, x->data());
+			this->emitIR(y);
+			this->emit("STORE", x->data(), y->data());
+			this->emit("LABEL", tmp);
+			node->setReg(x->getReg());
+			return;
+		case AST_LOG_XOR:
+			ALERT(2 != node->length());
+
+			x = node->child(0);
+			y = node->child(1);
+			this->emitIR(x);
+			this->emitIR(y);
+			this->emit("XOR", x->data(), y->data());
+			node->setReg(x->getReg());
+			return ;
+		case AST_LOG_NOT:
+			ALERT(1 != node->length());
+
+			x = node->child(0);
+			this->emitIR(x);
+			this->emit("XOR", x->data(), "0x1");
+			node->setReg(x->getReg());
+			return;
 		case AST_IDENTIFIER:
 		case AST_SYSCALL:
 			if (2 == node->length() && AST_PARENTHESES_OPEN == node->child(0)->type()) {
@@ -364,6 +408,7 @@ void Zerg::emitIR(AST *node) {
 				case AST_LESS:   case AST_LESS_OR_EQUAL:
 				case AST_GRATE:  case AST_GRATE_OR_EQUAL:
 				case AST_EQUAL:
+				case AST_LOG_AND: case AST_LOG_OR: case AST_LOG_XOR: case AST_LOG_NOT:
 					this->emit("ASM", "cmp", x->data(), "0x0");
 					this->emit("ASM", "jz", "&__SHOW_FALSE__");
 					this->emit("ASM", "lea", "rsi", "&TRUE");

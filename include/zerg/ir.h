@@ -46,6 +46,7 @@ class IR : public Binary {
 		virtual std::string regalloc(std::string src) = 0;
 	protected:
 		bool _only_ir_;
+		std::string randstr(int size=24, std::string prefix="__", std::string suffix="__");
 	private:
 		int _param_nr_;
 		off_t _entry_;

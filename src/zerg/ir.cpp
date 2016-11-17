@@ -1,6 +1,8 @@
 /* Copyright (C) 2014-2016 cmj. All right reserved. */
 
+#include <stdlib.h>
 #include "zerg.h"
+
 IRToken::IRToken() {
 }
 IRToken::IRToken(std::string op, std::string dst, std::string src, std::string extra) {
@@ -241,7 +243,15 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 		(*this) += new Instruction("and",  tmp, "0x1");
 	} else if (op == "JMP") {			/* (JMP,   DST) */
 		/* directly jump */
-		(*this) += new Instruction("jmp", dst);
+		(*this) += new Instruction("jmp", "&" + dst);
+	} else if (op == "JMP_TRUE") {		/* (JMP_TRUE, DST, SRC) */
+		/* jump if true */
+		(*this) += new Instruction("cmp", src, "0x0");
+		(*this) += new Instruction("jne", "&" + dst);
+	} else if (op == "JMP_FALSE") {		/* (JMP_FALSE, DST, SRC) */
+		/* jump if false */
+		(*this) += new Instruction("cmp", src, "0x0");
+		(*this) += new Instruction("je", "&" + dst);
 	} else if (op == "CALL") {			/* (CALL,  DST) */
 		/* call produce */
 		(*this) += new Instruction("call", dst);
@@ -305,4 +315,23 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 		_D(LOG_CRIT, "Not Implemented operators `%s`", op.c_str());
 		exit(-1);
 	}
+}
+std::string IR::randstr(int size, std::string prefix, std::string suffix) {
+	/* generated a random label string */
+	std::string ret = prefix;
+	char CH_POOL[] = {	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+						'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+						'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
+						'U', 'V', 'W', 'X', 'Y', 'Z'};
+
+	ALERT(ret.size() >  size);
+	srand(time(NULL));
+	while (ret.size() + suffix.size() < size) {
+		int pos = random() % (sizeof(CH_POOL)/sizeof(CH_POOL[0]));
+
+		ret = ret + CH_POOL[pos];
+	}
+
+	ret = ret + suffix;
+	return ret;
 }
