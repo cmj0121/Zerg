@@ -494,6 +494,11 @@ void Zerg::emitIR(AST *node) {
 		case AST_SYSCALL:
 			_D(LOG_CRIT, "Not Implemented %zu", node->length());
 			break;
+
+		case AST_NOP:
+			this->emit("NOP");
+			break;
+
 		default:
 			_D(LOG_CRIT, "Not implemented %s [%X]", node->data().c_str(), node->type());
 			exit(-1);

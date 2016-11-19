@@ -34,6 +34,7 @@ static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 		DEF("=",		AST_ASSIGN,			0),
 		DEF("print",	AST_PRINT,			0),
 		DEF("syscall",	AST_SYSCALL,		0),
+		DEF("nop",		AST_NOP,			0),
 	#undef DEF
 };
 

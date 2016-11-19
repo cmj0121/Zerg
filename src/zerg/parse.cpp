@@ -167,9 +167,13 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 
 			node = node->insert(cur);
 			break;
+
+		case AST_NOP:
+			node = node->insert(cur);
+			break;
+
 		default:
-			_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",
-							prev.c_str(), prev.type(), cur.c_str(), cur.type());
+			_D(LOG_CRIT, "Not Implemented `%s` (0x%X)", cur.c_str(), cur.type());
 			break;
 	}
 
