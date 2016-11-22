@@ -9,12 +9,22 @@ void Zerg::lexer(std::string src) {
 	std::fstream fs(src);
 	ZergToken token, prev("\n");
 
+	static int _indent_cnt_ = 0;
+
 	if (!fs.is_open()) {
 		/* cannot open the source code */
 		_D(LOG_CRIT, "source file `%s` does NOT exist", src.c_str());
 	}
 
 	while (std::getline(fs, line)) {
+		if ('\t' != line[0] || ' ' != line[0] || '\0' != line[0]) {
+			while (0 != _indent_cnt_) {
+				_indent_cnt_ --;
+				token = "\r";
+				prev  = this->parser(token, prev);
+			}
+		}
+
 		for (size_t cur = 0; cur <= line.size(); ++cur) {
 			size_t pos;
 			int base = 10;
@@ -25,9 +35,33 @@ void Zerg::lexer(std::string src) {
 					cur = line.size();
 					token = "\n";
 					prev  = this->parser(token, prev);
+					this->_lineno_ ++;
 					break;
 				case ' ': case '\t':	/* SPACE */
-					/* FIXME - Maybe INDENT or DEDENT */
+					if (cur == 0) {
+						int cnt = 0;
+
+						while('\t' == line[cur]) {
+							cnt ++;
+							cur ++;
+						}
+
+						if ('\0' != cur) {
+							while (_indent_cnt_ < cnt) {
+								_indent_cnt_ ++;
+								token = "\t";
+								prev  = this->parser(token, prev);
+							}
+
+							while (_indent_cnt_ > cnt) {
+								_indent_cnt_--;
+								token = "\r";
+								prev  = this->parser(token, prev);
+							}
+						}
+
+						cur --;
+					}
 					break;
 				case '1': case '2': case '3': case '4':
 				case '5': case '6': case '7': case '8':

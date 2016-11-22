@@ -19,6 +19,10 @@ exit.case: exit.zg
 	../zerg -o $@ $^
 	./$@ || test "$$?"            == 4
 
+condition.case: condition.zg
+	../zerg -o $@ $^
+	test `./$@ | grep 1 | wc -l` == 1
+	test `./$@ | grep 0 | wc -l` == 0
 
 .PHONY: clean
 

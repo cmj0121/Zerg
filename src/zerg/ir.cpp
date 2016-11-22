@@ -246,10 +246,12 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 		(*this) += new Instruction("jmp", "&" + dst);
 	} else if (op == "JMP_TRUE") {		/* (JMP_TRUE, DST, SRC) */
 		/* jump if true */
+		ALERT("" == dst || "" == src);
 		(*this) += new Instruction("cmp", src, "0x0");
 		(*this) += new Instruction("jne", "&" + dst);
 	} else if (op == "JMP_FALSE") {		/* (JMP_FALSE, DST, SRC) */
 		/* jump if false */
+		ALERT("" == dst || "" == src);
 		(*this) += new Instruction("cmp", src, "0x0");
 		(*this) += new Instruction("je", "&" + dst);
 	} else if (op == "CALL") {			/* (CALL,  DST) */

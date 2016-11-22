@@ -55,6 +55,7 @@ typedef enum _ASTType_ {
 	AST_SYSCALL,
 	AST_PRINT,
 	AST_NOP,
+	AST_WHILE,
 } ASTType;
 
 #define IS_OPERATOR(type)	(AST_OPERATORS < type && AST_RESERVED > type)

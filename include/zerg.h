@@ -25,9 +25,10 @@ class Zerg : public IR {
 		ZergToken& parser(ZergToken &cur, ZergToken &prev);	/* syntax and semantic analysis */
 
 		void compileCFG(CFG *node);
+		void _compileCFG_(CFG *node, std::string label="");
 		void emitIR(AST *node);
 	private:
-		int _labelcnt_;
+		int _labelcnt_, _lineno_;
 		std::map<std::string, CFG *>_root_;
 
 		std::vector<std::pair<std::string, std::string>> _symb_;

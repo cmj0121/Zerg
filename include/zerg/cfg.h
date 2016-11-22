@@ -30,6 +30,7 @@ class CFG : public AST {
 
 		CFG* insert(ZergToken dst);
 		CFG* parent(void);
+		CFG* prev(void);
 		CFG* root(void);
 		CFG *nextCFG(bool branch=true);
 

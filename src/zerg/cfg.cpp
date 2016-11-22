@@ -53,13 +53,14 @@ void CFG::branch(CFG *truecase, CFG *falsecase) {
 		_D(LOG_CRIT, "stage already be assigned");
 		exit(-1);
 	}
+
 	this->_next_[0] = truecase;
+	this->_next_[1] = falsecase;
 	this->_condi_ = true;
 
 	truecase->_refed_ = true;
 	if (NULL != falsecase) {
 		falsecase->_refed_ = true;
-		this->_next_[1] = falsecase;
 	}
 
 	/* set the branch node */
@@ -74,6 +75,9 @@ void CFG::branch(CFG *truecase, CFG *falsecase) {
 }
 std::string CFG::label(void) {
 	/* return the CFG label */
+	if (this->isBranch()) {
+		return this->prev()->label() + "_END";
+	}
 	return this->_name_;
 }
 
@@ -83,6 +87,10 @@ CFG* CFG::insert(ZergToken dst) {
 }
 CFG* CFG::parent(void) {
 	CFG* tmp = (CFG *)AST::parent();
+	return tmp;
+}
+CFG* CFG::prev(void) {
+	CFG* tmp = this->_parent_;
 	return tmp;
 }
 CFG* CFG::root(void) {
