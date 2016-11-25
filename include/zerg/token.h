@@ -51,6 +51,7 @@ typedef enum _ASTType_ {
 	/* reserved words */
 	AST_RESERVED		= 0x100,
 	AST_IF,
+	AST_ELSE,
 	AST_FUNC,
 	AST_SYSCALL,
 	AST_PRINT,

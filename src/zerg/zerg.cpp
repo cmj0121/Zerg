@@ -53,11 +53,6 @@ void Zerg::compileCFG(CFG *node) {
 		return ;
 	}
 
-	_D(LOG_DEBUG, "compile CFG - %s", node->label().c_str());
-	#ifdef DEBUG
-	std::cout << *node << std::endl;
-	#endif
-
 	this->emit("LABEL", node->label());
 	if (0 == node->length()) {
 		/* need NOT process this node */
@@ -90,11 +85,17 @@ void Zerg::_compileCFG_(CFG *node, std::string label) {
 	CFG *tmp = NULL;
 
 	if (NULL == node) {
-		if ("" != label) this->emit("LABEL", label);
+		if ("" != label) {
+			_D(LOG_BUG, "set label %s", node->label().c_str());
+			this->emit("LABEL", label);
+		}
 		return ;
 	}
 
-	_D(LOG_DEBUG, "compile CFG node %s", node->label().c_str());
+	_D(LOG_DEBUG, "compile CFG - %s", node->label().c_str());
+	#ifdef DEBUG_CFG
+	std::cout << *node << std::endl;
+	#endif /* DEBUG_CFG */
 	/*
 	 *         +---+
 	 *         |   |           CONDITION NODE          test expression
@@ -114,18 +115,23 @@ void Zerg::_compileCFG_(CFG *node, std::string label) {
 
 	/* main logical to generate IR */
 	if (NULL != node->prev() && node->prev()->isBranch()) {
+		_D(LOG_DEBUG, "set label %s", node->label().c_str());
+		this->emit("LABEL", node->label());
+	} else if (node->isBranch() && (NULL == node->nextCFG(true) || node->nextCFG(false))) {
+		_D(LOG_DEBUG, "set label %s", node->label().c_str());
 		this->emit("LABEL", node->label());
 	}
 	this->emitIR(node);
 
-	if (node->isCondit()) {				/* CONDITION NODE */
-		std::string op = node->label();
+	if (node->isCondit()) {		/* CONDITION NODE */
+		std::string label;
 
-		if (NULL != node->nextCFG(false)) {
-			this->emit("JMP_FALSE", op + "_FALSE", node->data());
+		if (NULL == node->nextCFG(false)) {
+			label = node->label() + "_END";
 		} else {
-			this->emit("JMP_FALSE", op + "_END", node->data());
+			label = node->nextCFG(false)->label();
 		}
+		this->emit("JMP_FALSE", label, node->data());
 	} else if (node->isBranch() && NULL != (tmp = node->nextCFG(true))) {
 		/* end of branch node, jump to next stage */
 		this->emit("JMP", tmp->label());
@@ -135,8 +141,11 @@ void Zerg::_compileCFG_(CFG *node, std::string label) {
 	this->_compileCFG_(node->nextCFG(true));
 	this->_compileCFG_(node->nextCFG(false));
 
-	if (node->isBranch() && (NULL == node->nextCFG(true) || node->nextCFG(false))) {
-		this->emit("LABEL", node->label());
+	if (node->isBranch()) {
+		if (node == node->prev()->nextCFG(false) || NULL == node->prev()->nextCFG(false)) {
+			_D(LOG_DEBUG, "set label %s_END", node->prev()->label().c_str());
+			this->emit("LABEL", node->prev()->label() + "_END");
+		}
 	}
 }
 void Zerg::emitIR(AST *node) {
@@ -533,6 +542,8 @@ void Zerg::emitIR(AST *node) {
 		case AST_IF:
 			x = node->child(0);
 			node->setReg(x->getReg());
+			break;
+		case AST_ELSE:
 			break;
 
 		default:

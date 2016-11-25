@@ -198,6 +198,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 
 			switch(node->type()) {
 				case AST_IF:
+				case AST_ELSE:
 					break;
 				default:
 					_D(LOG_CRIT, "`:` is not the valid syntax [0X%02X]", node->type());
@@ -213,6 +214,22 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			node = tmp;
 			node = node->insert(cur);
 			break;
+		case AST_ELSE:
+			ALERT(NULL == node->prev() || NULL == node->prev()->child(0));
+
+			tmp  = node;
+			node = node->prev();
+			node->passto(NULL);
+			delete tmp;
+
+			node = node->prev();
+			ALERT(AST_IF != node->child(0)->type());
+
+			snprintf(buff, sizeof(buff), "%s_FALSE", node->label().c_str());
+			tmp  = new CFG(buff);
+			node->branch(node->nextCFG(true), tmp);
+			node = tmp->insert(cur);
+			break;
 		case AST_INDENT:
 			switch(node->type()) {
 				case AST_IF:
@@ -224,6 +241,8 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 
 					node->branch(tmp, NULL);
 					node = tmp;
+					break;
+				case AST_ELSE:
 					break;
 				default:
 					_D(LOG_CRIT, "syntax error 0x%02X", node->type());
@@ -261,13 +280,13 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			break;
 	}
 
-	#ifdef DEBUG
+	#ifdef DEBUG_AST
 		do {
 			AST* tmp = node->root();
 
 			std::cout << *tmp << std::endl;
 		} while (0);
-	#endif /* DEBUG */
+	#endif /* DEBUG_AST */
 
 	return cur;
 }
