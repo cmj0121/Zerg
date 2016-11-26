@@ -5,6 +5,7 @@ AST::AST(ZergToken src) : Tree<AST>(src), _emitted_(false), _raw_(src) {
 	this->_label_ = 0;
 	this->_reg_   = 0;
 	this->_type_  = src.type();
+	this->_weight_ = this->_raw_.weight();
 }
 
 AST* AST::insert(ZergToken src) {
@@ -13,16 +14,21 @@ AST* AST::insert(ZergToken src) {
 	return this->insert(node);
 }
 AST* AST::insert(AST *node) {
-	AST *cur = this;
+	AST *cur = this, *tmp = NULL;
 
 	ALERT(node == NULL);
 
 	_D(LOG_INFO, "AST insert %s", node->data().c_str());
 	switch(node->type()) {
 		case AST_ADD:    case AST_SUB:     case AST_LIKE:
-		case AST_MUL:    case AST_DIV:     case AST_MOD:
-		case AST_LSHT:   case AST_RSHT:
-		case AST_BIT_OR: case AST_BIT_AND: case AST_BIT_XOR:
+			if (!IS_ATOM(cur)) {
+				/* Set the operator is the SIGN (w:1) */
+				_D(LOG_DEBUG, "%s is treated as sign", node->data().c_str());
+				node->weight(1);
+			}
+		case AST_LESS:   case AST_LESS_OR_EQUAL:
+		case AST_GRATE:  case AST_GRATE_OR_EQUAL:
+		case AST_EQUAL:
 			if (0 != cur->weight() && cur->weight() < node->weight()) {
 				while (NULL != cur->parent() && 0 != cur->parent()->weight()) {
 					if (cur->parent()->weight() <= node->weight()) {
@@ -32,6 +38,46 @@ AST* AST::insert(AST *node) {
 					break;
 				}
 
+				_D(LOG_DEBUG, "insert operator on %s", cur->data().c_str());
+				switch(cur->type()) {
+					case AST_LESS:   case AST_LESS_OR_EQUAL:
+					case AST_GRATE:  case AST_GRATE_OR_EQUAL:
+						_D(LOG_INFO, "Special Case - concate via `and`");
+						ALERT(2 != cur->length());
+
+						tmp = new AST("and");
+						cur->replace(tmp);
+						tmp->insert(cur);
+						cur = tmp;		/* `and` */
+
+						cur->insert(node);
+						tmp = new AST(cur->child(0)->child(1)->data());
+						cur->child(1)->insert(tmp);
+						break;
+					default:
+						cur->replace(node);
+						node->insert(cur);
+						break;
+				}
+				break;
+			}
+			Tree<AST>::insert(node);
+			break;
+		case AST_LOG_NOT:
+		case AST_MUL:    case AST_DIV:     case AST_MOD:
+		case AST_LSHT:   case AST_RSHT:
+		case AST_BIT_OR: case AST_BIT_AND: case AST_BIT_XOR:
+		case AST_LOG_OR: case AST_LOG_AND: case AST_LOG_XOR:
+			if (0 != cur->weight() && cur->weight() < node->weight()) {
+				while (NULL != cur->parent() && 0 != cur->parent()->weight()) {
+					if (cur->parent()->weight() <= node->weight()) {
+						cur = cur->parent();
+						continue;
+					}
+					break;
+				}
+
+				_D(LOG_DEBUG, "insert operator on %s", cur->data().c_str());
 				cur->replace(node);
 				node->insert(cur);
 				break;
@@ -68,7 +114,11 @@ int AST::getReg(void) {
 }
 int AST::weight(void) {
 	/* reply the weight of the node in AST */
-	return this->_raw_.weight();
+	return this->_weight_;
+}
+void AST::weight(int src) {
+	/* reset the weight of the node in AST */
+	this->_weight_ = src;
 }
 ASTType AST::type(void) {
 	/* category of the node in AST */

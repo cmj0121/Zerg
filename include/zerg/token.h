@@ -25,7 +25,7 @@ typedef enum _ASTType_ {
 	AST_COMMA,
 	AST_ASSIGN,
 
-	AST_ADD,
+	AST_ADD					= 0x30,
 	AST_SUB,
 	AST_MUL,
 	AST_DIV,
@@ -34,13 +34,13 @@ typedef enum _ASTType_ {
 	AST_LSHT,
 	AST_RSHT,
 
-	AST_EQUAL,
+	AST_EQUAL				= 0x40,
 	AST_LESS,
 	AST_LESS_OR_EQUAL,
 	AST_GRATE_OR_EQUAL,
 	AST_GRATE,
 
-	AST_BIT_OR,
+	AST_BIT_OR				= 0x50,
 	AST_BIT_AND,
 	AST_BIT_XOR,
 	AST_LOG_OR,
@@ -51,10 +51,16 @@ typedef enum _ASTType_ {
 	/* reserved words */
 	AST_RESERVED		= 0x100,
 	AST_IF,
+	AST_ELSE,
 	AST_FUNC,
 	AST_SYSCALL,
 	AST_PRINT,
+	AST_NOP,
+	AST_WHILE,
 } ASTType;
+
+#define IS_OPERATOR(type)	(AST_OPERATORS < type && AST_RESERVED > type)
+#define IS_ATOM(node)		(AST_NUMBER == (node)->type() || AST_IDENTIFIER == (node)->type())
 
 /* token used in Zerg for lexer analysis */
 class ZergToken : public std::string {

@@ -21,6 +21,7 @@ class AST : public Tree<AST> {
 		void setReg(int nr);
 		int  getReg(void);
 		int  weight(void);
+		void weight(int src);
 		void setEmitted(void);
 		bool isEmmited(void);
 
@@ -30,7 +31,7 @@ class AST : public Tree<AST> {
 		friend bool operator== (const AST &obj, const char *src);
 	private:
 		bool _emitted_;
-		int _label_, _reg_;
+		int _label_, _reg_, _weight_;
 		ZergToken _raw_;
 		ASTType _type_;
 };

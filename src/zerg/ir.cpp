@@ -1,6 +1,8 @@
 /* Copyright (C) 2014-2016 cmj. All right reserved. */
 
+#include <stdlib.h>
 #include "zerg.h"
+
 IRToken::IRToken() {
 }
 IRToken::IRToken(std::string op, std::string dst, std::string src, std::string extra) {
@@ -107,11 +109,10 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 		(*this) += new Instruction("push", "rdx");
 		(*this) += new Instruction("push", "rax");
 
-		if (dst != "rax") {
-			(*this) += new Instruction("mov", "rax", dst);
-		}
+		if (dst != "rax") (*this) += new Instruction("mov", "rax", dst);
 		(*this) += new Instruction("xor", "rdx", "rdx");
-		(*this) += new Instruction("div", src);
+		(*this) += new Instruction("cqo");
+		(*this) += new Instruction("idiv", src);
 		(*this) += new Instruction("mov", dst, "rax");
 
 		(*this) += new Instruction("pop", "rax");
@@ -121,10 +122,10 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 		(*this) += new Instruction("push", "rdx");
 		(*this) += new Instruction("push", "rax");
 
-		if (dst != "rax")
-			(*this) += new Instruction("mov", "rax", dst);
+		if (dst != "rax") (*this) += new Instruction("mov", "rax", dst);
 		(*this) += new Instruction("xor", "rdx", "rdx");
-		(*this) += new Instruction("div", src);
+		(*this) += new Instruction("cqo");
+		(*this) += new Instruction("idiv", src);
 		(*this) += new Instruction("mov", dst, "rdx");
 
 		(*this) += new Instruction("pop", "rax");
@@ -180,30 +181,79 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 
 		(*this) += new Instruction("xor", dst, tmp);
 		(*this) += new Instruction("sub", dst, tmp);
-	} else if (op == "CMP") {			/* (CMP,   VAR, VAR) */
-		/* raw compare */
+	} else if (op == "EQ")  {			/* (EQ,    DST, SRC) */
+		/* dst = dst eq src */
+		std::string tmp;
+		std::vector<std::string> regs = { REGISTERS };
+		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+
+		ALERT(pos == regs.size());
+		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
+
 		(*this) += new Instruction("cmp", dst, src);
+		(*this) += new Instruction("setz", tmp);
+		(*this) += new Instruction("and",  tmp, "0x1");
+	} else if (op == "LS")  {			/* (EQ,    DST, SRC) */
+		/* dst = dst < src */
+		std::string tmp;
+		std::vector<std::string> regs = { REGISTERS };
+		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+
+		ALERT(pos == regs.size());
+		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
+
+		(*this) += new Instruction("cmp", dst, src);
+		(*this) += new Instruction("setl", tmp);
+		(*this) += new Instruction("and",  tmp, "0x1");
+	} else if (op == "LE")  {			/* (EQ,    DST, SRC) */
+		/* dst = dst <= src */
+		std::string tmp;
+		std::vector<std::string> regs = { REGISTERS };
+		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+
+		ALERT(pos == regs.size());
+		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
+
+		(*this) += new Instruction("cmp", dst, src);
+		(*this) += new Instruction("setle", tmp);
+		(*this) += new Instruction("and",   tmp, "0x1");
+	} else if (op == "GE")  {			/* (EQ,    DST, SRC) */
+		/* dst = dst >= src */
+		std::string tmp;
+		std::vector<std::string> regs = { REGISTERS };
+		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+
+		ALERT(pos == regs.size());
+		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
+
+		(*this) += new Instruction("cmp", dst, src);
+		(*this) += new Instruction("setge", tmp);
+		(*this) += new Instruction("and",   tmp, "0x1");
+	} else if (op == "GT")  {			/* (EQ,    DST, SRC) */
+		/* dst = dst > src */
+		std::string tmp;
+		std::vector<std::string> regs = { REGISTERS };
+		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+
+		ALERT(pos == regs.size());
+		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
+
+		(*this) += new Instruction("cmp", dst, src);
+		(*this) += new Instruction("setg", tmp);
+		(*this) += new Instruction("and",  tmp, "0x1");
 	} else if (op == "JMP") {			/* (JMP,   DST) */
 		/* directly jump */
-		(*this) += new Instruction("jmp", dst);
-	} else if (op == "JEQ") {			/* (JEQ,   DST) */
-		/* directly jump */
-		(*this) += new Instruction("je", dst);
-	} else if (op == "JNEQ") {			/* (JNEQ,  DST) */
-		/* directly jump */
-		(*this) += new Instruction("jne", dst);
-	} else if (op == "JLS") {			/* (JLS,   DST) */
-		/* directly jump */
-		(*this) += new Instruction("jl", dst);
-	} else if (op == "JLSE") {			/* (JLSE,  DST) */
-		/* directly jump */
-		(*this) += new Instruction("jle", dst);
-	} else if (op == "JGT") {			/* (JGT,   DST) */
-		/* directly jump */
-		(*this) += new Instruction("jg", dst);
-	} else if (op == "JGTE") {			/* (JGTE,  DST) */
-		/* jump if greater or equal */
-		(*this) += new Instruction("jge", dst);
+		(*this) += new Instruction("jmp", "&" + dst);
+	} else if (op == "JMP_TRUE") {		/* (JMP_TRUE, DST, SRC) */
+		/* jump if true */
+		ALERT("" == dst || "" == src);
+		(*this) += new Instruction("cmp", src, "0x0");
+		(*this) += new Instruction("jne", "&" + dst);
+	} else if (op == "JMP_FALSE") {		/* (JMP_FALSE, DST, SRC) */
+		/* jump if false */
+		ALERT("" == dst || "" == src);
+		(*this) += new Instruction("cmp", src, "0x0");
+		(*this) += new Instruction("je", "&" + dst);
 	} else if (op == "CALL") {			/* (CALL,  DST) */
 		/* call produce */
 		(*this) += new Instruction("call", dst);
@@ -267,4 +317,23 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 		_D(LOG_CRIT, "Not Implemented operators `%s`", op.c_str());
 		exit(-1);
 	}
+}
+std::string IR::randstr(int size, std::string prefix, std::string suffix) {
+	/* generated a random label string */
+	std::string ret = prefix;
+	char CH_POOL[] = {	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+						'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+						'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
+						'U', 'V', 'W', 'X', 'Y', 'Z'};
+
+	ALERT(ret.size() >  size);
+	srand(time(NULL));
+	while (ret.size() + suffix.size() < size) {
+		int pos = random() % (sizeof(CH_POOL)/sizeof(CH_POOL[0]));
+
+		ret = ret + CH_POOL[pos];
+	}
+
+	ret = ret + suffix;
+	return ret;
 }

@@ -10,13 +10,13 @@ CFG::CFG(std::string name) : AST(""), _name_(name), _parent_(NULL) {
 	this->_next_[0] = NULL;
 	this->_next_[1] = NULL;
 
-	#ifdef DEBUG
+	#ifdef DEBUG_CFG
 		/* only used on CFG relationship graph */
 		this->_map_ = NULL;
 	#endif /* DEBUG */
 }
 CFG::~CFG(void) {
-#ifdef DEBUG
+#ifdef DEBUG_CFG
 	if (NULL != this->_map_) {
 		for (unsigned int i = 0; i < this->stages.size(); ++i) {
 			delete this->_map_[i];
@@ -39,27 +39,21 @@ bool CFG::isCondit(void) {
 	return this->_condi_;
 }
 void CFG::passto(CFG *next) {
-	if (NULL != this->_next_[0] || NULL != this->_next_[1]) {
-		_D(LOG_CRIT, "stage already be assigned");
-		exit(-1);
-	}
 	this->_next_[0] = next;
-	next->_refed_   = this->_branch_;
 
-	if (next) next->_parent_ = this;
+	if (next) {
+		next->_refed_   = this->_branch_;
+		next->_parent_ = this;
+	}
 }
 void CFG::branch(CFG *truecase, CFG *falsecase) {
-	if (NULL != this->_next_[0] || NULL != this->_next_[1]) {
-		_D(LOG_CRIT, "stage already be assigned");
-		exit(-1);
-	}
 	this->_next_[0] = truecase;
+	this->_next_[1] = falsecase;
 	this->_condi_ = true;
 
 	truecase->_refed_ = true;
 	if (NULL != falsecase) {
 		falsecase->_refed_ = true;
-		this->_next_[1] = falsecase;
 	}
 
 	/* set the branch node */
@@ -85,6 +79,10 @@ CFG* CFG::parent(void) {
 	CFG* tmp = (CFG *)AST::parent();
 	return tmp;
 }
+CFG* CFG::prev(void) {
+	CFG* tmp = this->_parent_;
+	return tmp;
+}
 CFG* CFG::root(void) {
 	CFG *tmp = (CFG *)AST::root();
 	return tmp;
@@ -103,7 +101,7 @@ std::ostream& operator <<(std::ostream &stream, const CFG &src) {
 	return stream;
 }
 
-#ifdef DEBUG
+#ifdef DEBUG_CFG
 /* Build the CFG relationship as 2D matrix */
 void CFG::buildRelation(CFG *node) {
 	/* First, get all stages */

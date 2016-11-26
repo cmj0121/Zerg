@@ -1,0 +1,13 @@
+#! /usr/bin/env zerg
+
+if 1 eq 1:
+	print 1
+if 1 eq 2:
+	print 0
+
+x = 1
+if x eq 1:
+	print 1
+if x eq 2:
+	print 0
+

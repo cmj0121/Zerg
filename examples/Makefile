@@ -13,12 +13,19 @@ helloWorld.case: helloWorld.zs
 
 arithmetic.case: arithmetic.zg
 	../zerg -o $@ $^
-	test "`./$@                   == -29`"
+	test `./$@`                   == 7
 
 exit.case: exit.zg
 	../zerg -o $@ $^
 	./$@ || test "$$?"            == 4
 
+condition.case: condition.zg
+	../zerg -o $@ $^
+	test `./$@ | grep 1 | wc -l` == 2
+
+repeat.case: repeat.zg
+	../zerg -o $@ $^
+	test `./$@ | grep 1 | wc -l` == 1
 
 .PHONY: clean
 

@@ -23,9 +23,13 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 	if (0 != (inst.flags & INST_DOUBLE_FP)) {
 		/* double float */
 		_payload_[_length_++] = 0xF2;
+	} else if (0 != (inst.flags & INST_EXTENSION_64)) {
+		/* force 64-bit extension */
+		_payload_[_length_++] = 0x48;
 	}
 
-	if (4 == this->dst().size() || 4 == this->src().size()) {
+	if (4 == this->dst().size() || 4 == this->src().size() ||
+		this->src().isEXT() || this->dst().isEXT()) {
 		int REX_B = 0, REX_X = 0, REX_R = 0, REX_W = 0;
 
 		/*

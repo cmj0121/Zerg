@@ -30,6 +30,7 @@ class CFG : public AST {
 
 		CFG* insert(ZergToken dst);
 		CFG* parent(void);
+		CFG* prev(void);
 		CFG* root(void);
 		CFG *nextCFG(bool branch=true);
 
@@ -39,7 +40,7 @@ class CFG : public AST {
 		std::string _name_;
 		CFG *_next_[2], *_parent_;
 
-	#ifdef DEBUG
+	#ifdef DEBUG_CFG
 			/* CFG relation map */
 			std::vector<CFG *>stages;
 			bool **_map_;
