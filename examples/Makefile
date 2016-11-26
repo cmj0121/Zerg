@@ -23,6 +23,10 @@ condition.case: condition.zg
 	../zerg -o $@ $^
 	test `./$@ | grep 1 | wc -l` == 2
 
+repeat.case: repeat.zg
+	../zerg -o $@ $^
+	test `./$@ | grep 1 | wc -l` == 1
+
 .PHONY: clean
 
 clean:

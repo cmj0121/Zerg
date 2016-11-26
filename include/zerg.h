@@ -36,9 +36,4 @@ class Zerg : public IR {
 		std::map<std::string, std::string> _alloc_regs_map_;
 };
 
-#ifdef DEBUG
-#  define DEBUG_AST
-#  define DEBUG_CFG
-#endif /* DEBUG */
-
 #endif /* __ZERG_H__ */

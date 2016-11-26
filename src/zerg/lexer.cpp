@@ -17,11 +17,11 @@ void Zerg::lexer(std::string src) {
 	}
 
 	while (std::getline(fs, line)) {
-		if ('\t' != line[0] || ' ' != line[0] || '\0' != line[0]) {
+		if ('\t' != line[0] && '\0' != line[0]) {
 			while (0 != _indent_cnt_) {
 				_indent_cnt_ --;
 				token = "\r";
-				prev  = this->parser(token, prev);
+				prev = this->parser(token, prev);
 			}
 		}
 
@@ -56,6 +56,7 @@ void Zerg::lexer(std::string src) {
 							while (_indent_cnt_ > cnt) {
 								_indent_cnt_--;
 								token = "\r";
+								_D(LOG_BUG, "DEDENT");
 								prev  = this->parser(token, prev);
 							}
 						}

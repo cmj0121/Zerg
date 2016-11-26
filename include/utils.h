@@ -79,5 +79,10 @@ inline static std::vector<std::string> split(std::string src, std::string tok) {
 
 	return ret;
 }
+
+#ifdef DEBUG
+#  define DEBUG_AST
+#  define DEBUG_CFG
+#endif /* DEBUG */
 #endif /* _ZERG_UTILS_H_ */
 

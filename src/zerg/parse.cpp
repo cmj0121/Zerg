@@ -109,6 +109,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			switch(prev.type()) {
 				case AST_NEWLINE:
 				case AST_INDENT:
+				case AST_DEDENT:
 				case AST_PRINT:
 				case AST_WHILE:
 				case AST_IF:
@@ -199,6 +200,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			switch(node->type()) {
 				case AST_IF:
 				case AST_ELSE:
+				case AST_WHILE:
 					break;
 				default:
 					_D(LOG_CRIT, "`:` is not the valid syntax [0X%02X]", node->type());
@@ -230,9 +232,19 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			node->branch(node->nextCFG(true), tmp);
 			node = tmp->insert(cur);
 			break;
+		case AST_WHILE:
+			snprintf(buff, sizeof(buff), "while_statememt_%04d", this->_lineno_);
+			tmp = new CFG(buff);
+
+			node = node->root();
+			node->passto(tmp);
+			node = tmp;
+			node = node->insert(cur);
+			break;
 		case AST_INDENT:
 			switch(node->type()) {
 				case AST_IF:
+				case AST_WHILE:
 					node = node->root();
 
 					ALERT("" == node->label());
@@ -242,6 +254,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					node->branch(tmp, NULL);
 					node = tmp;
 					break;
+				case AST_ROOT:
 				case AST_ELSE:
 					break;
 				default:
@@ -258,21 +271,25 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 						case 1:
 						case 2:
 							snprintf(buff, sizeof(buff), "%s_END", tmp->label().c_str());
+							tmp = new CFG(buff);
+							node->passto(tmp);
+							node = tmp;
 							break;
 						default:
 							_D(LOG_CRIT, "Not Implemented 0x%zX", tmp->child(0)->length());
 							break;
 					}
 					break;
+				case AST_WHILE:
+					snprintf(buff, sizeof(buff), "%s_FALSE", tmp->label().c_str());
+					node = new CFG(buff);
+
+					tmp->branch(tmp->nextCFG(true), node);
+					break;
 				default:
 					_D(LOG_CRIT, "Not Implemented 0X%X", tmp->child(0)->type());
 					break;
 			}
-
-			ALERT("" == buff);
-			tmp = new CFG(buff);
-			node->passto(tmp);
-			node = tmp;
 			break;
 
 		default:

@@ -120,6 +120,9 @@ void Zerg::_compileCFG_(CFG *node, std::string label) {
 	} else if (node->isBranch() && (NULL == node->nextCFG(true) || node->nextCFG(false))) {
 		_D(LOG_DEBUG, "set label %s", node->label().c_str());
 		this->emit("LABEL", node->label());
+	} else if (node->isCondit()) {
+		_D(LOG_DEBUG, "set label %s", node->label().c_str());
+		this->emit("LABEL", node->label());
 	}
 	this->emitIR(node);
 
@@ -140,6 +143,13 @@ void Zerg::_compileCFG_(CFG *node, std::string label) {
 	/* process other stage in CFG */
 	this->_compileCFG_(node->nextCFG(true));
 	this->_compileCFG_(node->nextCFG(false));
+
+	if (node->isBranch() && node == node->prev()->nextCFG(true)) {
+		if (AST_WHILE == node->prev()->child(0)->type()) {
+			_D(LOG_DEBUG, "Loop on the label %s", node->prev()->label().c_str());
+			this->emit("JMP", node->prev()->label());
+		}
+	}
 
 	if (node->isBranch()) {
 		if (node == node->prev()->nextCFG(false) || NULL == node->prev()->nextCFG(false)) {
@@ -540,6 +550,7 @@ void Zerg::emitIR(AST *node) {
 
 		/* new CFG */
 		case AST_IF:
+		case AST_WHILE:
 			x = node->child(0);
 			node->setReg(x->getReg());
 			break;
