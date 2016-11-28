@@ -188,6 +188,8 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			break;
 
 		case AST_NOP:
+		case AST_BREAK:
+		case AST_CONTINUE:
 			node = node->insert(cur);
 			break;
 

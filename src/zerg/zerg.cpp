@@ -123,6 +123,10 @@ void Zerg::_compileCFG_(CFG *node, std::string label) {
 	} else if (node->isCondit()) {
 		_D(LOG_DEBUG, "set label %s", node->label().c_str());
 		this->emit("LABEL", node->label());
+
+		if (NULL != node->child(0) && AST_WHILE == node->child(0)->type()) {
+			this->_repeate_label_.push_back(node->label());
+		}
 	}
 	this->emitIR(node);
 
@@ -155,6 +159,10 @@ void Zerg::_compileCFG_(CFG *node, std::string label) {
 		if (node == node->prev()->nextCFG(false) || NULL == node->prev()->nextCFG(false)) {
 			_D(LOG_DEBUG, "set label %s_END", node->prev()->label().c_str());
 			this->emit("LABEL", node->prev()->label() + "_END");
+		}
+
+		if (NULL != node->child(0) && AST_WHILE == node->child(0)->type()) {
+			this->_repeate_label_.pop_back();
 		}
 	}
 }
@@ -563,6 +571,14 @@ void Zerg::emitIR(AST *node) {
 			node->setReg(x->getReg());
 			break;
 		case AST_ELSE:
+			break;
+		case AST_BREAK:
+			tmp = this->_repeate_label_[this->_repeate_label_.size()-1];
+			this->emit("JMP", tmp + "_END");
+			break;
+		case AST_CONTINUE:
+			tmp = this->_repeate_label_[this->_repeate_label_.size()-1];
+			this->emit("JMP", tmp);
 			break;
 
 		default:
