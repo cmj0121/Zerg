@@ -450,6 +450,7 @@ void Zerg::emitIR(AST *node) {
 		case AST_PRINT:
 			/* FIXME - hardcode for build-in funciton: str() */
 
+			tmp = this->randstr(10, "__", "");
 			ALERT(0 == node->length());
 			x= node->child(0);
 
@@ -459,14 +460,14 @@ void Zerg::emitIR(AST *node) {
 				case AST_EQUAL:
 				case AST_LOG_AND: case AST_LOG_OR: case AST_LOG_XOR: case AST_LOG_NOT:
 					this->emit("ASM", "cmp", x->data(), "0x0");
-					this->emit("ASM", "jz", "&__SHOW_FALSE__");
+					this->emit("ASM", "jz", "&" + tmp + "__SHOW_FALSE__");
 					this->emit("ASM", "lea", "rsi", "&TRUE");
 					this->emit("ASM", "mov", "rdx", "0x06");
-					this->emit("ASM", "jmp", "&__SHOW_TRUE__");
-					this->emit("ASM", "asm", "__SHOW_FALSE__:");
+					this->emit("ASM", "jmp", "&" + tmp + "__SHOW_TRUE__");
+					this->emit("ASM", "asm", tmp + "__SHOW_FALSE__:");
 					this->emit("ASM", "lea", "rsi", "&FALSE");
 					this->emit("ASM", "mov", "rdx", "0x07");
-					this->emit("ASM", "asm", "__SHOW_TRUE__:");
+					this->emit("ASM", "asm", tmp + "__SHOW_TRUE__:");
 
 					this->emit("ASM", "mov", "rax", "0x2000004");
 					this->emit("ASM", "mov", "rdi", "0x01");
@@ -475,29 +476,33 @@ void Zerg::emitIR(AST *node) {
 				default:
 					this->emit("ASM", "mov", "rax", x->data());
 
-					this->emit("ASM", "asm", "__INT_TO_STR__:");
+					this->emit("ASM", "asm", tmp + "__INT_TO_STR__:");
+					this->emit("ASM", "push", "rbp");
+					this->emit("ASM", "mov", "rbp", "rsp");
+					this->emit("ASM", "sub", "rsp", "0x40");
+
 					this->emit("ASM", "mov", "rsi", "rsp");
 					this->emit("ASM", "mov", "rdi", "rsi");
 					this->emit("ASM", "mov", "rcx", "0x0A");	/* DIVISOR */
 
 					this->emit("ASM", "cmp", "rax", "0x0");
-					this->emit("ASM", "jge", "&__INT_TO_STR_INNER_LOOP__");
+					this->emit("ASM", "jge", "&" + tmp + "__INT_TO_STR_INNER_LOOP__");
 					this->emit("ASM", "neg", "rax");
 					this->emit("ASM", "mov", "[rsi]", "0x2D");
 					this->emit("ASM", "inc", "rsi");
 					this->emit("ASM", "inc", "rdi");
 
-					this->emit("ASM", "asm", "__INT_TO_STR_INNER_LOOP__:");
+					this->emit("ASM", "asm", tmp + "__INT_TO_STR_INNER_LOOP__:");
 					this->emit("ASM", "xor", "rdx", "rdx");
 					this->emit("ASM", "div", "rcx");
 					this->emit("ASM", "add", "rdx", "0x30");
 					this->emit("ASM", "mov", "[rdi]", "rdx");
 					this->emit("ASM", "inc", "rdi");
 					this->emit("ASM", "cmp", "rax", "0x0");
-					this->emit("ASM", "jne", "&__INT_TO_STR_INNER_LOOP__");
+					this->emit("ASM", "jne", "&" + tmp + "__INT_TO_STR_INNER_LOOP__");
 
 					/* FIXME - hardcode for the build-in function: reserved() */
-					this->emit("ASM", "asm", "__RESERVED__:");
+					this->emit("ASM", "asm", tmp + "__RESERVED__:");
 					this->emit("ASM", "mov", "[rdi]", "0x0A");
 
 					this->emit("ASM", "mov", "rdx", "rdi");
@@ -506,7 +511,7 @@ void Zerg::emitIR(AST *node) {
 					this->emit("ASM", "mov", "rax", "rdi");
 					this->emit("ASM", "mov", "rbx", "rsi");
 					this->emit("ASM", "dec", "rax");
-					this->emit("ASM", "asm", "__RESERVED_INNER_LOOP__:");
+					this->emit("ASM", "asm", tmp + "__RESERVED_INNER_LOOP__:");
 					this->emit("ASM", "mov", "cl", "[rax]");
 					this->emit("ASM", "mov", "ch", "[rbx]");
 					this->emit("ASM", "mov", "[rax]", "ch");
@@ -514,12 +519,15 @@ void Zerg::emitIR(AST *node) {
 					this->emit("ASM", "dec", "rax");
 					this->emit("ASM", "inc", "rbx");
 					this->emit("ASM", "cmp", "rax", "rbx");
-					this->emit("ASM", "jge", "&__RESERVED_INNER_LOOP__");
+					this->emit("ASM", "jge", "&" + tmp + "__RESERVED_INNER_LOOP__");
 
 					this->emit("ASM", "mov", "rax", "0x2000004");
 					this->emit("ASM", "mov", "rdi", "0x01");
 					this->emit("ASM", "mov", "rsi", "rsp");
 					this->emit("INTERRUPT");
+
+					this->emit("ASM", "add", "rsp", "0x40");
+					this->emit("ASM", "pop", "rbp");
 					break;
 			}
 

@@ -65,7 +65,7 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 				/* save into stack */
 				_D(LOG_CRIT, "Local VAR `%s` not declare", src.c_str());
 			} else {
-				snprintf(buff, sizeof(buff), "[rbp-0X%X]", pos * 0x08);
+				snprintf(buff, sizeof(buff), "[rbp-0X%X]", (pos+1) * 0x08);
 				(*this) += new Instruction("mov", dst, buff);
 			}
 		} else if (__IR_GLOBAL_VAR__ == extra) {
@@ -87,7 +87,7 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 				/* save into stack */
 				stack.push_back(dst);
 			}
-			snprintf(buff, sizeof(buff), "[rbp-0X%X]", pos * 0x08);
+			snprintf(buff, sizeof(buff), "[rbp-0X%X]", (pos+1) * 0x08);
 			(*this) += new Instruction("mov", buff, src);
 		} else if (__IR_GLOBAL_VAR__ == extra) {
 			/* save global variable */

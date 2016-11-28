@@ -25,7 +25,8 @@ condition.case: condition.zg
 
 repeat.case: repeat.zg
 	../zerg -o $@ $^
-	test `./$@ | grep 1 | wc -l` == 1
+	test `./$@ | grep 1 | wc -l` == 5
+	test `./$@ | grep 0 | wc -l` == 1
 
 .PHONY: clean
 
