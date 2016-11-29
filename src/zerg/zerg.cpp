@@ -5,7 +5,7 @@
 
 #define PARAM_SIZE	0x08
 
-Zerg::Zerg(std::string dst, off_t entry) : IR(dst, entry) {
+Zerg::Zerg(std::string dst, bool pie, off_t entry) : IR(dst, entry, pie) {
 	this->_labelcnt_ = 0;
 	this->_lineno_   = 1;
 }

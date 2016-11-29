@@ -8,7 +8,8 @@
 
 #include "zasm.h"
 
-int __verbose__ = 0;
+int  __verbose__ = 0;
+bool __pie__     = false;
 
 void Zasm::compile(std::fstream &src) {
 	off_t entry = 0x1000;
@@ -124,14 +125,16 @@ void help(void) {
 	fprintf(stderr, "Option\n");
 	fprintf(stderr, "    -v, --verbose          Show the verbose message\n");
 	fprintf(stderr, "    -o, --output <file>    Write output to <file>\n");
+	fprintf(stderr, "        --pie              PIE - Position-Independent Executables\n");
 	exit(-1);
 }
 int main(int argc, char *argv[]) {
 	int optIdx = -1;
 	char ch, opts[] = "vo:";
 	struct option options[] = {
-		{"output",  optional_argument, 0, 'o'},
-		{"verbose",	optional_argument, 0, 'v'},
+		{"output",  optional_argument,	0, 'o'},
+		{"pie",		no_argument,		0, 'p'},
+		{"verbose",	optional_argument,	0, 'v'},
 		{NULL, 0, 0, 0}
 	};
 	std::string dst = "a.out";
@@ -141,6 +144,9 @@ int main(int argc, char *argv[]) {
 		switch(ch) {
 			case 'o':
 				dst = optarg;
+				break;
+			case 'p':
+				__pie__ = true;
 				break;
 			case 'v':
 				__verbose__++;
@@ -166,7 +172,7 @@ int main(int argc, char *argv[]) {
 
 		src.open(argv[0], std::fstream::in);
 
-		Zasm *bin = new Zasm(dst);
+		Zasm *bin = new Zasm(dst, __pie__);
 		bin->compile(src);
 
 		delete bin;

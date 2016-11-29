@@ -13,7 +13,7 @@
 
 class Zerg : public IR {
 	public:
-		Zerg(std::string dst, off_t entry = 0x1000);
+		Zerg(std::string dst, bool pie=false, off_t entry = 0x1000);
 		virtual ~Zerg();
 
 		void compile(std::string src, bool only_ir=false);

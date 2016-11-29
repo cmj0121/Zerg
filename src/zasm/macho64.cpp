@@ -7,7 +7,7 @@
 
 #include "macho64_inc.hpp"
 
-Binary::Binary(std::string src) : _src_(src), _inst_() {
+Binary::Binary(std::string src, bool pie) : _pie_(pie), _src_(src), _inst_() {
 };
 Binary::~Binary() {
 	for (int i=0; i<_inst_.size(); ++i) {
@@ -57,7 +57,7 @@ off_t Binary::dump(off_t entry) {
 
 	/* Create necessary header, dummy first */
 	for (int i = 0; i < 2; ++i) {
-		header(_bin_, 8, header_offset);
+		header(_bin_, 8, header_offset, this->_pie_);
 
 		seg_pagezero(_bin_);
 		seg_text(_bin_, size, entry, header_offset);

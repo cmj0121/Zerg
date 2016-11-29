@@ -37,7 +37,7 @@ class IRToken {
 
 class IR : public Binary {
 	public:
-		IR(std::string dst, off_t entry = 0x1000);
+		IR(std::string dst, off_t entry = 0x1000, bool pie=false);
 		~IR(void);
 
 		void emit(IRToken token);

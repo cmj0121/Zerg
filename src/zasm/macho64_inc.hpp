@@ -4,7 +4,7 @@
 #include <mach-o/stab.h>
 #include <mach/vm_prot.h>
 
-void header(std::fstream &src, int ncmds, off_t offset);
+void header(std::fstream &src, int ncmds, off_t offset, bool pie=false);
 void seg_pagezero(std::fstream &src);
 void seg_text(std::fstream &src, int size, off_t entry, off_t offset);
 void sec_text(std::fstream &src, int size, off_t entry, off_t offset);
@@ -15,7 +15,7 @@ void dyld_link (std::fstream &src);
 
 /* Static Method */
 
-void header(std::fstream &src, int ncmds, off_t offset) {
+void header(std::fstream &src, int ncmds, off_t offset, bool pie) {
 	struct mach_header_64 hdr;
 
 	src.seekp(0);
@@ -26,7 +26,7 @@ void header(std::fstream &src, int ncmds, off_t offset) {
 	hdr.filetype		= MH_EXECUTE;
 	hdr.ncmds			= ncmds;
 	hdr.sizeofcmds		= offset - sizeof(struct mach_header_64);
-	hdr.flags			= MH_NOUNDEFS | MH_DYLDLINK | MH_TWOLEVEL;
+	hdr.flags			= MH_NOUNDEFS | MH_DYLDLINK | MH_TWOLEVEL | (pie ? MH_PIE : 0);
 	hdr.reserved		= 0x0;
 
 	src.write((char *)&hdr, sizeof(struct mach_header_64));

@@ -8,6 +8,7 @@
 int  __verbose__  = 0;
 bool _only_ir_	  = false;
 bool _gen_grammar = false;
+bool _pie_        = false;
 
 void help(void) {
 	fprintf(stderr, "ZERG - A useless compiler\n");
@@ -19,15 +20,17 @@ void help(void) {
 	fprintf(stderr, "    -o, --output           Output file\n");
 	fprintf(stderr, "    -r, --ir               Show the IR\n");
 	fprintf(stderr, "    -v, --verbose          Show the verbose message\n");
+	fprintf(stderr, "        --pie              PIE - Position-Independent Executables\n");
 	exit(-1);
 }
 int main(int argc, char *argv[]) {
 	int optIdx = -1;
-	char ch, opts[] = "Go:rvh";
+	char ch, opts[] = "Go:prvh";
 	struct option options[] = {
 		{"grammar",	no_argument,		0, 'G'},
 		{"help",	no_argument,		0, 'h'},
 		{"output",	required_argument,	0, 'o'},
+		{"pie",		no_argument,		0, 'p'},
 		{"ir",		no_argument, 		0, 'r'},
 		{"verbose", optional_argument,	0, 'v'},
 		{NULL, 0, 0, 0}
@@ -44,6 +47,9 @@ int main(int argc, char *argv[]) {
 				return -1;
 			case 'o':
 				dst = optarg;
+				break;
+			case 'p':
+				_pie_ = true;
 				break;
 			case 'r':
 				_only_ir_ = true;
@@ -64,7 +70,7 @@ int main(int argc, char *argv[]) {
 	} else if (_gen_grammar) {
 		_D(LOG_CRIT, "Not Implemented");
 	} else {
-		Zerg zerg(dst);
+		Zerg zerg(dst, _pie_);
 		zerg.compile(argv[0], _only_ir_);
 	}
 

@@ -110,7 +110,7 @@ class Instruction {
 #include <stdlib.h>
 class Binary : public Utils {
 	public:
-		Binary(std::string src);
+		Binary(std::string src, bool pie=false);
 		virtual ~Binary();
 
 		off_t dump(off_t entry = 0x1000);
@@ -122,6 +122,7 @@ class Binary : public Utils {
 
 		Binary& operator+= (Instruction *inst);
 	private:
+		bool _pie_;
 		std::string  _src_;
 		std::fstream _bin_;
 		std::vector<Instruction *> _inst_;
@@ -129,7 +130,7 @@ class Binary : public Utils {
 
 class Zasm : public Binary {
 	public:
-		Zasm(std::string src) : Binary(src) {};
+		Zasm(std::string src, bool pie=false) : Binary(src, pie) {};
 		void compile(std::fstream &src);
 		ZasmToken* token(std::fstream &src);
 };
