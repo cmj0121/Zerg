@@ -34,9 +34,8 @@ syn match   ZERGNumber        "\<\d\+[e]-\=\d+\>"
 syn match   ZERGNumber        "\<0[oO]\=\o\+\>"
 syn match   ZERGNumber        "\<0[xX]\x\+\>"
 syn match   ZERGNumber        "\<0[bB][01]\+\>"
-syn match   ZERGFloat         "\<\d\+\.\=\%([eE][+-]\=\d\+\)\="
+syn match   ZERGNumber        "\<\d\+\%([eE][+-]\=\d\+\)\=\>"
 hi def link ZERGNumber        Number
-hi def link ZERGFloat         Number
 
 " Reserved token - STRING
 syn region  ZERGString        start=+\z(['"]\)+ end="\z1" skip="\\\z1" contains=ZERGEscape,ZERGToDo
