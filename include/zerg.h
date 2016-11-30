@@ -24,9 +24,9 @@ class Zerg : public IR {
 		void lexer(std::string src);						/* lexer analysis */
 		ZergToken& parser(ZergToken &cur, ZergToken &prev);	/* syntax and semantic analysis */
 
-		void compileCFG(CFG *node);
-		void _compileCFG_(CFG *node, std::string label="");
-		void emitIR(AST *node);
+		void compileCFG(CFG *node, std::map<std::string, VType> &&namescope={});
+		void _compileCFG_(CFG *node, std::map<std::string, VType> &namescope);
+		void emitIR(AST *node, std::map<std::string, VType> &namescope);
 	private:
 		int _labelcnt_, _lineno_;
 		std::map<std::string, CFG *>_root_;

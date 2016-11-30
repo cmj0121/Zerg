@@ -149,6 +149,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_SYSCALL:
 			switch (prev.type()) {
 				case AST_NEWLINE:
+				case AST_ASSIGN:
 					node = node->insert(cur);
 					break;
 				default:

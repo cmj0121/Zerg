@@ -28,6 +28,9 @@ repeat.case: repeat.zg
 	test `./$@ | grep 1 | wc -l` == 5
 	test `./$@ | grep 0 | wc -l` == 1
 
+buffer.case: buffer.zg
+	../zerg -o $@ $^
+
 .PHONY: clean
 
 clean:

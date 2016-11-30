@@ -13,6 +13,7 @@
 #define __IR_VERSION__		"0.1 (" __DATE__ " " __TIME__ ")"
 #define __IR_REG_FMT__		"REG_%02d"
 #define __IR_LABEL_FMT__	"__ZERG_LABEL_%d__"
+#define __IR_SYSCALL_REG__	"SYSCALL_REG"
 #define __IR_LOCAL_VAR__	"LOCAL"
 #define __IR_GLOBAL_VAR__	"GLOBAL"
 

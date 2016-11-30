@@ -44,7 +44,7 @@ void Zerg::compile(std::string src, bool only_ir) {
 		}
 	}
 }
-void Zerg::compileCFG(CFG *node) {
+void Zerg::compileCFG(CFG *node, std::map<std::string, VType> &&namescope) {
 	int cnt = 0;
 	char cntvar[64] = {0};
 
@@ -59,8 +59,8 @@ void Zerg::compileCFG(CFG *node) {
 		/* PROLOGUE */
 		this->emit("PROLOGUE");
 
-		this->_compileCFG_(node->nextCFG(true));
-		this->_compileCFG_(node->nextCFG(false));
+		this->_compileCFG_(node->nextCFG(true), namescope);
+		this->_compileCFG_(node->nextCFG(false), namescope);
 
 		/* EPILOGUE */
 		this->emit("EPILOGUE", cntvar);
@@ -75,20 +75,16 @@ void Zerg::compileCFG(CFG *node) {
 		/* PROLOGUE */
 		this->emit("PROLOGUE", cntvar);
 
-		this->_compileCFG_(node);
+		this->_compileCFG_(node, namescope);
 
 		/* EPILOGUE */
 		this->emit("EPILOGUE", cntvar);
 	}
 }
-void Zerg::_compileCFG_(CFG *node, std::string label) {
+void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
 	CFG *tmp = NULL;
 
 	if (NULL == node) {
-		if ("" != label) {
-			_D(LOG_BUG, "set label %s", node->label().c_str());
-			this->emit("LABEL", label);
-		}
 		return ;
 	}
 
@@ -128,7 +124,7 @@ void Zerg::_compileCFG_(CFG *node, std::string label) {
 			this->_repeate_label_.push_back(node->label());
 		}
 	}
-	this->emitIR(node);
+	this->emitIR(node, namescope);
 
 	if (node->isCondit()) {		/* CONDITION NODE */
 		std::string label;
@@ -145,8 +141,8 @@ void Zerg::_compileCFG_(CFG *node, std::string label) {
 	}
 
 	/* process other stage in CFG */
-	this->_compileCFG_(node->nextCFG(true));
-	this->_compileCFG_(node->nextCFG(false));
+	this->_compileCFG_(node->nextCFG(true), namescope);
+	this->_compileCFG_(node->nextCFG(false), namescope);
 
 	if (node->isBranch() && node == node->prev()->nextCFG(true)) {
 		if (AST_WHILE == node->prev()->child(0)->type()) {
@@ -166,7 +162,7 @@ void Zerg::_compileCFG_(CFG *node, std::string label) {
 		}
 	}
 }
-void Zerg::emitIR(AST *node) {
+void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 	static int regs = 0;
 	static std::vector<std::string> stack;
 
@@ -182,9 +178,9 @@ void Zerg::emitIR(AST *node) {
 			tmp = IR::randstr();
 			x = node->child(0);
 			y = node->child(1);
-			this->emitIR(x);
+			this->emitIR(x, namescope);
 			this->emit("JMP_FALSE", tmp, x->data());
-			this->emitIR(y);
+			this->emitIR(y, namescope);
 			this->emit("STORE", x->data(), y->data());
 			this->emit("LABEL", tmp);
 			node->setReg(x->getReg());
@@ -195,9 +191,9 @@ void Zerg::emitIR(AST *node) {
 			tmp = IR::randstr();
 			x = node->child(0);
 			y = node->child(1);
-			this->emitIR(x);
+			this->emitIR(x, namescope);
 			this->emit("JMP_TRUE", tmp, x->data());
-			this->emitIR(y);
+			this->emitIR(y, namescope);
 			this->emit("STORE", x->data(), y->data());
 			this->emit("LABEL", tmp);
 			node->setReg(x->getReg());
@@ -207,8 +203,8 @@ void Zerg::emitIR(AST *node) {
 
 			x = node->child(0);
 			y = node->child(1);
-			this->emitIR(x);
-			this->emitIR(y);
+			this->emitIR(x, namescope);
+			this->emitIR(y, namescope);
 			this->emit("XOR", x->data(), y->data());
 			node->setReg(x->getReg());
 			return ;
@@ -216,7 +212,7 @@ void Zerg::emitIR(AST *node) {
 			ALERT(1 != node->length());
 
 			x = node->child(0);
-			this->emitIR(x);
+			this->emitIR(x, namescope);
 			this->emit("XOR", x->data(), "0x1");
 			node->setReg(x->getReg());
 			return;
@@ -232,28 +228,29 @@ void Zerg::emitIR(AST *node) {
 							this->emit("PARAM", cur->data());
 							break;
 						case AST_STRING:
-							this->emitIR(cur);
+							this->emitIR(cur, namescope);
 							this->emit("PARAM", cur->data());
 							break;
 						default:
-							this->emitIR(cur);
+							this->emitIR(cur, namescope);
 							this->emit("PARAM", cur->data());
 							break;
 					}
 				}
 				this->emit("INTERRUPT");
+				node->setReg(SYSCALL_REG);
 				return;
 			}
 		default:
 			/* Run DFS */
 			for (size_t i = 0; i < node->length(); ++i) {
-				this->emitIR(node->child(i));
+				this->emitIR(node->child(i), namescope);
 			}
 			break;
 	}
 
 	/* translate AST to IR */
-	_D(LOG_DEBUG, "emit IR on %s", node->data().c_str());
+	_D(LOG_DEBUG, "emit IR on %s #%zu", node->data().c_str(), namescope.size());
 	switch(node->type()) {
 		case AST_ROOT:
 			/* NOP */
@@ -280,6 +277,7 @@ void Zerg::emitIR(AST *node) {
 					break;
 				default:
 					tmp = node->data();
+					node->vtype(namescope[node->data()]);
 					node->setReg(++regs);
 
 					this->emit("LOAD", node->data(), tmp, __IR_LOCAL_VAR__);
@@ -454,6 +452,8 @@ void Zerg::emitIR(AST *node) {
 			y = node->child(1);
 
 			this->emit("STORE", x->data(), y->data(), __IR_LOCAL_VAR__);
+			x->vtype(y->vtype());
+			namescope[x->data()] = x->vtype();
 			break;
 		case AST_PRINT:
 			/* FIXME - hardcode for build-in funciton: str() */
@@ -462,11 +462,8 @@ void Zerg::emitIR(AST *node) {
 			ALERT(0 == node->length());
 			x= node->child(0);
 
-			switch(x->type()) {
-				case AST_LESS:   case AST_LESS_OR_EQUAL:
-				case AST_GRATE:  case AST_GRATE_OR_EQUAL:
-				case AST_EQUAL:
-				case AST_LOG_AND: case AST_LOG_OR: case AST_LOG_XOR: case AST_LOG_NOT:
+			switch(x->vtype()) {
+				case VTYPE_BOOLEAN:
 					this->emit("ASM", "cmp", x->data(), "0x0");
 					this->emit("ASM", "jz", "&" + tmp + "__SHOW_FALSE__");
 					this->emit("ASM", "lea", "rsi", "&TRUE");
@@ -481,7 +478,7 @@ void Zerg::emitIR(AST *node) {
 					this->emit("ASM", "mov", "rdi", "0x01");
 					this->emit("INTERRUPT");
 					break;
-				default:
+				case VTYPE_INTEGER:
 					this->emit("ASM", "mov", "rax", x->data());
 
 					this->emit("ASM", "asm", tmp + "__INT_TO_STR__:");
@@ -536,6 +533,9 @@ void Zerg::emitIR(AST *node) {
 
 					this->emit("ASM", "add", "rsp", "0x40");
 					this->emit("ASM", "pop", "rbp");
+					break;
+				default:
+					_D(LOG_CRIT, "Not Implemented `%s` [0x%X]", x->data().c_str(), x->vtype());
 					break;
 			}
 
@@ -625,7 +625,9 @@ std::string Zerg::regalloc(std::string src) {
 	int cnt = 0;
 	std::string tmp;
 
-	if (1 ==  sscanf(src.c_str(), __IR_REG_FMT__, &cnt)) {
+	if (src == __IR_SYSCALL_REG__) {
+		return SYSCALL_REG;
+	} else if (1 ==  sscanf(src.c_str(), __IR_REG_FMT__, &cnt)) {
 		if (0 != _alloc_regs_map_.count(src)) {
 			/* HACK - Found in cache */
 			tmp = _alloc_regs_map_[src];

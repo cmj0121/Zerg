@@ -1,11 +1,31 @@
 #include <assert.h>
 #include "zerg.h"
 
-AST::AST(ZergToken src) : Tree<AST>(src), _emitted_(false), _raw_(src) {
-	this->_label_ = 0;
-	this->_reg_   = 0;
-	this->_type_  = src.type();
-	this->_weight_ = this->_raw_.weight();
+AST::AST(ZergToken src) : Tree<AST>(src), _raw_(src) {
+	this->_emitted_     = false;
+	this->_syscall_reg_ = false;
+	this->_label_       = 0;
+	this->_reg_         = 0;
+	this->_type_        = src.type();
+	this->_weight_      = this->_raw_.weight();
+
+	switch(this->_type_) {
+		case AST_NUMBER:
+			this->_vtype_ = VTYPE_INTEGER;
+			break;
+		case AST_LESS:   case AST_LESS_OR_EQUAL:
+		case AST_GRATE:  case AST_GRATE_OR_EQUAL:
+		case AST_EQUAL:
+		case AST_LOG_AND: case AST_LOG_OR: case AST_LOG_XOR: case AST_LOG_NOT:
+			this->_vtype_ = VTYPE_BOOLEAN;
+			break;
+		case AST_SYSCALL:
+			this->_vtype_ = VTYPE_OBJECT;
+			break;
+		default:
+			this->_vtype_ = VTYPE_UNKNOWN;
+			break;
+	}
 }
 
 AST* AST::insert(ZergToken src) {
@@ -108,6 +128,10 @@ void AST::setReg(int nr) {
 	/* set the register */
 	this->_reg_ = nr;
 }
+void AST::setReg(std::string reg) {
+	ALERT(reg != SYSCALL_REG);
+	this->_syscall_reg_ = true;
+}
 int AST::getReg(void) {
 	/* get the number of register */
 	return this->_reg_;
@@ -124,12 +148,27 @@ ASTType AST::type(void) {
 	/* category of the node in AST */
 	return this->_type_;
 }
+VType AST::vtype(void) {
+	/* category of the value type in AST */
+	if (VTYPE_UNKNOWN == this->_vtype_ && NULL != this->child(0)) {
+		return this->child(0)->vtype();
+	}
+	return this->_vtype_;
+}
+VType AST::vtype(VType src) {
+	/* Set the value type in AST */
+	this->_vtype_ = src;
+	return this->_vtype_;
+}
 std::string AST::data(void) {
 	char buff[BUFSIZ] = {0};
 
 	/* formatted data */
 	if (0 != this->_label_) {
 		snprintf(buff, sizeof(buff), __IR_LABEL_FMT__, this->_label_);
+		return buff;
+	} else if (true == this->_syscall_reg_) {
+		snprintf(buff, sizeof(buff), "%s", __IR_SYSCALL_REG__);
 		return buff;
 	} else if (0 != this->_reg_) {
 		/* return the register without limited count */
