@@ -30,6 +30,13 @@ static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 		DEF("and",	AST_LOG_AND,		12),
 		DEF("or",	AST_LOG_OR,			13),
 
+		DEF("(",	AST_PARENTHESES_OPEN,	0),
+		DEF(")",	AST_PARENTHESES_CLOSE,	0),
+		DEF("[",	AST_BRACKET_OPEN,		0),
+		DEF("]",	AST_BRACKET_CLOSE,		0),
+		DEF("{",	AST_DICT_OPEN,			0),
+		DEF("}",	AST_DICT_CLOSE,			0),
+
 		/* reserved words */
 		DEF("=",		AST_ASSIGN,			0),
 		DEF("print",	AST_PRINT,			0),

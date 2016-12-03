@@ -35,12 +35,13 @@ void IR::emit(IRToken token) {
 
 	return this->emit(token.op(), dst, src, extra);
 }
-void IR::emit(std::string op, std::string &dst, std::string &src, std::string &extra) {
+void IR::emit(std::string op, std::string &_dst, std::string &_src, std::string &_extra) {
 	static std::vector<std::string> stack;
+	std::string src, dst, extra;
 
-	dst   = this->regalloc(dst);
-	src   = this->regalloc(src);
-	extra = this->regalloc(extra);
+	dst   = this->regalloc(_dst);
+	src   = this->regalloc(_src);
+	extra = this->regalloc(_extra);
 
 	_D(LOG_INFO, "IR emit - %s %s %s %s",
 			op.c_str(), dst.c_str(), src.c_str(), extra.c_str());
@@ -57,7 +58,7 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 		int pos = 0;
 		char buff[BUFSIZ] = {0};
 
-		if (__IR_LOCAL_VAR__ == extra) {
+		if (src == _src) {
 			/* save local variable */
 			pos = std::find(stack.begin(), stack.end(), src) - stack.begin();
 
@@ -68,9 +69,6 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 				snprintf(buff, sizeof(buff), "[rbp-0X%X]", (pos+1) * 0x08);
 				(*this) += new Instruction("mov", dst, buff);
 			}
-		} else if (__IR_GLOBAL_VAR__ == extra) {
-			/* save global variable */
-			_D(LOG_CRIT, "Not Implemented");
 		} else if (dst != src) {
 			(*this) += new Instruction("mov", dst, src);
 		}
@@ -79,20 +77,28 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 		int pos = 0;
 		char buff[BUFSIZ] = {0};
 
-		if (__IR_LOCAL_VAR__ == extra) {
-			/* save local variable */
+		if (dst == _dst) {			/* save variable */
 			pos = std::find(stack.begin(), stack.end(), dst) - stack.begin();
 
+			/* HACK - only allow created variable */
+			ALERT(stack.size() == pos && "" != extra);
 			if (stack.size() == pos) {
 				/* save into stack */
 				stack.push_back(dst);
 			}
 			snprintf(buff, sizeof(buff), "[rbp-0X%X]", (pos+1) * 0x08);
-			(*this) += new Instruction("mov", buff, src);
-		} else if (__IR_GLOBAL_VAR__ == extra) {
-			/* save global variable */
-			_D(LOG_CRIT, "Not Implemented");
-		} else if (dst != src) {
+
+			if ("" == extra) {
+				/* save in local variable*/
+				(*this) += new Instruction("mov", buff, src);
+			} else {
+				std::string tmp = this->tmpreg();
+
+				(*this) += new Instruction("mov", tmp, buff);
+				snprintf(buff, sizeof(buff), "[%s+%s]", tmp.c_str(), extra.c_str());
+				(*this) += new Instruction("mov", buff, src);
+			}
+		} else if (dst != src) {	/* register STORE */
 			(*this) += new Instruction("mov", dst, src);
 		}
 	} else if (op == "ADD") {			/* (ADD,   DST, SRC) */
@@ -317,6 +323,10 @@ void IR::emit(std::string op, std::string &dst, std::string &src, std::string &e
 		_D(LOG_CRIT, "Not Implemented operators `%s`", op.c_str());
 		exit(-1);
 	}
+
+	_dst	= dst;
+	_src	= src;
+	_extra	= extra;
 }
 std::string IR::randstr(int size, std::string prefix, std::string suffix) {
 	/* generated a random label string */

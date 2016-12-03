@@ -181,7 +181,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			this->emitIR(x, namescope);
 			this->emit("JMP_FALSE", tmp, x->data());
 			this->emitIR(y, namescope);
-			this->emit("STORE", x->data(), y->data());
+			this->emit("STORE", x->data(), y->data(), x->getIndex());
 			this->emit("LABEL", tmp);
 			node->setReg(x->getReg());
 			return;
@@ -194,7 +194,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			this->emitIR(x, namescope);
 			this->emit("JMP_TRUE", tmp, x->data());
 			this->emitIR(y, namescope);
-			this->emit("STORE", x->data(), y->data());
+			this->emit("STORE", x->data(), y->data(), x->getIndex());
 			this->emit("LABEL", tmp);
 			node->setReg(x->getReg());
 			return;
@@ -217,6 +217,16 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			node->setReg(x->getReg());
 			return;
 		case AST_IDENTIFIER:
+			if (2 == node->length() && AST_BRACKET_OPEN == node->child(0)->type()) {
+				x = node->child(0);
+				ALERT(1 != x->length());
+
+				x = x->child(0);
+				this->emitIR(x, namescope);
+				node->setIndex(x);
+				/* FIXME - set as index of object */
+				return ;
+			}
 		case AST_SYSCALL:
 			if (2 == node->length() && AST_PARENTHESES_OPEN == node->child(0)->type()) {
 				for (size_t i = 0; i < node->child(0)->length(); ++i) {
@@ -262,7 +272,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 		case AST_NUMBER:
 			tmp = node->data();
 			node->setReg(++regs);
-			this->emit("STORE", node->data(), tmp);
+			this->emit("STORE", node->data(), tmp, node->getIndex());
 			break;
 		case AST_STRING:
 			tmp = node->data();
@@ -280,7 +290,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					node->vtype(namescope[node->data()]);
 					node->setReg(++regs);
 
-					this->emit("LOAD", node->data(), tmp, __IR_LOCAL_VAR__);
+					this->emit("LOAD", node->data(), tmp);
 					break;
 			}
 			break;
@@ -451,7 +461,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			x = node->child(0);
 			y = node->child(1);
 
-			this->emit("STORE", x->data(), y->data(), __IR_LOCAL_VAR__);
+			this->emit("STORE", x->data(), y->data(), x->getIndex());
 			x->vtype(y->vtype());
 			namescope[x->data()] = x->vtype();
 			break;
@@ -643,4 +653,8 @@ std::string Zerg::regalloc(std::string src) {
 	}
 
 	return src;
+}
+std::string Zerg::tmpreg(void) {
+	ALERT(0 == _alloc_regs_.size());
+	return _alloc_regs_[0];
 }

@@ -15,7 +15,6 @@
 #define __IR_LABEL_FMT__	"__ZERG_LABEL_%d__"
 #define __IR_SYSCALL_REG__	"SYSCALL_REG"
 #define __IR_LOCAL_VAR__	"LOCAL"
-#define __IR_GLOBAL_VAR__	"GLOBAL"
 
 /* Low-Level IR to emit Zasm language
  *
@@ -45,6 +44,7 @@ class IR : public Binary {
 		void emit(std::string op, std::string &dst, std::string &src, std::string &extra);
 
 		virtual std::string regalloc(std::string src) = 0;
+		virtual std::string tmpreg(void) = 0;
 	protected:
 		bool _only_ir_;
 		std::string randstr(int size=24, std::string prefix="__", std::string suffix="__");

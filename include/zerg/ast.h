@@ -27,6 +27,8 @@ class AST : public Tree<AST> {
 		void setLabel(int nr);
 		void setReg(int nr);
 		void setReg(std::string reg);
+		void setIndex(AST *src);
+		std::string getIndex(void);
 		int  getReg(void);
 		int  weight(void);
 		void weight(int src);
@@ -45,5 +47,6 @@ class AST : public Tree<AST> {
 		ZergToken _raw_;
 		ASTType _type_;
 		VType   _vtype_;
+		AST *_index_;
 };
 #endif /* __ZERG_AST_H__ */

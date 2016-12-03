@@ -20,6 +20,7 @@ class Zerg : public IR {
 		void emit(std::string op, std::string dst="", std::string src="", std::string extra="");
 
 		std::string regalloc(std::string src);
+		std::string tmpreg(void);
 	protected:
 		void lexer(std::string src);						/* lexer analysis */
 		ZergToken& parser(ZergToken &cur, ZergToken &prev);	/* syntax and semantic analysis */
