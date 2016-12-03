@@ -29,6 +29,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_ADD:    case AST_SUB:     case AST_LIKE:
 		case AST_LOG_NOT:
 			switch(prev.type()) {
+				case AST_TRUE: case AST_FALSE:
 				case AST_NEWLINE:
 				case AST_INDENT:
 				case AST_PRINT:
@@ -59,6 +60,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_EQUAL:
 		case AST_LOG_OR: case AST_LOG_AND: case AST_LOG_XOR:
 			switch(prev.type()) {
+				case AST_TRUE: case AST_FALSE:
 				case AST_NUMBER:
 				case AST_IDENTIFIER:
 					node = node->insert(cur);
@@ -105,6 +107,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			}
 			break;
 
+		case AST_TRUE: case AST_FALSE:
 		case AST_NUMBER:
 		case AST_IDENTIFIER:
 			switch(prev.type()) {

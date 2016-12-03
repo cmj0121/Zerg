@@ -269,6 +269,16 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 				node->setReg(x->getReg());
 			}
 			break;
+		case AST_TRUE:
+			node->setReg(++regs);
+			node->vtype(VTYPE_BOOLEAN);
+			this->emit("STORE", node->data(), "1");
+			break;
+		case AST_FALSE:
+			node->setReg(++regs);
+			node->vtype(VTYPE_BOOLEAN);
+			this->emit("STORE", node->data(), "0");
+			break;
 		case AST_NUMBER:
 			tmp = node->data();
 			node->setReg(++regs);

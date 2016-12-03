@@ -58,6 +58,9 @@ typedef enum _ASTType_ {
 	AST_BREAK,
 	AST_CONTINUE,
 
+	AST_TRUE,
+	AST_FALSE,
+
 	/* pair-token */
 	AST_PAIR_TOKEN			= 0x200,
 	AST_PARENTHESES_OPEN,
