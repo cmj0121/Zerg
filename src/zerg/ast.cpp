@@ -12,6 +12,7 @@ AST::AST(ZergToken src) : Tree<AST>(src), _raw_(src) {
 
 	switch(this->_type_) {
 		case AST_NUMBER:
+		case AST_SYSCALL:
 			this->_vtype_ = VTYPE_INTEGER;
 			break;
 		case AST_LESS:   case AST_LESS_OR_EQUAL:
@@ -20,7 +21,7 @@ AST::AST(ZergToken src) : Tree<AST>(src), _raw_(src) {
 		case AST_LOG_AND: case AST_LOG_OR: case AST_LOG_XOR: case AST_LOG_NOT:
 			this->_vtype_ = VTYPE_BOOLEAN;
 			break;
-		case AST_SYSCALL:
+		case AST_BUILDIN_BUFFER:
 			this->_vtype_ = VTYPE_OBJECT;
 			break;
 		default:

@@ -60,6 +60,7 @@ typedef enum _ASTType_ {
 
 	AST_TRUE,
 	AST_FALSE,
+	AST_BUILDIN_BUFFER,
 
 	/* pair-token */
 	AST_PAIR_TOKEN			= 0x200,

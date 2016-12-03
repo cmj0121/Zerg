@@ -130,6 +130,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			}
 			break;
 		case AST_SYSCALL:
+		case AST_BUILDIN_BUFFER:
 			switch (prev.type()) {
 				case AST_NEWLINE:
 				case AST_ASSIGN:
@@ -253,6 +254,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_PARENTHESES_OPEN:
 			switch(prev.type()) {
 				case AST_SYSCALL:
+				case AST_BUILDIN_BUFFER:
 					node = node->insert(cur);
 					break;
 				default:

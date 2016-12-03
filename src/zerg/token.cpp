@@ -50,6 +50,8 @@ static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 
 		DEF("TRUE",		AST_TRUE,			1),
 		DEF("FALSE",	AST_FALSE,			1),
+
+		DEF("__buffer__",	AST_BUILDIN_BUFFER,	0),
 	#undef DEF
 };
 

@@ -216,17 +216,40 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			this->emit("XOR", x->data(), "0x1");
 			node->setReg(x->getReg());
 			return;
+		case AST_BUILDIN_BUFFER:
+			ALERT(2 != node->length() || 1 != node->child(0)->length());
+
+			x = node->child(0)->child(0);
+			if (0 != x->length()) {
+				this->emitIR(x, namescope);
+				node->setReg(x->getReg());
+			}
+			return ;
 		case AST_IDENTIFIER:
 			if (2 == node->length() && AST_BRACKET_OPEN == node->child(0)->type()) {
-				x = node->child(0);
-				ALERT(1 != x->length());
+				VType type = VTYPE_UNKNOWN;
 
-				x = x->child(0);
-				this->emitIR(x, namescope);
-				node->setIndex(x);
-				/* FIXME - set as index of object */
+
+				ALERT(1 != node->child(0)->length() || 0 == namescope.count(node->data()));
+				x    = node->child(0)->child(0);
+				type = namescope[node->data()];
+
+				switch(type) {
+					case VTYPE_BUFFER:
+						this->emitIR(x, namescope);
+						node->setIndex(x);
+						break;
+					default:
+						_D(LOG_CRIT, "`%s` need to be declare as __buffer__", node->data().c_str());
+						break;
+				}
 				return ;
 			}
+
+			for (size_t i = 0; i < node->length(); ++i) {
+				this->emitIR(node->child(i), namescope);
+			}
+			break;
 		case AST_SYSCALL:
 			if (2 == node->length() && AST_PARENTHESES_OPEN == node->child(0)->type()) {
 				for (size_t i = 0; i < node->child(0)->length(); ++i) {
@@ -251,6 +274,11 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 				node->setReg(SYSCALL_REG);
 				return;
 			}
+
+			for (size_t i = 0; i < node->length(); ++i) {
+				this->emitIR(node->child(i), namescope);
+			}
+			break;
 		default:
 			/* Run DFS */
 			for (size_t i = 0; i < node->length(); ++i) {
@@ -479,8 +507,15 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			x = node->child(0);
 			y = node->child(1);
 
-			this->emit("STORE", x->data(), y->data(), x->getIndex());
-			x->vtype(y->vtype());
+			if (AST_BUILDIN_BUFFER != y->type() || x->data() != y->child(0)->child(0)->data()) {
+				this->emit("STORE", x->data(), y->data(), x->getIndex());
+				x->vtype(y->vtype());
+			}
+
+			if (AST_BUILDIN_BUFFER == y->type()) {
+				/* set buffer vtype */
+				x->vtype(VTYPE_BUFFER);
+			}
 			namescope[x->data()] = x->vtype();
 			break;
 		case AST_PRINT:
