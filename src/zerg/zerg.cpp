@@ -331,7 +331,11 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			switch(node->length()) {
 				case 1:
 					x = node->child(0);
-					this->emit("NEG", x->data());
+					if (VTYPE_BOOLEAN == x->vtype()) {
+						this->emit("XOR", x->data(), "0x01");
+					} else {
+						this->emit("NEG", x->data());
+					}
 					node->setReg(x->getReg());
 					break;
 				case 2:
@@ -351,7 +355,11 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			switch(node->length()) {
 				case 1:
 					x = node->child(0);
-					this->emit("NOT", x->data());
+					if (VTYPE_BOOLEAN == x->vtype()) {
+						this->emit("XOR", x->data(), "0x01");
+					} else {
+						this->emit("NOT", x->data());
+					}
 					node->setReg(x->getReg());
 					break;
 				default:
