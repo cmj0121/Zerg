@@ -10,6 +10,9 @@ helloWorld.case: helloWorld.zs
 	../zasm -o $@ $^
 	test "`./$@ 2>&1 >/dev/null`" == 'Welcome to ZASM - A prototype for a simple assembler'
 	test "`./$@ 2>/dev/null`"     == 'Hello World'
+	../zasm --symbol -o $@ $^
+	test "`./$@ 2>&1 >/dev/null`" == 'Welcome to ZASM - A prototype for a simple assembler'
+	test "`./$@ 2>/dev/null`"     == 'Hello World'
 
 arithmetic.case: arithmetic.zg
 	../zerg -o $@ $^

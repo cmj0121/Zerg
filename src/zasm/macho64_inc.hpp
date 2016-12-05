@@ -4,6 +4,8 @@
 #include <mach-o/stab.h>
 #include <mach/vm_prot.h>
 
+typedef std::pair<std::string, struct nlist_64> MACHO64SYMB;
+
 void header(std::fstream &src, int ncmds, off_t offset, bool pie=false);
 void seg_pagezero(std::fstream &src);
 void seg_text(std::fstream &src, int size, off_t entry, off_t offset);
@@ -90,8 +92,15 @@ void sec_text(std::fstream &src, int size, off_t entry, off_t offset) {
 	src.write((char *)&hdr, sizeof(struct section_64));
 }
 
-void seg_linkedit (std::fstream &src) {
+void seg_linkedit (std::fstream &src, std::vector<MACHO64SYMB> symb) {
 	struct segment_command_64 hdr;
+	uint32_t strlen = 0;
+
+	for (auto it : symb) {
+		strlen += it.first.size() + 1;
+	}
+
+	strlen += symb.size() * sizeof(struct nlist_64);
 
 	hdr.cmd		= LC_SEGMENT_64;
 	hdr.cmdsize	= sizeof(struct segment_command_64);
@@ -99,7 +108,7 @@ void seg_linkedit (std::fstream &src) {
 	hdr.vmaddr		= 0x0;
 	hdr.vmsize		= 0x0;
 	hdr.fileoff		= 0x1000;	/* Don't know why need large than 4K */
-	hdr.filesize	= 0x0;
+	hdr.filesize	= strlen;
 	hdr.maxprot		= VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE;
 	hdr.initprot	= VM_PROT_READ;
 	hdr.nsects		= 0x0;
@@ -147,16 +156,22 @@ void dyld_info (std::fstream &src) {
 	src.write((char *)&dyld, sizeof(struct dyld_info_command));
 }
 
-void seg_symtab(std::fstream &src) {
+void seg_symtab(std::fstream &src, std::vector<MACHO64SYMB> symb) {
+	off_t offset = 0x1000;	/* Don't know why need large than __LINKEDIT */
+	uint32_t strlen = 0;
 	struct symtab_command  symtab;
+
+	for (auto it : symb) {
+		strlen += it.first.size() + 1;
+	}
 
 	symtab.cmd			= LC_SYMTAB;
 	symtab.cmdsize		= sizeof(struct symtab_command);
 
-	symtab.symoff		= 0x1000;	/* Don't know why need large than __LINKEDIT */
-	symtab.nsyms		= 0x0;
-	symtab.stroff		= 0x1000;
-	symtab.strsize		= 0x0;
+	symtab.symoff		= offset;
+	symtab.nsyms		= symb.size();
+	symtab.stroff		= offset + symb.size() * sizeof(nlist_64);
+	symtab.strsize		= strlen;
 
 	src.write((char *)&symtab, sizeof(struct symtab_command));
 }

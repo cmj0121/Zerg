@@ -113,7 +113,7 @@ class Binary : public Utils {
 		Binary(std::string src, bool pie=false);
 		virtual ~Binary();
 
-		off_t dump(off_t entry = 0x1000);
+		off_t dump(off_t entry = 0x1000, bool symb=false);
 		off_t length(void);
 		off_t nrInst(void);
 		void insert(Instruction* inst, int pos);
@@ -126,12 +126,13 @@ class Binary : public Utils {
 		std::string  _src_;
 		std::fstream _bin_;
 		std::vector<Instruction *> _inst_;
+		std::vector<std::pair<std::string, struct nlist_64>> _symb_;
 };
 
 class Zasm : public Binary {
 	public:
 		Zasm(std::string src, bool pie=false) : Binary(src, pie) {};
-		void compile(std::fstream &src);
+		void compile(std::fstream &src, bool symb=false);
 		ZasmToken* token(std::fstream &src);
 };
 

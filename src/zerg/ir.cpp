@@ -21,11 +21,14 @@ std::fstream& operator<< (std::fstream &stream, const IRToken &src) {
 	return stream;
 }
 
-IR::IR(std::string dst, off_t entry, bool pie) : Binary(dst, pie), _param_nr_(0), _entry_(entry) {
+IR::IR(std::string dst, off_t entry, bool pie, bool symb) : Binary(dst, pie) {
+	this->_param_nr_	= 0;
+	this->_entry_		= entry;
+	this->_symb_		= symb;
 }
 IR::~IR(void) {
 	if (!this->_only_ir_) {
-		Binary::dump(this->_entry_);
+		Binary::dump(this->_entry_, this->_symb_);
 	}
 }
 

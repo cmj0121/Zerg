@@ -6,9 +6,11 @@
 #include "zerg.h"
 
 int  __verbose__  = 0;
-bool _only_ir_	  = false;
+int  _entry_      = 0x1000;
+bool _only_ir_    = false;
 bool _gen_grammar = false;
 bool _pie_        = false;
+bool _symbol_     = false;
 
 void help(void) {
 	fprintf(stderr, "ZERG - A useless compiler\n");
@@ -21,6 +23,7 @@ void help(void) {
 	fprintf(stderr, "    -r, --ir               Show the IR\n");
 	fprintf(stderr, "    -v, --verbose          Show the verbose message\n");
 	fprintf(stderr, "        --pie              PIE - Position-Independent Executables\n");
+	fprintf(stderr, "        --symbol           Show the symbol information\n");
 	exit(-1);
 }
 int main(int argc, char *argv[]) {
@@ -32,6 +35,7 @@ int main(int argc, char *argv[]) {
 		{"output",	required_argument,	0, 'o'},
 		{"pie",		no_argument,		0, 'p'},
 		{"ir",		no_argument, 		0, 'r'},
+		{"symbol",	optional_argument,	0, 'S'},
 		{"verbose", optional_argument,	0, 'v'},
 		{NULL, 0, 0, 0}
 	};
@@ -49,10 +53,27 @@ int main(int argc, char *argv[]) {
 				dst = optarg;
 				break;
 			case 'p':
-				_pie_ = true;
+				switch(optIdx) {
+					case 3:		/* --pie */
+						_pie_ = true;
+						break;
+					default:
+						_D(LOG_CRIT, "Not Implemented");
+						break;
+				}
 				break;
 			case 'r':
 				_only_ir_ = true;
+				break;
+			case 'S':
+				switch(optIdx) {
+					case 5:		/* --symbol */
+						_symbol_ = true;
+						break;
+					default:
+						_D(LOG_CRIT, "Not Implemented");
+						break;
+				}
 				break;
 			case 'v':
 				__verbose__++;
@@ -70,7 +91,7 @@ int main(int argc, char *argv[]) {
 	} else if (_gen_grammar) {
 		_D(LOG_CRIT, "Not Implemented");
 	} else {
-		Zerg zerg(dst, _pie_);
+		Zerg zerg(dst, _pie_, _entry_, _symbol_);
 		zerg.compile(argv[0], _only_ir_);
 	}
 

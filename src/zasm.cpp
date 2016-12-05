@@ -10,8 +10,9 @@
 
 int  __verbose__ = 0;
 bool __pie__     = false;
+bool __symbol__  = false;
 
-void Zasm::compile(std::fstream &src) {
+void Zasm::compile(std::fstream &src, bool symb) {
 	off_t entry = 0x1000;
 	std::vector<ZasmToken *> line;
 	ZasmToken *token = NULL;
@@ -60,7 +61,7 @@ void Zasm::compile(std::fstream &src) {
 	}
 
 	/* Output the binary */
-	this->dump(entry);
+	this->dump(entry, symb);
 }
 ZasmToken* Zasm::token(std::fstream &src) {
 	char ch;
@@ -126,6 +127,7 @@ void help(void) {
 	fprintf(stderr, "    -v, --verbose          Show the verbose message\n");
 	fprintf(stderr, "    -o, --output <file>    Write output to <file>\n");
 	fprintf(stderr, "        --pie              PIE - Position-Independent Executables\n");
+	fprintf(stderr, "        --symbol           Show the symbol information\n");
 	exit(-1);
 }
 int main(int argc, char *argv[]) {
@@ -134,6 +136,7 @@ int main(int argc, char *argv[]) {
 	struct option options[] = {
 		{"output",  optional_argument,	0, 'o'},
 		{"pie",		no_argument,		0, 'p'},
+		{"symbol",	optional_argument,	0, 'S'},
 		{"verbose",	optional_argument,	0, 'v'},
 		{NULL, 0, 0, 0}
 	};
@@ -146,7 +149,24 @@ int main(int argc, char *argv[]) {
 				dst = optarg;
 				break;
 			case 'p':
-				__pie__ = true;
+				switch(optIdx) {
+					case 1:		/* --pie */
+						__pie__ = true;
+						break;
+					default:
+						_D(LOG_CRIT, "Not Implemented");
+						break;
+				}
+				break;
+			case 'S':
+				switch(optIdx) {
+					case 2:		/* --symbol */
+						__symbol__ = true;
+						break;
+					default:
+						_D(LOG_CRIT, "Not Implemented");
+						break;
+				}
 				break;
 			case 'v':
 				__verbose__++;
@@ -173,7 +193,7 @@ int main(int argc, char *argv[]) {
 		src.open(argv[0], std::fstream::in);
 
 		Zasm *bin = new Zasm(dst, __pie__);
-		bin->compile(src);
+		bin->compile(src, __symbol__);
 
 		delete bin;
 	} while (0);

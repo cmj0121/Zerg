@@ -37,7 +37,7 @@ class IRToken {
 
 class IR : public Binary {
 	public:
-		IR(std::string dst, off_t entry = 0x1000, bool pie=false);
+		IR(std::string dst, off_t entry = 0x1000, bool pie=false, bool symb=false);
 		~IR(void);
 
 		void emit(IRToken token);
@@ -49,6 +49,7 @@ class IR : public Binary {
 		std::string randstr(int size=24, std::string prefix="__", std::string suffix="__");
 	private:
 		int _param_nr_;
+		bool _symb_;
 		off_t _entry_;
 		std::string _param_[MAX_ZASMP_PARAM];
 };
