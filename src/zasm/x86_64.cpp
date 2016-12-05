@@ -64,6 +64,12 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 			REX_R = 1;
 		}
 
+		if (this->dst().isMEM2() && this->dst().indexReg()->isEXT()) {
+			REX_X = 1;
+		} else if (this->src().isMEM2() && this->src().indexReg()->isEXT()) {
+			REX_X = 1;
+		}
+
 		if (0 == (inst.flags & INST_SECONDARY)) {
 			REX_W = 1;
 		}
@@ -171,7 +177,8 @@ void Instruction::modRW(X86_64_INST &inst) {
 			mod = 0 == (~0x7F & this->offset()) ? 0x01 : 0x02;
 		}
 
-		_payload_[_length_++] = 0x04 | (mod << 6);
+		reg = this->src().asInt();
+		_payload_[_length_++] = 0x04 | (reg & 0x07) << 3 | (mod << 6);
 		_D(ZASM_LOG_WARNING, "Mod R/W       - %02X", _payload_[_length_-1]);
 
 		mod = 0x0;

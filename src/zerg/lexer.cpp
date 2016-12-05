@@ -56,7 +56,6 @@ void Zerg::lexer(std::string src) {
 							while (_indent_cnt_ > cnt) {
 								_indent_cnt_--;
 								token = "\r";
-								_D(LOG_BUG, "DEDENT");
 								prev  = this->parser(token, prev);
 							}
 						}

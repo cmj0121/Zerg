@@ -16,8 +16,6 @@ typedef enum _ASTType_ {
 	AST_NUMBER			= 0x10,
 	AST_STRING,
 	AST_IDENTIFIER,
-	AST_PARENTHESES_OPEN,
-	AST_PARENTHESES_CLOSE,
 
 	/* operators */
 	AST_OPERATORS			= 0x20,
@@ -57,6 +55,21 @@ typedef enum _ASTType_ {
 	AST_PRINT,
 	AST_NOP,
 	AST_WHILE,
+	AST_BREAK,
+	AST_CONTINUE,
+
+	AST_TRUE,
+	AST_FALSE,
+	AST_BUILDIN_BUFFER,
+
+	/* pair-token */
+	AST_PAIR_TOKEN			= 0x200,
+	AST_PARENTHESES_OPEN,
+	AST_PARENTHESES_CLOSE,
+	AST_BRACKET_OPEN,
+	AST_BRACKET_CLOSE,
+	AST_DICT_OPEN,
+	AST_DICT_CLOSE,
 } ASTType;
 
 #define IS_OPERATOR(type)	(AST_OPERATORS < type && AST_RESERVED > type)
@@ -70,6 +83,7 @@ class ZergToken : public std::string {
 
 		void setType(ASTType type);
 		ASTType type(void);
+		void setIndex(ZergToken *src);
 
 		void weight(int weight);
 		int  weight(void);

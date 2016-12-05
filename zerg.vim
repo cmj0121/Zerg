@@ -55,6 +55,8 @@ syn keyword ZERGRepeat        while break continue
 syn match   ZERGFunction      "\%(\(func\|class\)\s\+\)\@<=\w\+" contained
 syn keyword ZERGException     try except finally raise
 syn keyword ZERGInclude       from import
+syn keyword ZERGConstant      TRUE FALSE
+syn keyword ZERGBuiltinType   __buffer__
 hi def link ZERGConstant      Constant
 hi def link ZERGIdentifier    Identifier
 hi def link ZERGStatement     Statement
@@ -64,6 +66,8 @@ hi def link ZERGRepeat        Statement
 hi def link ZERGFunction      Function
 hi def link ZERGException     Statement
 hi def link ZERGInclude       Include
+hi def link ZERGConstant      Constant
+hi def link ZERGBuiltinType   StorageClass
 
 " Reserved Function
 syn keyword ZERGReservedFn    print syscall

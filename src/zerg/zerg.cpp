@@ -44,7 +44,7 @@ void Zerg::compile(std::string src, bool only_ir) {
 		}
 	}
 }
-void Zerg::compileCFG(CFG *node) {
+void Zerg::compileCFG(CFG *node, std::map<std::string, VType> &&namescope) {
 	int cnt = 0;
 	char cntvar[64] = {0};
 
@@ -59,8 +59,8 @@ void Zerg::compileCFG(CFG *node) {
 		/* PROLOGUE */
 		this->emit("PROLOGUE");
 
-		this->_compileCFG_(node->nextCFG(true));
-		this->_compileCFG_(node->nextCFG(false));
+		this->_compileCFG_(node->nextCFG(true), namescope);
+		this->_compileCFG_(node->nextCFG(false), namescope);
 
 		/* EPILOGUE */
 		this->emit("EPILOGUE", cntvar);
@@ -75,20 +75,16 @@ void Zerg::compileCFG(CFG *node) {
 		/* PROLOGUE */
 		this->emit("PROLOGUE", cntvar);
 
-		this->_compileCFG_(node);
+		this->_compileCFG_(node, namescope);
 
 		/* EPILOGUE */
 		this->emit("EPILOGUE", cntvar);
 	}
 }
-void Zerg::_compileCFG_(CFG *node, std::string label) {
+void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
 	CFG *tmp = NULL;
 
 	if (NULL == node) {
-		if ("" != label) {
-			_D(LOG_BUG, "set label %s", node->label().c_str());
-			this->emit("LABEL", label);
-		}
 		return ;
 	}
 
@@ -123,8 +119,12 @@ void Zerg::_compileCFG_(CFG *node, std::string label) {
 	} else if (node->isCondit()) {
 		_D(LOG_DEBUG, "set label %s", node->label().c_str());
 		this->emit("LABEL", node->label());
+
+		if (NULL != node->child(0) && AST_WHILE == node->child(0)->type()) {
+			this->_repeate_label_.push_back(node->label());
+		}
 	}
-	this->emitIR(node);
+	this->emitIR(node, namescope);
 
 	if (node->isCondit()) {		/* CONDITION NODE */
 		std::string label;
@@ -141,8 +141,8 @@ void Zerg::_compileCFG_(CFG *node, std::string label) {
 	}
 
 	/* process other stage in CFG */
-	this->_compileCFG_(node->nextCFG(true));
-	this->_compileCFG_(node->nextCFG(false));
+	this->_compileCFG_(node->nextCFG(true), namescope);
+	this->_compileCFG_(node->nextCFG(false), namescope);
 
 	if (node->isBranch() && node == node->prev()->nextCFG(true)) {
 		if (AST_WHILE == node->prev()->child(0)->type()) {
@@ -156,9 +156,13 @@ void Zerg::_compileCFG_(CFG *node, std::string label) {
 			_D(LOG_DEBUG, "set label %s_END", node->prev()->label().c_str());
 			this->emit("LABEL", node->prev()->label() + "_END");
 		}
+
+		if (NULL != node->child(0) && AST_WHILE == node->child(0)->type()) {
+			this->_repeate_label_.pop_back();
+		}
 	}
 }
-void Zerg::emitIR(AST *node) {
+void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 	static int regs = 0;
 	static std::vector<std::string> stack;
 
@@ -174,12 +178,12 @@ void Zerg::emitIR(AST *node) {
 			tmp = IR::randstr();
 			x = node->child(0);
 			y = node->child(1);
-			this->emitIR(x);
+			this->emitIR(x, namescope);
 			this->emit("JMP_FALSE", tmp, x->data());
-			this->emitIR(y);
-			this->emit("STORE", x->data(), y->data());
+			this->emitIR(y, namescope);
+			this->emit("STORE", x->data(), y->data(), x->getIndex());
 			this->emit("LABEL", tmp);
-			node->setReg(x->getReg());
+			node->setReg(x);
 			return;
 		case AST_LOG_OR:
 			ALERT(2 != node->length());
@@ -187,32 +191,64 @@ void Zerg::emitIR(AST *node) {
 			tmp = IR::randstr();
 			x = node->child(0);
 			y = node->child(1);
-			this->emitIR(x);
+			this->emitIR(x, namescope);
 			this->emit("JMP_TRUE", tmp, x->data());
-			this->emitIR(y);
-			this->emit("STORE", x->data(), y->data());
+			this->emitIR(y, namescope);
+			this->emit("STORE", x->data(), y->data(), x->getIndex());
 			this->emit("LABEL", tmp);
-			node->setReg(x->getReg());
+			node->setReg(x);
 			return;
 		case AST_LOG_XOR:
 			ALERT(2 != node->length());
 
 			x = node->child(0);
 			y = node->child(1);
-			this->emitIR(x);
-			this->emitIR(y);
+			this->emitIR(x, namescope);
+			this->emitIR(y, namescope);
 			this->emit("XOR", x->data(), y->data());
-			node->setReg(x->getReg());
+			node->setReg(x);
 			return ;
 		case AST_LOG_NOT:
 			ALERT(1 != node->length());
 
 			x = node->child(0);
-			this->emitIR(x);
+			this->emitIR(x, namescope);
 			this->emit("XOR", x->data(), "0x1");
-			node->setReg(x->getReg());
+			node->setReg(x);
 			return;
+		case AST_BUILDIN_BUFFER:
+			ALERT(1 != node->length());
+
+			x = node->child(0);
+			this->emitIR(x, namescope);
+			node->setReg(x);
+			return ;
 		case AST_IDENTIFIER:
+			if (2 == node->length() && AST_BRACKET_OPEN == node->child(0)->type()) {
+				VType type = VTYPE_UNKNOWN;
+
+
+				ALERT(1 != node->child(0)->length() || 0 == namescope.count(node->data()));
+				x    = node->child(0)->child(0);
+				type = namescope[node->data()];
+
+				switch(type) {
+					case VTYPE_BUFFER:
+						this->emitIR(x, namescope);
+						node->setIndex(x);
+						break;
+					default:
+						_D(LOG_DEBUG, "%s [0x%X]", node->data().c_str(), type);
+						_D(LOG_CRIT, "`%s` need to be declare as __buffer__", node->data().c_str());
+						break;
+				}
+				return ;
+			}
+
+			for (size_t i = 0; i < node->length(); ++i) {
+				this->emitIR(node->child(i), namescope);
+			}
+			break;
 		case AST_SYSCALL:
 			if (2 == node->length() && AST_PARENTHESES_OPEN == node->child(0)->type()) {
 				for (size_t i = 0; i < node->child(0)->length(); ++i) {
@@ -224,40 +260,56 @@ void Zerg::emitIR(AST *node) {
 							this->emit("PARAM", cur->data());
 							break;
 						case AST_STRING:
-							this->emitIR(cur);
+							this->emitIR(cur, namescope);
 							this->emit("PARAM", cur->data());
 							break;
 						default:
-							this->emitIR(cur);
+							this->emitIR(cur, namescope);
 							this->emit("PARAM", cur->data());
 							break;
 					}
 				}
 				this->emit("INTERRUPT");
+				node->setReg(SYSCALL_REG);
 				return;
 			}
+
+			for (size_t i = 0; i < node->length(); ++i) {
+				this->emitIR(node->child(i), namescope);
+			}
+			break;
 		default:
 			/* Run DFS */
 			for (size_t i = 0; i < node->length(); ++i) {
-				this->emitIR(node->child(i));
+				this->emitIR(node->child(i), namescope);
 			}
 			break;
 	}
 
 	/* translate AST to IR */
-	_D(LOG_DEBUG, "emit IR on %s", node->data().c_str());
+	_D(LOG_DEBUG, "emit IR on %s #%zu", node->data().c_str(), namescope.size());
 	switch(node->type()) {
 		case AST_ROOT:
 			/* NOP */
 			if (0 != node->length()) {
 				x = node->child(0);
-				node->setReg(x->getReg());
+				node->setReg(x);
 			}
+			break;
+		case AST_TRUE:
+			node->setReg(++regs);
+			node->vtype(VTYPE_BOOLEAN);
+			this->emit("STORE", node->data(), "1");
+			break;
+		case AST_FALSE:
+			node->setReg(++regs);
+			node->vtype(VTYPE_BOOLEAN);
+			this->emit("STORE", node->data(), "0");
 			break;
 		case AST_NUMBER:
 			tmp = node->data();
 			node->setReg(++regs);
-			this->emit("STORE", node->data(), tmp);
+			this->emit("STORE", node->data(), tmp, node->getIndex());
 			break;
 		case AST_STRING:
 			tmp = node->data();
@@ -272,9 +324,10 @@ void Zerg::emitIR(AST *node) {
 					break;
 				default:
 					tmp = node->data();
+					node->vtype(namescope[node->data()]);
 					node->setReg(++regs);
 
-					this->emit("LOAD", node->data(), tmp, __IR_LOCAL_VAR__);
+					this->emit("LOAD", node->data(), tmp);
 					break;
 			}
 			break;
@@ -285,14 +338,14 @@ void Zerg::emitIR(AST *node) {
 				case 1:
 					/* NOP */
 					x = node->child(0);
-					node->setReg(x->getReg());
+					node->setReg(x);
 					break;
 					break;
 				case 2:
 					x = node->child(0);
 					y = node->child(1);
 					this->emit("ADD", x->data(), y->data());
-					node->setReg(x->getReg());
+					node->setReg(x);
 					break;
 				default:
 					_D(LOG_CRIT, "Not Support ADD with #%zu", node->length());
@@ -305,14 +358,18 @@ void Zerg::emitIR(AST *node) {
 			switch(node->length()) {
 				case 1:
 					x = node->child(0);
-					this->emit("NEG", x->data());
-					node->setReg(x->getReg());
+					if (VTYPE_BOOLEAN == x->vtype()) {
+						this->emit("XOR", x->data(), "0x01");
+					} else {
+						this->emit("NEG", x->data());
+					}
+					node->setReg(x);
 					break;
 				case 2:
 					x = node->child(0);
 					y = node->child(1);
 					this->emit("SUB", x->data(), y->data());
-					node->setReg(x->getReg());
+					node->setReg(x);
 					break;
 				default:
 					_D(LOG_CRIT, "Not Support SUB with #%zu", node->length());
@@ -325,8 +382,12 @@ void Zerg::emitIR(AST *node) {
 			switch(node->length()) {
 				case 1:
 					x = node->child(0);
-					this->emit("NOT", x->data());
-					node->setReg(x->getReg());
+					if (VTYPE_BOOLEAN == x->vtype()) {
+						this->emit("XOR", x->data(), "0x01");
+					} else {
+						this->emit("NOT", x->data());
+					}
+					node->setReg(x);
 					break;
 				default:
 					_D(LOG_CRIT, "Not Support SUB with #%zu", node->length());
@@ -339,21 +400,21 @@ void Zerg::emitIR(AST *node) {
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("MUL", x->data(), y->data());
-			node->setReg(x->getReg());
+			node->setReg(x);
 			break;
 		case AST_DIV:
 			ALERT(2 != node->length())
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("DIV", x->data(), y->data());
-			node->setReg(x->getReg());
+			node->setReg(x);
 			break;
 		case AST_MOD:
 			ALERT(2 != node->length())
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("REM", x->data(), y->data());
-			node->setReg(x->getReg());
+			node->setReg(x);
 			break;
 
 		case AST_LSHT:
@@ -362,7 +423,7 @@ void Zerg::emitIR(AST *node) {
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("SHL", x->data(), y->data());
-			node->setReg(x->getReg());
+			node->setReg(x);
 			break;
 		case AST_RSHT:
 			ALERT(2 != node->length())
@@ -370,7 +431,7 @@ void Zerg::emitIR(AST *node) {
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("SHR", x->data(), y->data());
-			node->setReg(x->getReg());
+			node->setReg(x);
 			break;
 
 		case AST_LESS:
@@ -379,7 +440,7 @@ void Zerg::emitIR(AST *node) {
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("LS", x->data(), y->data());
-			node->setReg(x->getReg());
+			node->setReg(x);
 			break;
 		case AST_LESS_OR_EQUAL:
 			ALERT(2 != node->length())
@@ -387,7 +448,7 @@ void Zerg::emitIR(AST *node) {
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("LE", x->data(), y->data());
-			node->setReg(x->getReg());
+			node->setReg(x);
 			break;
 		case AST_GRATE:
 			ALERT(2 != node->length())
@@ -395,7 +456,7 @@ void Zerg::emitIR(AST *node) {
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("GT", x->data(), y->data());
-			node->setReg(x->getReg());
+			node->setReg(x);
 			break;
 		case AST_GRATE_OR_EQUAL:
 			ALERT(2 != node->length())
@@ -403,7 +464,7 @@ void Zerg::emitIR(AST *node) {
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("GE", x->data(), y->data());
-			node->setReg(x->getReg());
+			node->setReg(x);
 			break;
 		case AST_EQUAL:
 			ALERT(2 != node->length())
@@ -411,7 +472,7 @@ void Zerg::emitIR(AST *node) {
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("EQ", x->data(), y->data());
-			node->setReg(x->getReg());
+			node->setReg(x);
 			break;
 
 		case AST_BIT_AND:
@@ -420,7 +481,7 @@ void Zerg::emitIR(AST *node) {
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("AND", x->data(), y->data());
-			node->setReg(x->getReg());
+			node->setReg(x);
 			break;
 		case AST_BIT_OR:
 			ALERT(2 != node->length())
@@ -428,7 +489,7 @@ void Zerg::emitIR(AST *node) {
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("OR", x->data(), y->data());
-			node->setReg(x->getReg());
+			node->setReg(x);
 			break;
 		case AST_BIT_XOR:
 			ALERT(2 != node->length())
@@ -436,7 +497,7 @@ void Zerg::emitIR(AST *node) {
 			x = node->child(0);
 			y = node->child(1);
 			this->emit("XOR", x->data(), y->data());
-			node->setReg(x->getReg());
+			node->setReg(x);
 			break;
 
 		case AST_ASSIGN:
@@ -445,59 +506,74 @@ void Zerg::emitIR(AST *node) {
 			x = node->child(0);
 			y = node->child(1);
 
-			this->emit("STORE", x->data(), y->data(), __IR_LOCAL_VAR__);
+			if (AST_BUILDIN_BUFFER != y->type() || x->data() != y->child(0)->data()) {
+				this->emit("STORE", x->data(), y->data(), x->getIndex());
+				x->vtype(y->vtype());
+			}
+
+			if (AST_BUILDIN_BUFFER == y->type()) {
+				/* set buffer vtype */
+				x->vtype(VTYPE_BUFFER);
+			}
+
+			if (0 == x->length() || AST_BRACKET_OPEN != x->child(0)->type()) {
+				namescope[x->data()] = x->vtype();
+				_D(LOG_DEBUG, "%s -> 0x%X", x->data().c_str(), x->vtype());
+			}
 			break;
 		case AST_PRINT:
 			/* FIXME - hardcode for build-in funciton: str() */
 
+			tmp = this->randstr(10, "__", "");
 			ALERT(0 == node->length());
 			x= node->child(0);
 
-			switch(x->type()) {
-				case AST_LESS:   case AST_LESS_OR_EQUAL:
-				case AST_GRATE:  case AST_GRATE_OR_EQUAL:
-				case AST_EQUAL:
-				case AST_LOG_AND: case AST_LOG_OR: case AST_LOG_XOR: case AST_LOG_NOT:
+			switch(x->vtype()) {
+				case VTYPE_BOOLEAN:
 					this->emit("ASM", "cmp", x->data(), "0x0");
-					this->emit("ASM", "jz", "&__SHOW_FALSE__");
+					this->emit("ASM", "jz", "&" + tmp + "__SHOW_FALSE__");
 					this->emit("ASM", "lea", "rsi", "&TRUE");
 					this->emit("ASM", "mov", "rdx", "0x06");
-					this->emit("ASM", "jmp", "&__SHOW_TRUE__");
-					this->emit("ASM", "asm", "__SHOW_FALSE__:");
+					this->emit("ASM", "jmp", "&" + tmp + "__SHOW_TRUE__");
+					this->emit("ASM", "asm", tmp + "__SHOW_FALSE__:");
 					this->emit("ASM", "lea", "rsi", "&FALSE");
 					this->emit("ASM", "mov", "rdx", "0x07");
-					this->emit("ASM", "asm", "__SHOW_TRUE__:");
+					this->emit("ASM", "asm", tmp + "__SHOW_TRUE__:");
 
 					this->emit("ASM", "mov", "rax", "0x2000004");
 					this->emit("ASM", "mov", "rdi", "0x01");
 					this->emit("INTERRUPT");
 					break;
-				default:
+				case VTYPE_INTEGER:
 					this->emit("ASM", "mov", "rax", x->data());
 
-					this->emit("ASM", "asm", "__INT_TO_STR__:");
+					this->emit("ASM", "asm", tmp + "__INT_TO_STR__:");
+					this->emit("ASM", "push", "rbp");
+					this->emit("ASM", "mov", "rbp", "rsp");
+					this->emit("ASM", "sub", "rsp", "0x40");
+
 					this->emit("ASM", "mov", "rsi", "rsp");
 					this->emit("ASM", "mov", "rdi", "rsi");
 					this->emit("ASM", "mov", "rcx", "0x0A");	/* DIVISOR */
 
 					this->emit("ASM", "cmp", "rax", "0x0");
-					this->emit("ASM", "jge", "&__INT_TO_STR_INNER_LOOP__");
+					this->emit("ASM", "jge", "&" + tmp + "__INT_TO_STR_INNER_LOOP__");
 					this->emit("ASM", "neg", "rax");
 					this->emit("ASM", "mov", "[rsi]", "0x2D");
 					this->emit("ASM", "inc", "rsi");
 					this->emit("ASM", "inc", "rdi");
 
-					this->emit("ASM", "asm", "__INT_TO_STR_INNER_LOOP__:");
+					this->emit("ASM", "asm", tmp + "__INT_TO_STR_INNER_LOOP__:");
 					this->emit("ASM", "xor", "rdx", "rdx");
 					this->emit("ASM", "div", "rcx");
 					this->emit("ASM", "add", "rdx", "0x30");
 					this->emit("ASM", "mov", "[rdi]", "rdx");
 					this->emit("ASM", "inc", "rdi");
 					this->emit("ASM", "cmp", "rax", "0x0");
-					this->emit("ASM", "jne", "&__INT_TO_STR_INNER_LOOP__");
+					this->emit("ASM", "jne", "&" + tmp + "__INT_TO_STR_INNER_LOOP__");
 
 					/* FIXME - hardcode for the build-in function: reserved() */
-					this->emit("ASM", "asm", "__RESERVED__:");
+					this->emit("ASM", "asm", tmp + "__RESERVED__:");
 					this->emit("ASM", "mov", "[rdi]", "0x0A");
 
 					this->emit("ASM", "mov", "rdx", "rdi");
@@ -506,7 +582,7 @@ void Zerg::emitIR(AST *node) {
 					this->emit("ASM", "mov", "rax", "rdi");
 					this->emit("ASM", "mov", "rbx", "rsi");
 					this->emit("ASM", "dec", "rax");
-					this->emit("ASM", "asm", "__RESERVED_INNER_LOOP__:");
+					this->emit("ASM", "asm", tmp + "__RESERVED_INNER_LOOP__:");
 					this->emit("ASM", "mov", "cl", "[rax]");
 					this->emit("ASM", "mov", "ch", "[rbx]");
 					this->emit("ASM", "mov", "[rax]", "ch");
@@ -514,12 +590,18 @@ void Zerg::emitIR(AST *node) {
 					this->emit("ASM", "dec", "rax");
 					this->emit("ASM", "inc", "rbx");
 					this->emit("ASM", "cmp", "rax", "rbx");
-					this->emit("ASM", "jge", "&__RESERVED_INNER_LOOP__");
+					this->emit("ASM", "jge", "&" + tmp + "__RESERVED_INNER_LOOP__");
 
 					this->emit("ASM", "mov", "rax", "0x2000004");
 					this->emit("ASM", "mov", "rdi", "0x01");
 					this->emit("ASM", "mov", "rsi", "rsp");
 					this->emit("INTERRUPT");
+
+					this->emit("ASM", "add", "rsp", "0x40");
+					this->emit("ASM", "pop", "rbp");
+					break;
+				default:
+					_D(LOG_CRIT, "Not Implemented `%s` [0x%X]", x->data().c_str(), x->vtype());
 					break;
 			}
 
@@ -552,9 +634,17 @@ void Zerg::emitIR(AST *node) {
 		case AST_IF:
 		case AST_WHILE:
 			x = node->child(0);
-			node->setReg(x->getReg());
+			node->setReg(x);
 			break;
 		case AST_ELSE:
+			break;
+		case AST_BREAK:
+			tmp = this->_repeate_label_[this->_repeate_label_.size()-1];
+			this->emit("JMP", tmp + "_END");
+			break;
+		case AST_CONTINUE:
+			tmp = this->_repeate_label_[this->_repeate_label_.size()-1];
+			this->emit("JMP", tmp);
 			break;
 
 		default:
@@ -601,7 +691,9 @@ std::string Zerg::regalloc(std::string src) {
 	int cnt = 0;
 	std::string tmp;
 
-	if (1 ==  sscanf(src.c_str(), __IR_REG_FMT__, &cnt)) {
+	if (src == __IR_SYSCALL_REG__) {
+		return SYSCALL_REG;
+	} else if (1 ==  sscanf(src.c_str(), __IR_REG_FMT__, &cnt)) {
 		if (0 != _alloc_regs_map_.count(src)) {
 			/* HACK - Found in cache */
 			tmp = _alloc_regs_map_[src];
@@ -617,4 +709,8 @@ std::string Zerg::regalloc(std::string src) {
 	}
 
 	return src;
+}
+std::string Zerg::tmpreg(void) {
+	ALERT(0 == _alloc_regs_.size());
+	return _alloc_regs_[0];
 }
