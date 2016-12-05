@@ -75,6 +75,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_COMMA:
 			switch(prev.type()) {
 				case AST_NUMBER:
+				case AST_IDENTIFIER:
 					do {
 						if (NULL == node->parent()) {
 							std::cout << *node << std::endl;
@@ -134,6 +135,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			switch (prev.type()) {
 				case AST_NEWLINE:
 				case AST_ASSIGN:
+				case AST_BUILDIN_BUFFER:
 					node = node->insert(cur);
 					break;
 				default:

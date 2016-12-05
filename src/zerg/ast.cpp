@@ -22,7 +22,7 @@ AST::AST(ZergToken src) : Tree<AST>(src), _raw_(src) {
 			this->_vtype_ = VTYPE_BOOLEAN;
 			break;
 		case AST_BUILDIN_BUFFER:
-			this->_vtype_ = VTYPE_OBJECT;
+			this->_vtype_ = VTYPE_BUFFER;
 			break;
 		default:
 			this->_vtype_ = VTYPE_UNKNOWN;
@@ -129,6 +129,10 @@ void AST::setLabel(int nr) {
 void AST::setReg(int nr) {
 	/* set the register */
 	this->_reg_ = nr;
+}
+void AST::setReg(AST *src) {
+	this->_reg_			= src->_reg_;
+	this->_syscall_reg_	= src->_syscall_reg_;
 }
 void AST::setReg(std::string reg) {
 	ALERT(reg != SYSCALL_REG);

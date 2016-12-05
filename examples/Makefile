@@ -30,6 +30,7 @@ repeat.case: repeat.zg
 
 buffer.case: buffer.zg
 	../zerg -o $@ $^
+	test `./$@`                    == "cmj"
 
 .PHONY: clean
 

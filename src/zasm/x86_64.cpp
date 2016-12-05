@@ -64,6 +64,12 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 			REX_R = 1;
 		}
 
+		if (this->dst().isMEM2() && this->dst().indexReg()->isEXT()) {
+			REX_X = 1;
+		} else if (this->src().isMEM2() && this->src().indexReg()->isEXT()) {
+			REX_X = 1;
+		}
+
 		if (0 == (inst.flags & INST_SECONDARY)) {
 			REX_W = 1;
 		}

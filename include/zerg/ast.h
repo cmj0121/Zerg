@@ -29,6 +29,7 @@ class AST : public Tree<AST> {
 		void setLabel(int nr);
 		void setReg(int nr);
 		void setReg(std::string reg);
+		void setReg(AST *src);
 		void setIndex(AST *src);
 		std::string getIndex(void);
 		int  getReg(void);
