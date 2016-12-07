@@ -26,5 +26,5 @@ if [ $? != 0 ]; then
 fi
 
 echo "\x1b[1;36m Run CI Success ! \x1b[m"
-git pop
+git stash pop
 exit 0
