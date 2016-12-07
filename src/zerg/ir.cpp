@@ -314,11 +314,6 @@ void IR::emit(std::string op, std::string &_dst, std::string &_src, std::string 
 			(*this) += new Instruction("add", "rsp", dst);
 		}
 		(*this) += new Instruction("pop", "rbp");
-
-		/* FIXME */
-		(*this) += new Instruction("mov", "rax", "0x2000001");
-		(*this) += new Instruction("syscall");
-
 		(*this) += new Instruction("ret");
 	} else if (op == "ASM") {
 		(*this) += new Instruction(dst, src, extra);
