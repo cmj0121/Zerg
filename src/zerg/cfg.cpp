@@ -66,6 +66,10 @@ void CFG::branch(CFG *truecase, CFG *falsecase) {
 		falsecase->_parent_ = this;
 	}
 }
+void CFG::rename(std::string name) {
+	/* rename the label */
+	this->_name_ = name;
+}
 std::string CFG::label(void) {
 	/* return the CFG label */
 	return this->_name_;

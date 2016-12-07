@@ -26,6 +26,7 @@ class CFG : public AST {
 		bool isCondit(void);
 		void passto(CFG *next);
 		void branch(CFG *truecase, CFG *falsecase);
+		void rename(std::string name);
 		std::string label(void);
 
 		CFG* insert(ZergToken dst);

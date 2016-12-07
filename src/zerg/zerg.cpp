@@ -278,6 +278,18 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 				this->emitIR(node->child(i), namescope);
 			}
 			break;
+		case AST_FUNC:
+			ALERT(3 > node->length());
+
+			x = node->child(0);
+			if (0 != x->length()) {
+				_D(LOG_CRIT, "Not Implemented");
+			}
+
+			for (int i = 2; i < node->length(); ++i) {
+				this->emitIR(node->child(i), namescope);
+			}
+			return ;
 		default:
 			/* Run DFS */
 			for (size_t i = 0; i < node->length(); ++i) {

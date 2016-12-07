@@ -108,9 +108,23 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			}
 			break;
 
+		case AST_IDENTIFIER:
+			if (AST_FUNC == prev.type()) {
+				/* remove the current node and set into new AST */
+				for (auto it : this->_root_) {
+					if (it.second == node->root()) {
+						_D(LOG_DEBUG, "remove AST %s", it.first.c_str());
+						this->_root_.erase(it.first);
+						break;
+					}
+				}
+
+				node->root()->rename(cur.data());
+				this->_root_[cur.data()] = node->root();
+				break ;
+			}
 		case AST_TRUE: case AST_FALSE:
 		case AST_NUMBER:
-		case AST_IDENTIFIER:
 			switch(prev.type()) {
 				default:
 					node = node->insert(cur);
@@ -143,7 +157,17 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					break;
 			}
 			break;
-
+		case AST_FUNC:
+			switch(prev.type()) {
+				case AST_NEWLINE:
+				case AST_INDENT: case AST_DEDENT:
+					node = node->insert(cur);
+					break;
+				default:
+					_D(LOG_CRIT, "function declare need be first token in statement");
+					break;
+			}
+			break;
 
 		case AST_NOP:
 		case AST_BREAK:
@@ -161,9 +185,10 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_IF:
 				case AST_ELSE:
 				case AST_WHILE:
+				case AST_FUNC:
 					break;
 				default:
-					_D(LOG_CRIT, "`:` is not the valid syntax [0X%02X]", node->type());
+					_D(LOG_CRIT, "`:` is not the valid syntax on `%s`", node->data().c_str());
 					break;
 			}
 			break;
@@ -216,9 +241,10 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					break;
 				case AST_ROOT:
 				case AST_ELSE:
+				case AST_FUNC:
 					break;
 				default:
-					_D(LOG_CRIT, "syntax error 0x%02X", node->type());
+					_D(LOG_CRIT, "syntax error `%s`", node->data().c_str());
 					break;
 			}
 			break;
@@ -257,6 +283,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			switch(prev.type()) {
 				case AST_SYSCALL:
 				case AST_BUILDIN_BUFFER:
+				case AST_IDENTIFIER:
 					node = node->insert(cur);
 					break;
 				default:
