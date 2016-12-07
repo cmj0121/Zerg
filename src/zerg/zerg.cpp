@@ -22,16 +22,22 @@ void Zerg::compile(std::string src, bool only_ir) {
 	this->lexer(src);
 
 	this->emit("# ZERG IR - v" __IR_VERSION__);
+	this->emit("ASM", "call", "&" CFG_MAIN);
+	this->emit("ASM", "mov", "rax", "0x2000001");
+	this->emit("INTERRUPT");
 
-	this->compileCFG(this->_root_[CFG_MAIN]);
+	if (0 == this->_root_.count(CFG_MAIN)) {
+		this->emit("LABEL", CFG_MAIN);
+		this->emit("RET");
+	}
+
 	for (auto it : this->_root_) {
-		if (it.first != CFG_MAIN) {
-			/* compile subroutine */
-			_D(LOG_WARNING, "compile subroutine `%s`", it.first.c_str());
-			this->emit("# Sub-Routine - " + it.first);
-			this->compileCFG(it.second);
-			this->emit("RET");
-		}
+		/* compile subroutine */
+		_D(LOG_INFO, "compile subroutine `%s`", it.first.c_str());
+
+		this->emit("# Sub-Routine - " + it.first);
+		this->compileCFG(it.second);
+		this->emit("RET");
 	}
 
 	_D(LOG_INFO, "dump all symbols");
