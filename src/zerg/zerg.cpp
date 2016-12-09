@@ -181,6 +181,16 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 		case AST_INC: case AST_DEC:
 			ALERT(1 != node->length() || AST_IDENTIFIER != node->child(0)->type());
 
+			/* HACK - check the INC/DEC is the simple or not */
+			switch(node->parent()->type()) {
+				case AST_ROOT:
+				case AST_PRINT:
+					break;
+				default:
+					_D(LOG_CRIT, "INC/DEC only allow in simple statement");
+					break;
+			}
+
 			x   = node->child(0);
 			tmp = x->data();
 			this->emitIR(x, namescope);
