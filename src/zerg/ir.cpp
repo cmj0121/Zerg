@@ -265,7 +265,7 @@ void IR::emit(std::string op, std::string &_dst, std::string &_src, std::string 
 		(*this) += new Instruction("je", "&" + dst);
 	} else if (op == "CALL") {			/* (CALL,  DST) */
 		/* call produce */
-		(*this) += new Instruction("call", dst);
+		(*this) += new Instruction("call", "&" + dst);
 	} else if (op == "RET") {			/* (RET) */
 		/* 	return from procedure */
 		(*this) += new Instruction("ret");

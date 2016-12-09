@@ -230,22 +230,34 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			node->setReg(x);
 			return ;
 		case AST_IDENTIFIER:
-			if (2 == node->length() && AST_BRACKET_OPEN == node->child(0)->type()) {
+			if (2 == node->length()) {
 				VType type = VTYPE_UNKNOWN;
 
+				switch(node->child(0)->type()) {
+					case AST_PARENTHESES_OPEN:
+						/* FIXME - pass parameter */
+						ALERT(0 != node->child(0)->length());
 
-				ALERT(1 != node->child(0)->length() || 0 == namescope.count(node->data()));
-				x    = node->child(0)->child(0);
-				type = namescope[node->data()];
+						this->emit("CALL", node->data());
+						break;
+					case AST_BRACKET_OPEN:
+						ALERT(1 != node->child(0)->length() || 0 == namescope.count(node->data()));
+						x    = node->child(0)->child(0);
+						type = namescope[node->data()];
 
-				switch(type) {
-					case VTYPE_BUFFER:
-						this->emitIR(x, namescope);
-						node->setIndex(x);
+						switch(type) {
+							case VTYPE_BUFFER:
+								this->emitIR(x, namescope);
+								node->setIndex(x);
+								break;
+							default:
+								_D(LOG_DEBUG, "%s [0x%X]", node->data().c_str(), type);
+								_D(LOG_CRIT, "`%s` need to be declare as __buffer__", node->data().c_str());
+								break;
+						}
 						break;
 					default:
-						_D(LOG_DEBUG, "%s [0x%X]", node->data().c_str(), type);
-						_D(LOG_CRIT, "`%s` need to be declare as __buffer__", node->data().c_str());
+						_D(LOG_CRIT, "Not Implemented");
 						break;
 				}
 				return ;

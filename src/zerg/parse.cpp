@@ -250,31 +250,41 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			break;
 		case AST_DEDENT:
 			node = node->root();
-			tmp  = node->prev();
-			switch(tmp->child(0)->type()) {
-				case AST_IF:
-					switch(tmp->child(0)->length()) {
-						case 1:
-						case 2:
-							snprintf(buff, sizeof(buff), "%s_END", tmp->label().c_str());
-							tmp = new CFG(buff);
-							node->passto(tmp);
-							node = tmp;
-							break;
-						default:
-							_D(LOG_CRIT, "Not Implemented 0x%zX", tmp->child(0)->length());
-							break;
-					}
-					break;
-				case AST_WHILE:
-					snprintf(buff, sizeof(buff), "%s_FALSE", tmp->label().c_str());
-					node = new CFG(buff);
 
-					tmp->branch(tmp->nextCFG(true), node);
-					break;
-				default:
-					_D(LOG_CRIT, "Not Implemented 0X%X", tmp->child(0)->type());
-					break;
+			if (NULL == node->root()->prev()) {
+				ALERT(0 != this->_root_.count(CFG_MAIN));
+
+				node = new CFG(CFG_MAIN);
+				this->_root_[CFG_MAIN] = node;
+			} else {
+				tmp  = node->prev();
+
+				ALERT(0 == node->prev()->length());
+				switch(tmp->child(0)->type()) {
+					case AST_IF:
+						switch(tmp->child(0)->length()) {
+							case 1:
+							case 2:
+								snprintf(buff, sizeof(buff), "%s_END", tmp->label().c_str());
+								tmp = new CFG(buff);
+								node->passto(tmp);
+								node = tmp;
+								break;
+							default:
+								_D(LOG_CRIT, "Not Implemented 0x%zX", tmp->child(0)->length());
+								break;
+						}
+						break;
+					case AST_WHILE:
+						snprintf(buff, sizeof(buff), "%s_FALSE", tmp->label().c_str());
+						node = new CFG(buff);
+
+						tmp->branch(tmp->nextCFG(true), node);
+						break;
+					default:
+						_D(LOG_CRIT, "Not Implemented 0X%X", tmp->child(0)->type());
+						break;
+				}
 			}
 			break;
 
