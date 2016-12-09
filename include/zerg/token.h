@@ -46,6 +46,9 @@ typedef enum _ASTType_ {
 	AST_LOG_XOR,
 	AST_LOG_NOT,
 
+	AST_INC,
+	AST_DEC,
+
 	/* reserved words */
 	AST_RESERVED		= 0x100,
 	AST_IF,

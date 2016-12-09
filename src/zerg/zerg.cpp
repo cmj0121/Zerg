@@ -178,6 +178,16 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 	node->setEmitted();
 	/* process first if need */
 	switch(node->type()) {
+		case AST_INC: case AST_DEC:
+			ALERT(1 != node->length() || AST_IDENTIFIER != node->child(0)->type());
+
+			x   = node->child(0);
+			tmp = x->data();
+			this->emitIR(x, namescope);
+			this->emit(AST_INC == node->type() ? "INC" : "DEC", x->data());
+			this->emit("STORE", tmp, x->data());
+			node->setReg(x);
+			return ;
 		case AST_LOG_AND:
 			ALERT(2 != node->length());
 

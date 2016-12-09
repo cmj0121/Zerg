@@ -59,6 +59,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_GRATE:  case AST_GRATE_OR_EQUAL:
 		case AST_EQUAL:
 		case AST_LOG_OR: case AST_LOG_AND: case AST_LOG_XOR:
+		case AST_INC:    case AST_DEC:
 			switch(prev.type()) {
 				case AST_TRUE: case AST_FALSE:
 				case AST_NUMBER:

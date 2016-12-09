@@ -90,6 +90,7 @@ AST* AST::insert(AST *node) {
 		case AST_LSHT:   case AST_RSHT:
 		case AST_BIT_OR: case AST_BIT_AND: case AST_BIT_XOR:
 		case AST_LOG_OR: case AST_LOG_AND: case AST_LOG_XOR:
+		case AST_INC:    case AST_DEC:
 			if (0 != cur->weight() && cur->weight() < node->weight()) {
 				while (NULL != cur->parent() && 0 != cur->parent()->weight()) {
 					if (cur->parent()->weight() <= node->weight()) {
