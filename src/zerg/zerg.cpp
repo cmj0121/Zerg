@@ -179,7 +179,10 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 	/* process first if need */
 	switch(node->type()) {
 		case AST_INC: case AST_DEC:
-			ALERT(1 != node->length() || AST_IDENTIFIER != node->child(0)->type());
+			if (1 != node->length() || AST_IDENTIFIER != node->child(0)->type()) {
+				_D(LOG_CRIT, "Not allow the syntax for `%s`", AST_INC == node->type() ? "++" : "--");
+				return ;
+			}
 
 			/* HACK - check the INC/DEC is the simple or not */
 			switch(node->parent()->type()) {

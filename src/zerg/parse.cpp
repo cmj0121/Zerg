@@ -127,6 +127,11 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_TRUE: case AST_FALSE:
 		case AST_NUMBER:
 			switch(prev.type()) {
+				case AST_TRUE: case AST_FALSE:
+				case AST_NUMBER:
+				case AST_IDENTIFIER:
+					_D(LOG_CRIT, "Syntax error on #%d", this->_lineno_);
+					break;
 				default:
 					node = node->insert(cur);
 					break;
