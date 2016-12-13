@@ -111,6 +111,15 @@ AST* AST::insert(AST *node) {
 			cur = cur->root();
 
 			ALERT(0 == cur->length());
+			switch(cur->child(0)->type()) {
+				case AST_FUNC:
+					cur = cur->child(0);
+					break;
+				default:
+					break;
+			}
+
+			ALERT(0 == cur->length());
 			cur = cur->child(cur->length()-1);
 			cur->replace(node);
 			node->insert(cur);
@@ -173,7 +182,7 @@ ASTType AST::type(void) {
 }
 VType AST::vtype(void) {
 	/* category of the value type in AST */
-	if (VTYPE_UNKNOWN == this->_vtype_ && NULL != this->child(0)) {
+	if (VTYPE_UNKNOWN == this->_vtype_ && 0 < this->length()) {
 		return this->child(0)->vtype();
 	}
 	return this->_vtype_;

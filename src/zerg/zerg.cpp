@@ -262,6 +262,8 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 						ALERT(0 != node->child(0)->length());
 
 						this->emit("CALL", node->data());
+						node->setReg(SYSCALL_REG);
+						node->vtype(VTYPE_FUNCCALL);
 						break;
 					case AST_BRACKET_OPEN:
 						ALERT(1 != node->child(0)->length() || 0 == namescope.count(node->data()));
@@ -320,16 +322,12 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			}
 			break;
 		case AST_FUNC:
-			ALERT(3 > node->length());
-
 			x = node->child(0);
+
 			if (0 != x->length()) {
 				_D(LOG_CRIT, "Not Implemented");
 			}
 
-			for (int i = 2; i < node->length(); ++i) {
-				this->emitIR(node->child(i), namescope);
-			}
 			return ;
 		default:
 			/* Run DFS */
@@ -573,6 +571,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 				namescope[x->data()] = x->vtype();
 				_D(LOG_DEBUG, "%s -> 0x%X", x->data().c_str(), x->vtype());
 			}
+
 			break;
 		case AST_PRINT:
 			/* FIXME - hardcode for build-in funciton: str() */
@@ -597,7 +596,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					this->emit("ASM", "mov", "rdi", "0x01");
 					this->emit("INTERRUPT");
 					break;
-				case VTYPE_INTEGER:
+				case VTYPE_INTEGER: case VTYPE_FUNCCALL:
 					this->emit("ASM", "mov", "rax", x->data());
 
 					this->emit("ASM", "asm", tmp + "__INT_TO_STR__:");
@@ -699,6 +698,23 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			tmp = this->_repeate_label_[this->_repeate_label_.size()-1];
 			this->emit("JMP", tmp);
 			break;
+		case AST_RETURN:
+			switch(node->length()) {
+				case 0:
+					this->emit("EPILOGUE");
+					this->emit("RET");
+					break;
+				case 1:
+					x = node->child(0);
+
+					this->emit("EPILOGUE");
+					this->emit("RET", x->data());
+					break;
+				case 2:
+					ALERT(1 < node->length());
+					break;
+			}
+			break;
 
 		default:
 			_D(LOG_CRIT, "Not implemented %s [%X]", node->data().c_str(), node->type());
@@ -732,7 +748,9 @@ void Zerg::emit(std::string op, std::string dst, std::string src, std::string ex
 		if (regs.end() != std::find(regs.begin(), regs.end(), src)) {
 			_D(LOG_INFO, "restore register %s", src.c_str());
 			this->_alloc_regs_.push_back(src);
-		} else if (regs.end() != std::find(regs.begin(), regs.end(), extra)) {
+		}
+
+		if (regs.end() != std::find(regs.begin(), regs.end(), extra)) {
 			_D(LOG_INFO, "restore register %s", extra.c_str());
 			this->_alloc_regs_.push_back(extra);
 		}
@@ -752,6 +770,7 @@ std::string Zerg::regalloc(std::string src) {
 			tmp = _alloc_regs_map_[src];
 		} else {
 			ALERT(0 == _alloc_regs_.size());
+
 			tmp = _alloc_regs_[0];
 			_alloc_regs_.erase(_alloc_regs_.begin());
 		}

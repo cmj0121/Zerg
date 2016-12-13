@@ -178,6 +178,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_NOP:
 		case AST_BREAK:
 		case AST_CONTINUE:
+		case AST_RETURN:
 			node = node->insert(cur);
 			break;
 
@@ -245,9 +246,18 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					node->branch(tmp, NULL);
 					node = tmp;
 					break;
+				case AST_FUNC:
+					node = node->root();
+
+					ALERT("" == node->label());
+					snprintf(buff, sizeof(buff), "%s_FUNC", node->label().c_str());
+					tmp = new CFG(buff);
+
+					node->passto(tmp);
+					node = tmp;
+					break;
 				case AST_ROOT:
 				case AST_ELSE:
-				case AST_FUNC:
 					break;
 				default:
 					_D(LOG_CRIT, "syntax error `%s`", node->data().c_str());
@@ -286,6 +296,14 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 						node = new CFG(buff);
 
 						tmp->branch(tmp->nextCFG(true), node);
+						break;
+					case AST_FUNC:
+						if (0 == this->_root_.count(CFG_MAIN)) {
+							node = new CFG(CFG_MAIN);
+							this->_root_[CFG_MAIN] = node;
+						} else {
+							node = this->_root_[CFG_MAIN];
+						}
 						break;
 					default:
 						_D(LOG_CRIT, "Not Implemented 0X%X", tmp->child(0)->type());

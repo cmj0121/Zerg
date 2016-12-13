@@ -9,6 +9,7 @@ typedef enum __VALUE_Type__ {
 	VTYPE_UNKNOWN	= 0,
 	VTYPE_BOOLEAN,
 	VTYPE_INTEGER,
+	VTYPE_FUNCCALL,
 
 	VTYPE_BUFFER,	/* Raw object which is created via syscall */
 	VTYPE_OBJECT,	/* Complete object which is created via VTYPE_BUFFER*/

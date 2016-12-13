@@ -266,8 +266,12 @@ void IR::emit(std::string op, std::string &_dst, std::string &_src, std::string 
 	} else if (op == "CALL") {			/* (CALL,  DST) */
 		/* call produce */
 		(*this) += new Instruction("call", "&" + dst);
-	} else if (op == "RET") {			/* (RET) */
+	} else if (op == "RET") {			/* (RET,   DST) */
 		/* 	return from procedure */
+		if (""  != dst) {
+			(*this) += new Instruction("mov", SYSCALL_REG, dst);
+		}
+
 		(*this) += new Instruction("ret");
 	} else if (op == "PARAM") {			/* (PARAM, DST) */
 		/* Save the parameter */
@@ -314,7 +318,6 @@ void IR::emit(std::string op, std::string &_dst, std::string &_src, std::string 
 			(*this) += new Instruction("add", "rsp", dst);
 		}
 		(*this) += new Instruction("pop", "rbp");
-		(*this) += new Instruction("ret");
 	} else if (op == "ASM") {
 		(*this) += new Instruction(dst, src, extra);
 	} else {

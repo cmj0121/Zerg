@@ -54,6 +54,7 @@ typedef enum _ASTType_ {
 	AST_IF,
 	AST_ELSE,
 	AST_FUNC,
+	AST_RETURN,
 	AST_SYSCALL,
 	AST_PRINT,
 	AST_NOP,
