@@ -267,6 +267,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 						break;
 					case AST_BRACKET_OPEN:
 						ALERT(1 != node->child(0)->length() || 0 == namescope.count(node->data()));
+
 						x    = node->child(0)->child(0);
 						type = namescope[node->data()];
 
@@ -277,7 +278,8 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 								break;
 							default:
 								_D(LOG_DEBUG, "%s [0x%X]", node->data().c_str(), type);
-								_D(LOG_CRIT, "`%s` need to be declare as __buffer__", node->data().c_str());
+								_D(LOG_CRIT, "`%s` need to be declare as __buffer__",
+																				node->data().c_str());
 								break;
 						}
 						break;
@@ -558,8 +560,18 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			y = node->child(1);
 
 			if (AST_BUILDIN_BUFFER != y->type() || x->data() != y->child(0)->data()) {
-				this->emit("STORE", x->data(), y->data(), x->getIndex());
-				x->vtype(y->vtype());
+				if (0 == namescope.count(y->data())) {
+					x->vtype(y->vtype());
+					this->emit("STORE", x->data(), y->data(), x->getIndex());
+				} else {
+					AST *tmp = new AST("");
+
+					tmp->setReg(++regs);
+					x->vtype(namescope[y->data()]);
+					this->emit("LOAD",  tmp->data(), y->data());
+					this->emit("STORE", x->data(), tmp->data(), x->getIndex());
+					delete tmp;
+				}
 			}
 
 			if (AST_BUILDIN_BUFFER == y->type()) {
@@ -574,7 +586,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 
 			break;
 		case AST_PRINT:
-			/* FIXME - hardcode for build-in funciton: str() */
+			/* FIXME - handcode for build-in function: str() */
 
 			tmp = this->randstr(10, "__", "");
 			ALERT(0 == node->length());
