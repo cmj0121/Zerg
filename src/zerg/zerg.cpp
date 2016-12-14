@@ -21,7 +21,8 @@ void Zerg::compile(std::string src, bool only_ir) {
 
 	this->lexer(src);
 
-	this->emit("# ZERG IR - v" __IR_VERSION__);
+	this->emit("#! /usr/bin/env zgr");
+	this->emit("#! ZERG IR - v" __IR_VERSION__);
 	this->emit("ASM", "call", "&" CFG_MAIN);
 	this->emit("ASM", "mov", "rax", "0x2000001");
 	this->emit("INTERRUPT");
@@ -49,6 +50,8 @@ void Zerg::compile(std::string src, bool only_ir) {
 			this->emit("LABEL", it.first, it.second);
 		}
 	}
+
+	this->emit("# vim: set ft=zgr:");
 }
 void Zerg::compileCFG(CFG *node, std::map<std::string, VType> &&namescope) {
 	int cnt = 0;
@@ -663,17 +666,23 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 void Zerg::emit(std::string op, std::string dst, std::string src, std::string extra) {
 	if (this->_only_ir_) {
 		if ('#' == op[0]) {
-			std::cout << "\n" << op;
+			if ("#!" != op.substr(0, 2)) {
+				std::cout << "\n";
+			}
+			std::cout << op;
 		} else if ("ASM" == op) {
-			std::cout << std::setw(5) << "->";
-			std::cout << std::left << std::setw(10) << dst;
-			std::cout << std::left << std::setw(6) << src;
+			std::cout << std::right << std::setw(4) << "-> ";
+			std::cout << std::left  << std::setw(10) << dst;
+			std::cout << std::left  << std::setw(6) << src;
 			std::cout << extra;
 		} else {
 			std::cout << std::left << std::setw(10) <<op;
-			if ("" != dst)   std::cout << ", " << dst;
-			if ("" != src)   std::cout << ", " << src;
-			if ("" != extra) std::cout << ", " << extra;
+			if ("" != dst)   std::cout << std::setw(10) << dst;
+			if ("" != src) {
+				if (op == "LABEL") src = "\"" + src +  "\"";
+			    std::cout << std::setw(10) << src;
+			}
+			if ("" != extra) std::cout << std::setw(10) << extra;
 		}
 		std::cout << std::endl;
 	} else if ('#' != op[0]) {

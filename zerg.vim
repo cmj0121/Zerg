@@ -1,7 +1,7 @@
 " ZERG Syntax File
 " Language:      ZERG
 " Maintainer:    cmj <cmj@cmj.tw>
-" Last Change:   2016 Jan 21
+" Last Change:   2016 Dec 14
 "
 
 if exists("b:current_syntax")
