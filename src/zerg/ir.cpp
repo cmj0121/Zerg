@@ -3,24 +3,6 @@
 #include <stdlib.h>
 #include "zerg.h"
 
-IRToken::IRToken() {
-}
-IRToken::IRToken(std::string op, std::string dst, std::string src, std::string extra) {
-	this->_op_  = op;
-	this->_dst_ = dst;
-	this->_src_ = src;
-	this->_ext_ = extra;
-}
-std::fstream& operator<< (std::fstream &stream, const IRToken &src) {
-	stream << "(" << src._op_;
-	if ("" != src._dst_) stream << ", " << src._dst_;
-	if ("" != src._src_) stream << ", " << src._src_;
-	if ("" != src._ext_) stream << ", " << src._ext_;
-	stream << ")";
-
-	return stream;
-}
-
 IR::IR(std::string dst, off_t entry, bool pie, bool symb) : Binary(dst, pie) {
 	this->_param_nr_	= 0;
 	this->_entry_		= entry;
@@ -32,11 +14,34 @@ IR::~IR(void) {
 	}
 }
 
-void IR::emit(IRToken token) {
-	/* wrapper for the emmitter using IR token */
-	std::string dst = token.dst(), src = token.src(), extra = token.extra();
+void IR::compile(std::string src) {
+	std::string line;
+	std::fstream fs(src);
 
-	return this->emit(token.op(), dst, src, extra);
+	if (!fs.is_open()) {
+		/* cannot open the source code */
+		_D(LOG_CRIT, "source file `%s` does NOT exist", src.c_str());
+	}
+
+	while (std::getline(fs, line)) {
+		IRToken *token = new IRToken(line);
+
+		if (0 != token->length()) {
+			this->emit(token);
+		}
+
+		delete token;
+	}
+}
+void IR::emit(IRToken *token) {
+	std::string op = "", dst = "", src = "", extra = "";
+
+	op    = token->op();
+	dst   = token->dst();
+	src   = token->src();
+	extra = token->extra();
+
+	return this->emit(op, dst, src, extra);
 }
 void IR::emit(std::string op, std::string &_dst, std::string &_src, std::string &_extra) {
 	static std::vector<std::string> stack;

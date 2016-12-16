@@ -16,42 +16,46 @@ Zerg::~Zerg() {
 	}
 }
 
-void Zerg::compile(std::string src, bool only_ir) {
-	this->_only_ir_ = only_ir;
+void Zerg::compile(std::string src, bool only_ir, bool compile_ir) {
+	if (compile_ir) {
+		IR::compile(src);
+	} else {
+		this->_only_ir_ = only_ir;
 
-	this->lexer(src);
+		this->lexer(src);
 
-	this->emit("#! /usr/bin/env zgr");
-	this->emit("#! ZERG IR - v" __IR_VERSION__);
-	this->emit("ASM", "call", "&" CFG_MAIN);
-	this->emit("ASM", "mov", "rax", "0x2000001");
-	this->emit("INTERRUPT");
+		this->emit("#! /usr/bin/env zgr");
+		this->emit("#! ZERG IR - v" __IR_VERSION__);
+		this->emit("ASM", "call", "&" CFG_MAIN);
+		this->emit("ASM", "mov", "rax", "0x2000001");
+		this->emit("INTERRUPT");
 
-	if (0 == this->_root_.count(CFG_MAIN)) {
-		this->emit("LABEL", CFG_MAIN);
-		this->emit("RET");
-	}
-
-	for (auto it : this->_root_) {
-		/* compile subroutine */
-		_D(LOG_INFO, "compile subroutine `%s`", it.first.c_str());
-
-		this->emit("# Sub-Routine - " + it.first);
-		this->compileCFG(it.second);
-		this->emit("RET");
-	}
-
-	_D(LOG_INFO, "dump all symbols");
-	this->_symb_.push_back(std::make_pair("TRUE",  "True\\n"));
-	this->_symb_.push_back(std::make_pair("FALSE", "False\\n"));
-	if (0 != this->_symb_.size()) {
-		this->emit("# Dump all symbols");
-		for (auto it : this->_symb_) {
-			this->emit("LABEL", it.first, it.second);
+		if (0 == this->_root_.count(CFG_MAIN)) {
+			this->emit("LABEL", CFG_MAIN);
+			this->emit("RET");
 		}
-	}
 
-	this->emit("# vim: set ft=zgr:");
+		for (auto it : this->_root_) {
+			/* compile subroutine */
+			_D(LOG_INFO, "compile subroutine `%s`", it.first.c_str());
+
+			this->emit("# Sub-Routine - " + it.first);
+			this->compileCFG(it.second);
+			this->emit("RET");
+		}
+
+		_D(LOG_INFO, "dump all symbols");
+		this->_symb_.push_back(std::make_pair("TRUE",  "True\\n"));
+		this->_symb_.push_back(std::make_pair("FALSE", "False\\n"));
+		if (0 != this->_symb_.size()) {
+			this->emit("# Dump all symbols");
+			for (auto it : this->_symb_) {
+				this->emit("LABEL", it.first, it.second);
+			}
+		}
+
+		this->emit("# vim: set ft=zgr:");
+	}
 }
 void Zerg::compileCFG(CFG *node, std::map<std::string, VType> &&namescope) {
 	int cnt = 0;
