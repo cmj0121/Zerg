@@ -333,6 +333,9 @@ void IR::emit(std::string op, std::string &_dst, std::string &_src, std::string 
 	_dst	= dst;
 	_src	= src;
 	_extra	= extra;
+
+	this->regsave(src);
+	this->regsave(extra);
 }
 std::string IR::randstr(int size, std::string prefix, std::string suffix) {
 	/* generated a random label string */

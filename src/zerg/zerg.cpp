@@ -755,30 +755,20 @@ void Zerg::emit(std::string op, std::string dst, std::string src, std::string ex
 			std::cout << std::left  << std::setw(6) << src;
 			std::cout << extra;
 		} else {
-			std::cout << std::left << std::setw(10) <<op;
-			if ("" != dst)   std::cout << std::setw(10) << dst;
+			size_t layout = 12;
+
+			std::cout << std::left << std::setw(layout) <<op;
+			if ("" != dst)   std::cout << " " << std::setw(layout) << dst;
 			if ("" != src) {
 				if (op == "LABEL") src = "\"" + src +  "\"";
-			    std::cout << std::setw(10) << src;
+			    std::cout << " " << std::setw(layout) << src;
 			}
-			if ("" != extra) std::cout << std::setw(10) << extra;
+			if ("" != extra) std::cout << " "<< std::setw(layout) << extra;
 		}
 		std::cout << std::endl;
 	} else if ('#' != op[0]) {
-		std::vector<std::string> regs = { USED_REGISTERS };
-
 		/* call the IR emitter */
 		IR::emit(op, dst, src, extra);
-
-		if (regs.end() != std::find(regs.begin(), regs.end(), src)) {
-			_D(LOG_INFO, "restore register %s", src.c_str());
-			this->_alloc_regs_.push_back(src);
-		}
-
-		if (regs.end() != std::find(regs.begin(), regs.end(), extra)) {
-			_D(LOG_INFO, "restore register %s", extra.c_str());
-			this->_alloc_regs_.push_back(extra);
-		}
 	}
 }
 
@@ -806,6 +796,14 @@ std::string Zerg::regalloc(std::string src) {
 	}
 
 	return src;
+}
+void Zerg::regsave(std::string src) {
+	std::vector<std::string> regs = { USED_REGISTERS };
+
+	if (regs.end() != std::find(regs.begin(), regs.end(), src)) {
+		_D(LOG_INFO, "restore register %s", src.c_str());
+		this->_alloc_regs_.push_back(src);
+	}
 }
 std::string Zerg::tmpreg(void) {
 	ALERT(0 == _alloc_regs_.size());
