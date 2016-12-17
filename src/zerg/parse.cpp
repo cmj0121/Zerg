@@ -168,7 +168,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			}
 			break;
 		case AST_IF:
-			snprintf(buff, sizeof(buff), "if_statememt_%04d", this->_lineno_);
+			snprintf(buff, sizeof(buff), ".if.%04d", this->_lineno_);
 			tmp = new CFG(buff);
 
 			node = node->root();
@@ -193,7 +193,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			node = tmp->insert(cur);
 			break;
 		case AST_WHILE:
-			snprintf(buff, sizeof(buff), "while_statememt_%04d", this->_lineno_);
+			snprintf(buff, sizeof(buff), ".while.%04d", this->_lineno_);
 			tmp = new CFG(buff);
 
 			node = node->root();

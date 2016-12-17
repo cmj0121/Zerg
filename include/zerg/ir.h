@@ -11,10 +11,10 @@
 
 #define MAX_ZASMP_PARAM	10
 #define __IR_VERSION__		"0.1 (" __DATE__ " " __TIME__ ")"
-#define __IR_REG_FMT__		"REG_%02d"
+#define __IR_REG_FMT__		".reg.%02d"
 #define __IR_LABEL_FMT__	"__ZERG_LABEL_%d__"
-#define __IR_SYSCALL_REG__	"SYSCALL_REG"
-#define __IR_LOCAL_VAR__	"LOCAL"
+#define __IR_SYSCALL_REG__	".reg.sys"
+#define __IR_LOCAL_VAR__	".local.var"
 
 class IRToken {
 	public:
@@ -42,6 +42,7 @@ class IR : public Binary {
 		void compile(std::string src);
 
 		virtual std::string regalloc(std::string src) = 0;
+		virtual void regsave(std::string src) = 0;
 		virtual std::string tmpreg(void) = 0;
 	protected:
 		bool _only_ir_;
