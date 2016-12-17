@@ -156,6 +156,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_NEWLINE:
 				case AST_ASSIGN:
 				case AST_BUILDIN_BUFFER:
+				case AST_INDENT: case AST_DEDENT:
 					node = node->insert(cur);
 					break;
 				default:

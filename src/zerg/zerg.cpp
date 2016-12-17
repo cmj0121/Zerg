@@ -78,10 +78,15 @@ void Zerg::compileCFG(CFG *node, std::map<std::string, VType> &&namescope) {
 		/* EPILOGUE */
 		this->emit("EPILOGUE", cntvar);
 	} else {
+		/* FIXME - Should correct count the number of local variable */
 		for (size_t i = 0; i < ((AST *)node)->length(); ++i) {
 			AST *child = (AST *)node->child(i);
 
 			if (AST_ASSIGN == child->type()) cnt ++;
+		}
+
+		if (AST_FUNC == node->child(0)->type()) {
+			cnt += node->child(0)->child(0)->length();
 		}
 
 		if (0 != cnt) snprintf(cntvar, sizeof(cntvar), "0x%X", cnt*PARAM_SIZE);
@@ -265,8 +270,10 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 
 				switch(node->child(0)->type()) {
 					case AST_PARENTHESES_OPEN:
-						/* FIXME - pass parameter */
-						ALERT(0 != node->child(0)->length());
+						x = node->child(0);
+						for (size_t i = 0; i < x->length(); ++i) {
+							this->emit("PARAM", x->child(i)->data());
+						}
 
 						this->emit("CALL", node->data());
 						node->setReg(SYSCALL_REG);
@@ -333,8 +340,11 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 		case AST_FUNC:
 			x = node->child(0);
 
-			if (0 != x->length()) {
-				_D(LOG_CRIT, "Not Implemented");
+			for (size_t i = 0; i < x->length(); ++i) {
+				char idx[BUFSIZ] = {0};
+
+				snprintf(idx, sizeof(idx), "[rbp+0x%zX]", (i+2) * 0x08);
+				this->emit("STORE", x->child(i)->data(), __IR_LOCAL_VAR__, idx);
 			}
 
 			return ;

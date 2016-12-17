@@ -89,14 +89,20 @@ void IR::emit(std::string op, std::string &_dst, std::string &_src, std::string 
 			pos = std::find(stack.begin(), stack.end(), dst) - stack.begin();
 
 			/* HACK - only allow created variable */
-			ALERT(stack.size() == pos && "" != extra);
+			ALERT(stack.size() == pos && ("" != extra && src != __IR_LOCAL_VAR__));
 			if (stack.size() == pos) {
 				/* save into stack */
 				stack.push_back(dst);
 			}
 			snprintf(buff, sizeof(buff), "[rbp-0X%X]", (pos+1) * 0x08);
 
-			if ("" == extra) {
+			if (src == __IR_LOCAL_VAR__ && "" != extra) {
+				/* save the parameter into local variable */
+				std::string _reg_ = this->tmpreg();
+
+				(*this) += new Instruction("mov", _reg_, extra);
+				(*this) += new Instruction("mov", buff, _reg_);
+			} else if ("" == extra) {
 				/* save in local variable*/
 				(*this) += new Instruction("mov", buff, src);
 			} else {
@@ -271,6 +277,13 @@ void IR::emit(std::string op, std::string &_dst, std::string &_src, std::string 
 	} else if (op == "CALL") {			/* (CALL,  DST) */
 		/* call produce */
 		(*this) += new Instruction("call", "&" + dst);
+
+		if (0 != this->_param_nr_) {
+			char buff[BUFSIZ] = {0};
+
+			snprintf(buff, sizeof(buff), "0x%X", this->_param_nr_ * 0x08);
+			(*this) += new Instruction("add", "rsp", buff);
+		}
 	} else if (op == "RET") {			/* (RET,   DST) */
 		/* 	return from procedure */
 		if (""  != dst) {
@@ -310,6 +323,7 @@ void IR::emit(std::string op, std::string &_dst, std::string &_src, std::string 
 			(*this) += new Instruction("pop", regs[--this->_param_nr_]);
 		}
 		(*this) += new Instruction("syscall");
+		this->_param_nr_ = 0;
 	} else if (op == "PROLOGUE") {		/* (PROLOGUE, NR) */
 		(*this) += new Instruction("push", "rbp");
 		(*this) += new Instruction("mov", "rbp", "rsp");
@@ -317,6 +331,8 @@ void IR::emit(std::string op, std::string &_dst, std::string &_src, std::string 
 			/* save the number of local variable */
 			(*this) += new Instruction("sub", "rsp", dst);
 		}
+
+		this->_param_nr_ = 0;
 	} else if (op == "EPILOGUE") {		/* (EPILOGUE, NR) */
 		if ("" != dst) {
 			/* save the number of local variable */
