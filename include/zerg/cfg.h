@@ -29,6 +29,9 @@ class CFG : public AST {
 		void rename(std::string name);
 		std::string label(void);
 
+		std::string varcnt(void);
+		size_t _varcnt_(void);
+
 		CFG* insert(ZergToken dst);
 		CFG* parent(void);
 		CFG* prev(void);

@@ -1,4 +1,6 @@
 #! /usr/bin/env zerg
 
-nop
-syscall(0x2000001, 0x04)
+func exit(code):
+	syscall(0x2000001, code)
+
+exit(0x04)

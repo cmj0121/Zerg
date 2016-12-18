@@ -3,8 +3,6 @@
 #include <iomanip>
 #include "zerg.h"
 
-#define PARAM_SIZE	0x08
-
 Zerg::Zerg(std::string dst, bool pie, off_t entry, bool symb) : IR(dst, entry, pie, symb) {
 	this->_labelcnt_ = 0;
 	this->_lineno_   = 1;
@@ -58,9 +56,6 @@ void Zerg::compile(std::string src, bool only_ir, bool compile_ir) {
 	}
 }
 void Zerg::compileCFG(CFG *node, std::map<std::string, VType> &&namescope) {
-	int cnt = 0;
-	char cntvar[64] = {0};
-
 	if (NULL == node || node->isEmmited()) {
 		_D(LOG_DEBUG, "already processed");
 		return ;
@@ -70,33 +65,21 @@ void Zerg::compileCFG(CFG *node, std::map<std::string, VType> &&namescope) {
 	if (0 == node->length()) {
 		/* need NOT process this node */
 		/* PROLOGUE */
-		this->emit("PROLOGUE");
+		this->emit("PROLOGUE", node->varcnt());
 
 		this->_compileCFG_(node->nextCFG(true), namescope);
 		this->_compileCFG_(node->nextCFG(false), namescope);
 
 		/* EPILOGUE */
-		this->emit("EPILOGUE", cntvar);
+		this->emit("EPILOGUE", node->varcnt());
 	} else {
-		/* FIXME - Should correct count the number of local variable */
-		for (size_t i = 0; i < ((AST *)node)->length(); ++i) {
-			AST *child = (AST *)node->child(i);
-
-			if (AST_ASSIGN == child->type()) cnt ++;
-		}
-
-		if (AST_FUNC == node->child(0)->type()) {
-			cnt += node->child(0)->child(0)->length();
-		}
-
-		if (0 != cnt) snprintf(cntvar, sizeof(cntvar), "0x%X", cnt*PARAM_SIZE);
 		/* PROLOGUE */
-		this->emit("PROLOGUE", cntvar);
+		this->emit("PROLOGUE", node->varcnt());
 
 		this->_compileCFG_(node, namescope);
 
 		/* EPILOGUE */
-		this->emit("EPILOGUE", cntvar);
+		this->emit("EPILOGUE", node->varcnt());
 	}
 }
 void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
@@ -343,8 +326,10 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			for (size_t i = 0; i < x->length(); ++i) {
 				char idx[BUFSIZ] = {0};
 
+				y = x->child(i);
 				snprintf(idx, sizeof(idx), "[rbp+0x%zX]", (i+2) * 0x08);
-				this->emit("STORE", x->child(i)->data(), __IR_LOCAL_VAR__, idx);
+				this->emit("STORE", y->data(), __IR_LOCAL_VAR__, idx);
+				namescope[y->data()] = VTYPE_PARAM;
 			}
 
 			return ;
@@ -730,13 +715,13 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 		case AST_RETURN:
 			switch(node->length()) {
 				case 0:
-					this->emit("EPILOGUE");
+					this->emit("EPILOGUE", ((CFG *)node->root())->varcnt());
 					this->emit("RET");
 					break;
 				case 1:
 					x = node->child(0);
 
-					this->emit("EPILOGUE");
+					this->emit("EPILOGUE", ((CFG *)node->root())->varcnt());
 					this->emit("RET", x->data());
 					break;
 				case 2:

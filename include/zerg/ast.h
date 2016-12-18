@@ -13,6 +13,7 @@ typedef enum __VALUE_Type__ {
 
 	VTYPE_BUFFER,	/* Raw object which is created via syscall */
 	VTYPE_OBJECT,	/* Complete object which is created via VTYPE_BUFFER*/
+	VTYPE_PARAM,
 } VType;
 
 /* AST - Abstract Syntax Tree

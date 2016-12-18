@@ -157,10 +157,11 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_ASSIGN:
 				case AST_BUILDIN_BUFFER:
 				case AST_INDENT: case AST_DEDENT:
+				case AST_PARENTHESES_CLOSE:
 					node = node->insert(cur);
 					break;
 				default:
-					_D(LOG_CRIT, "`syscall` should be the first token in the statement");
+					_D(LOG_CRIT, "`syscall` should be the first token in the statement %x", prev.type());
 					break;
 			}
 			break;
