@@ -283,6 +283,7 @@ void IR::emit(std::string op, std::string &_dst, std::string &_src, std::string 
 
 			snprintf(buff, sizeof(buff), "0x%X", this->_param_nr_ * 0x08);
 			(*this) += new Instruction("add", "rsp", buff);
+			this->_param_nr_ = 0;
 		}
 	} else if (op == "RET") {			/* (RET,   DST) */
 		/* 	return from procedure */
