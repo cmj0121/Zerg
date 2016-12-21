@@ -32,8 +32,9 @@ class AST : public Tree<AST> {
 		void setReg(int nr);
 		void setReg(std::string reg);
 		void setReg(AST *src);
-		void setIndex(AST *src);
+		void setIndex(AST *src, int size=0);
 		std::string getIndex(void);
+		std::string getIndexSize(void);
 		int  getReg(void);
 		int  weight(void);
 		void weight(int src);
@@ -48,7 +49,7 @@ class AST : public Tree<AST> {
 		friend bool operator== (const AST &obj, const char *src);
 	private:
 		bool _emitted_, _syscall_reg_;
-		int _label_, _reg_, _weight_;
+		int _label_, _reg_, _weight_, _indexsize_;
 		ZergToken _raw_;
 		ASTType _type_;
 		VType   _vtype_;

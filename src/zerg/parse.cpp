@@ -188,6 +188,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_COLON:
 			while (NULL != node->parent() && NULL != node->parent()->parent()) {
 				node = node->parent();
+				if (AST_BRACKET_OPEN == node->type()) break;
 			}
 
 			switch(node->type()) {
@@ -195,6 +196,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_ELSE:
 				case AST_WHILE:
 				case AST_FUNC:
+				case AST_BRACKET_OPEN:
 					break;
 				default:
 					_D(LOG_CRIT, "`:` is not the valid syntax on `%s`", node->data().c_str());

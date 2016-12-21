@@ -91,7 +91,7 @@ void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
 
 	_D(LOG_DEBUG, "compile CFG - %s", node->label().c_str());
 	#ifdef DEBUG_CFG
-	std::cout << *node << std::endl;
+	std::cerr << *node << std::endl;
 	#endif /* DEBUG_CFG */
 	/*
 	 *         +---+
@@ -205,7 +205,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			this->emitIR(x, namescope);
 			this->emit("JMP_FALSE", tmp, x->data());
 			this->emitIR(y, namescope);
-			this->emit("STORE", x->data(), y->data(), x->getIndex());
+			this->emit("STORE", x->data(), y->data(), x->getIndex(), x->getIndexSize());
 			this->emit("LABEL", tmp);
 			node->setReg(x);
 			return;
@@ -218,7 +218,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			this->emitIR(x, namescope);
 			this->emit("JMP_TRUE", tmp, x->data());
 			this->emitIR(y, namescope);
-			this->emit("STORE", x->data(), y->data(), x->getIndex());
+			this->emit("STORE", x->data(), y->data(), x->getIndex(), x->getIndexSize());
 			this->emit("LABEL", tmp);
 			node->setReg(x);
 			return;
@@ -250,6 +250,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 		case AST_IDENTIFIER:
 			if (2 == node->length()) {
 				VType type = VTYPE_UNKNOWN;
+				int idxsize = 1;
 
 				switch(node->child(0)->type()) {
 					case AST_PARENTHESES_OPEN:
@@ -263,15 +264,21 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 						node->vtype(VTYPE_FUNCCALL);
 						break;
 					case AST_BRACKET_OPEN:
-						ALERT(1 != node->child(0)->length() || 0 == namescope.count(node->data()));
+						ALERT(0 == node->child(0)->length() || 2 < node->child(0)->length());
+						ALERT(0 == namescope.count(node->data()));
 
-						x    = node->child(0)->child(0);
-						type = namescope[node->data()];
+						x       = node->child(0)->child(0);
+						type    = namescope[node->data()];
+
+						if (2 == node->child(0)->length()) {
+							idxsize  = atoi(node->child(0)->child(1)->data().c_str());
+							idxsize -= atoi(x->data().c_str());
+						}
 
 						switch(type) {
 							case VTYPE_BUFFER:
 								this->emitIR(x, namescope);
-								node->setIndex(x);
+								node->setIndex(x, idxsize);
 								break;
 							default:
 								_D(LOG_DEBUG, "%s [0x%X]", node->data().c_str(), type);
@@ -364,7 +371,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 		case AST_NUMBER:
 			tmp = node->data();
 			node->setReg(++regs);
-			this->emit("STORE", node->data(), tmp, node->getIndex());
+			this->emit("STORE", node->data(), tmp, node->getIndex(), node->getIndexSize());
 			break;
 		case AST_STRING:
 			tmp = node->data();
@@ -564,14 +571,14 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			if (AST_BUILDIN_BUFFER != y->type() || x->data() != y->child(0)->data()) {
 				if (0 == namescope.count(y->data())) {
 					x->vtype(y->vtype());
-					this->emit("STORE", x->data(), y->data(), x->getIndex());
+					this->emit("STORE", x->data(), y->data(), x->getIndex(), x->getIndexSize());
 				} else {
 					AST *tmp = new AST("");
 
 					tmp->setReg(++regs);
 					x->vtype(namescope[y->data()]);
 					this->emit("LOAD",  tmp->data(), y->data());
-					this->emit("STORE", x->data(), tmp->data(), x->getIndex());
+					this->emit("STORE", x->data(), tmp->data(), x->getIndex(), x->getIndexSize());
 					delete tmp;
 				}
 			}
@@ -737,7 +744,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 	}
 }
 /* wrapper for the IR emitter */
-void Zerg::emit(std::string op, std::string dst, std::string src, std::string extra) {
+void Zerg::emit(std::string op, std::string dst, std::string src, std::string idx, std::string size) {
 	if (this->_only_ir_) {
 		if ('#' == op[0]) {
 			if ("#!" != op.substr(0, 2)) {
@@ -748,7 +755,8 @@ void Zerg::emit(std::string op, std::string dst, std::string src, std::string ex
 			std::cout << std::right << std::setw(4) << "-> ";
 			std::cout << std::left  << std::setw(10) << dst;
 			std::cout << std::left  << std::setw(6) << src;
-			std::cout << extra;
+			std::cout << std::left  << std::setw(6) << idx;
+			std::cout << size;
 		} else {
 			size_t layout = 12;
 
@@ -758,12 +766,13 @@ void Zerg::emit(std::string op, std::string dst, std::string src, std::string ex
 				if (op == "LABEL") src = "\"" + src +  "\"";
 			    std::cout << " " << std::setw(layout) << src;
 			}
-			if ("" != extra) std::cout << " "<< std::setw(layout) << extra;
+			if ("" != idx) std::cout << " "<< std::setw(layout) << idx;
+			if ("" != idx) std::cout << " "<< std::setw(layout) << size;
 		}
 		std::cout << std::endl;
 	} else if ('#' != op[0]) {
 		/* call the IR emitter */
-		IR::emit(op, dst, src, extra);
+		IR::emit(op, dst, src, idx, size);
 	}
 }
 

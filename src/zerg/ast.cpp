@@ -8,6 +8,7 @@ AST::AST(ZergToken src) : Tree<AST>(src), _raw_(src) {
 	this->_reg_         = 0;
 	this->_type_        = src.type();
 	this->_index_		= NULL;
+	this->_indexsize_	= 0;
 	this->_weight_      = this->_raw_.weight();
 
 	switch(this->_type_) {
@@ -152,10 +153,11 @@ int AST::getReg(void) {
 	/* get the number of register */
 	return this->_reg_;
 }
-void AST::setIndex(AST *src) {
+void AST::setIndex(AST *src, int size) {
 	switch(this->_type_) {
 		case AST_IDENTIFIER:
-			this->_index_ = src;
+			this->_index_     = src;
+			this->_indexsize_ = size;
 			break;
 		default:
 			_D(LOG_CRIT, "Not Implemented 0x%x", this->_type_);
@@ -167,6 +169,29 @@ std::string AST::getIndex(void) {
 
 	tmp = NULL == this->_index_ ? "" : this->_index_->data();
 	return tmp;
+}
+std::string AST::getIndexSize(void) {
+	std::string dst = "";
+
+	switch(this->_indexsize_) {
+		case 1:
+			dst = ZASM_MEM_BYTE;
+			break;
+		case 2:
+			dst = ZASM_MEM_WORD;
+			break;
+		case 3:
+			dst = ZASM_MEM_DWORD;
+			break;
+		case 4:
+			dst = ZASM_MEM_QWORD;
+			break;
+		default:
+			dst = "";
+			break;
+	}
+
+	return dst;
 }
 int AST::weight(void) {
 	/* reply the weight of the node in AST */

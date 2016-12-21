@@ -17,7 +17,7 @@ class Zerg : public IR {
 		virtual ~Zerg();
 
 		void compile(std::string src, bool only_ir = false, bool compile_ir = false);
-		void emit(std::string op, std::string dst="", std::string src="", std::string extra="");
+		void emit(std::string op, std::string dst="", std::string src="", std::string idx="", std::string size="");
 
 		std::string regalloc(std::string src);
 		void regsave(std::string src);

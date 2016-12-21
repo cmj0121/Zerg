@@ -22,10 +22,11 @@ class IRToken {
 
 		size_t length(void) const;
 
-		std::string op(void)    const;
-		std::string dst(void)   const;
-		std::string src(void)   const;
-		std::string extra(void) const;
+		std::string op(void)   const;
+		std::string dst(void)  const;
+		std::string src(void)  const;
+		std::string idx(void)  const;
+		std::string size(void) const;
 
 		friend std::ostream& operator <<(std::ostream &stream, const IRToken &src);
 	private:
@@ -38,7 +39,7 @@ class IR : public Binary {
 		~IR(void);
 
 		void emit(IRToken *token);
-		void emit(std::string op, std::string &dst, std::string &src, std::string &extra);
+		void emit(std::string op, std::string dst, std::string src, std::string idx, std::string size);
 		void compile(std::string src);
 
 		virtual std::string regalloc(std::string src) = 0;

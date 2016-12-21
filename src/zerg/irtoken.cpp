@@ -39,8 +39,11 @@ std::string IRToken::dst(void) const {
 std::string IRToken::src(void) const {
 	return 3 > this->length() ? "" : this->_src_[2];
 }
-std::string IRToken::extra(void) const {
+std::string IRToken::idx(void) const {
 	return 4 > this->length() ? "" : this->_src_[3];
+}
+std::string IRToken::size(void) const {
+	return 5 > this->length() ? "" : this->_src_[4];
 }
 
 size_t IRToken::length(void) const {
