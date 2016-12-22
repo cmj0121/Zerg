@@ -122,6 +122,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 
 				node->root()->rename(cur.data());
 				this->_root_[cur.data()] = node->root();
+				node = node->insert(cur);
 				break ;
 			}
 		case AST_TRUE: case AST_FALSE:
@@ -157,11 +158,15 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_ASSIGN:
 				case AST_BUILDIN_BUFFER:
 				case AST_INDENT: case AST_DEDENT:
+					node = node->insert(cur);
+					break;
 				case AST_PARENTHESES_CLOSE:
+					node = node->parent();
 					node = node->insert(cur);
 					break;
 				default:
-					_D(LOG_CRIT, "`syscall` should be the first token in the statement %x", prev.type());
+					_D(LOG_CRIT, "`%s` should be the first token in the statement %x",
+																		cur.c_str(), prev.type());
 					break;
 			}
 			break;
@@ -181,6 +186,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_BREAK:
 		case AST_CONTINUE:
 		case AST_RETURN:
+		case AST_DELETE:
 			node = node->insert(cur);
 			break;
 

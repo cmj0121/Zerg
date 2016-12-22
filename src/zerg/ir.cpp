@@ -53,7 +53,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 	_D(LOG_INFO, "IR emit - %s %s %s %s",
 			op.c_str(), dst.c_str(), src.c_str(), idx.c_str());
 
-	if (op == "LOAD") {					/* (LOAD,  DST, SRC, EXTRA) */
+	if (op == "LOAD") {					/* (LOAD,  DST, SRC, IDX, SIZE) */
 		/* Load data from memory with index if need */
 		int pos = 0;
 		char buff[BUFSIZ] = {0};
@@ -65,14 +65,24 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 			if (stack.size() == pos) {
 				/* save into stack */
 				_D(LOG_CRIT, "Local VAR `%s` not declare", src.c_str());
-			} else {
-				snprintf(buff, sizeof(buff), "[rbp-0X%X]", (pos+1) * 0x08);
+			}
+
+			snprintf(buff, sizeof(buff), "[rbp-0X%X]", (pos+1) * 0x08);
+			(*this) += new Instruction("mov", dst, buff);
+
+			if ("" != idx) {
+				snprintf(buff, sizeof(buff), "%s[%s%s%s]",
+								"" == _size ? "" : (_size + " ").c_str(),
+								dst.c_str(),
+								'-' == idx[0] ? "" : "+",
+								idx.c_str());
 				(*this) += new Instruction("mov", dst, buff);
+				_DEBUG();
 			}
 		} else if (dst != src) {
 			(*this) += new Instruction("mov", dst, src);
 		}
-	} else if (op == "STORE") {			/* (STORE, DST, SRC, EXTRA) */
+	} else if (op == "STORE") {			/* (STORE, DST, SRC, IDX, SIZE) */
 		/* Load data from memory with index if need */
 		int pos = 0;
 		char buff[BUFSIZ] = {0};

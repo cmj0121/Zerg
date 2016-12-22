@@ -4,8 +4,9 @@
 #include "zerg.h"
 
 Zerg::Zerg(std::string dst, bool pie, off_t entry, bool symb) : IR(dst, entry, pie, symb) {
-	this->_labelcnt_ = 0;
-	this->_lineno_   = 1;
+	this->_labelcnt_	= 0;
+	this->_lineno_		= 1;
+	this->_regs_		= 0;
 }
 Zerg::~Zerg() {
 	/* delete the AST node */
@@ -35,10 +36,13 @@ void Zerg::compile(std::string src, bool only_ir, bool compile_ir) {
 
 		for (auto it : this->_root_) {
 			/* compile subroutine */
+			std::map<std::string, VType> namescope;
 			_D(LOG_INFO, "compile subroutine `%s`", it.first.c_str());
 
 			this->emit("# Sub-Routine - " + it.first);
-			this->compileCFG(it.second);
+			/* load the function status */
+			this->basic_namespace(namescope);
+			this->compileCFG(it.second, namescope);
 			this->emit("RET");
 		}
 
@@ -55,7 +59,7 @@ void Zerg::compile(std::string src, bool only_ir, bool compile_ir) {
 		this->emit("# vim: set ft=zgr:");
 	}
 }
-void Zerg::compileCFG(CFG *node, std::map<std::string, VType> &&namescope) {
+void Zerg::compileCFG(CFG *node, std::map<std::string, VType> &namescope) {
 	if (NULL == node || node->isEmmited()) {
 		_D(LOG_DEBUG, "already processed");
 		return ;
@@ -164,9 +168,9 @@ void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
 	}
 }
 void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
-	static int regs = 0;
 	static std::vector<std::string> stack;
 
+	char buf[BUFSIZ] = {0};
 	std::string tmp;
 	AST *x = NULL, *y = NULL, *cur = NULL;
 
@@ -254,6 +258,9 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 
 				switch(node->child(0)->type()) {
 					case AST_PARENTHESES_OPEN:
+						ALERT(0 == namescope.count(node->data()));
+						node->vtype(namescope[node->data()]);
+
 						x = node->child(0);
 						for (size_t i = 0; i < x->length(); ++i) {
 							this->emit("PARAM", x->child(i)->data());
@@ -261,7 +268,6 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 
 						this->emit("CALL", node->data());
 						node->setReg(SYSCALL_REG);
-						node->vtype(VTYPE_FUNCCALL);
 						break;
 					case AST_BRACKET_OPEN:
 						ALERT(0 == node->child(0)->length() || 2 < node->child(0)->length());
@@ -281,9 +287,8 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 								node->setIndex(x, idxsize);
 								break;
 							default:
-								_D(LOG_DEBUG, "%s [0x%X]", node->data().c_str(), type);
-								_D(LOG_CRIT, "`%s` need to be declare as __buffer__",
-																				node->data().c_str());
+								_D(LOG_CRIT, "`%s` need to be declare as __buffer__ 0x%X",
+																	node->data().c_str(), type);
 								break;
 						}
 						break;
@@ -328,7 +333,8 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			}
 			break;
 		case AST_FUNC:
-			x = node->child(0);
+			cur = node->child(0);
+			x   = cur->child(0);
 
 			for (size_t i = 0; i < x->length(); ++i) {
 				char idx[BUFSIZ] = {0};
@@ -359,18 +365,18 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			}
 			break;
 		case AST_TRUE:
-			node->setReg(++regs);
+			node->setReg(++this->_regs_);
 			node->vtype(VTYPE_BOOLEAN);
 			this->emit("STORE", node->data(), "1");
 			break;
 		case AST_FALSE:
-			node->setReg(++regs);
+			node->setReg(++this->_regs_);
 			node->vtype(VTYPE_BOOLEAN);
 			this->emit("STORE", node->data(), "0");
 			break;
 		case AST_NUMBER:
 			tmp = node->data();
-			node->setReg(++regs);
+			node->setReg(++this->_regs_);
 			this->emit("STORE", node->data(), tmp, node->getIndex(), node->getIndexSize());
 			break;
 		case AST_STRING:
@@ -385,9 +391,9 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					/* need NOT load as variable */
 					break;
 				default:
-					tmp = node->data();
+					tmp = node->raw();
 					node->vtype(namescope[node->data()]);
-					node->setReg(++regs);
+					node->setReg(++this->_regs_);
 
 					this->emit("LOAD", node->data(), tmp);
 					break;
@@ -575,17 +581,12 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 				} else {
 					AST *tmp = new AST("");
 
-					tmp->setReg(++regs);
+					tmp->setReg(++this->_regs_);
 					x->vtype(namescope[y->data()]);
 					this->emit("LOAD",  tmp->data(), y->data());
 					this->emit("STORE", x->data(), tmp->data(), x->getIndex(), x->getIndexSize());
 					delete tmp;
 				}
-			}
-
-			if (AST_BUILDIN_BUFFER == y->type()) {
-				/* set buffer vtype */
-				x->vtype(VTYPE_BUFFER);
 			}
 
 			if (0 == x->length() || AST_BRACKET_OPEN != x->child(0)->type()) {
@@ -617,7 +618,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					this->emit("ASM", "mov", "rdi", "0x01");
 					this->emit("INTERRUPT");
 					break;
-				case VTYPE_INTEGER: case VTYPE_FUNCCALL:
+				case VTYPE_INTEGER:
 					this->emit("ASM", "mov", "rax", x->data());
 
 					this->emit("ASM", "asm", tmp + "__INT_TO_STR__:");
@@ -673,6 +674,16 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					this->emit("ASM", "add", "rsp", "0x40");
 					this->emit("ASM", "pop", "rbp");
 					break;
+				case VTYPE_BUFFER:
+					snprintf(buf, sizeof(buf), __IR_REG_FMT__, ++this->_regs_);
+
+					this->emit("PARAM", "0x2000004");
+					this->emit("PARAM", "0x01");
+					this->emit("PARAM", x->data());
+					this->emit("LOAD",  buf, x->raw(), "-0x08");
+					this->emit("PARAM", buf);
+					this->emit("INTERRUPT");
+					break;
 				default:
 					_D(LOG_CRIT, "Not Implemented `%s` [0x%X]", x->data().c_str(), x->vtype());
 					break;
@@ -680,18 +691,22 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 
 			/* FIXME - `print` INTERRUPT */
 			break;
-		case AST_FUNCCALL:
-			switch (node->length()) {
-				case 0:
-					_D(LOG_CRIT, "Syntax Error !");
-					exit(-1);
-					break;
-				case 1:
-					this->emit("CALL", "&" + node->child(0)->data());
+		case AST_DELETE:
+			ALERT(1 != node->length());
+
+			x   = node->child(0);
+			tmp = this->tmpreg();
+			switch(x->vtype()) {
+				case VTYPE_OBJECT:
+					/* FIXME - Should be a built-in function */
+					this->emit("PARAM", "0x2000049");
+					this->emit("PARAM", x->data());
+					this->emit("LOAD",  tmp, x->data(), "0x08");
+					this->emit("PARAM", tmp);
+					this->emit("INTERRUPT");
 					break;
 				default:
-					_D(LOG_CRIT, "Not Implemented");
-					exit(-1);
+					_D(LOG_CRIT, "Not support delete `%s` 0x%X", x->data().c_str(), x->vtype());
 					break;
 			}
 			break;
@@ -813,3 +828,35 @@ std::string Zerg::tmpreg(void) {
 	ALERT(0 == _alloc_regs_.size());
 	return _alloc_regs_[0];
 }
+void Zerg::basic_namespace(std::map<std::string, VType> &namescope) {
+	AST *cur = NULL, *tmp = NULL;
+
+	namescope.clear();
+
+	for (auto it : this->_root_) {
+		if (0 == it.second->length()) continue;
+
+		tmp = it.second->child(0);
+		switch(tmp->type()) {
+			case AST_FUNC:
+				cur = tmp->child(0);
+				switch(cur->length()) {
+					case 2:
+						namescope[cur->data()] = VTYPE_OBJECT;
+						break;
+					case 3:
+						if (AST_BUILDIN_BUFFER == cur->child(2)->type()) {
+							namescope[cur->data()] = VTYPE_BUFFER;
+							break;
+						}
+					default:
+						_D(LOG_BUG, "Should never reach here %zd", cur->length());
+						break;
+				}
+				break;
+			default:
+				break;
+		}
+	}
+}
+

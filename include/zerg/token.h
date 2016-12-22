@@ -10,7 +10,6 @@ typedef enum _ASTType_ {
 	AST_NEWLINE,
 	AST_INDENT,
 	AST_DEDENT,
-	AST_FUNCCALL,
 
 	/* basic type */
 	AST_NUMBER			= 0x10,
@@ -61,6 +60,7 @@ typedef enum _ASTType_ {
 	AST_WHILE,
 	AST_BREAK,
 	AST_CONTINUE,
+	AST_DELETE,
 
 	AST_TRUE,
 	AST_FALSE,

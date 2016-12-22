@@ -214,6 +214,7 @@ VType AST::vtype(void) {
 }
 VType AST::vtype(VType src) {
 	/* Set the value type in AST */
+	_D(LOG_DEBUG, "set v-type `%s` -> 0x%X", this->data().c_str(), src);
 	this->_vtype_ = src;
 	return this->_vtype_;
 }
@@ -237,6 +238,9 @@ std::string AST::data(void) {
 	} else {
 		return this->_raw_;
 	}
+}
+std::string AST::raw(void) {
+	return this->_raw_;
 }
 
 void AST::setEmitted(void) {
