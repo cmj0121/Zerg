@@ -61,4 +61,4 @@ buffer.case: buffer.zg
 .PHONY: clean
 
 clean:
-	rm -f $(CASES)
+	rm -f $(CASES) *.zgr

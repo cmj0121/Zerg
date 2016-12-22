@@ -55,7 +55,7 @@ syn keyword ZERGRepeat        while break continue
 syn match   ZERGFunction      "\%(\(func\|class\)\s\+\)\@<=\w\+" contained
 syn keyword ZERGException     try except finally raise
 syn keyword ZERGInclude       from import
-syn keyword ZERGConstant      TRUE FALSE
+syn keyword ZERGConstant      True False
 syn keyword ZERGBuiltinType   __buffer__
 hi def link ZERGConstant      Constant
 hi def link ZERGIdentifier    Identifier
