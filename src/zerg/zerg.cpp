@@ -614,7 +614,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					this->emit("ASM", "mov", "rdx", "0x07");
 					this->emit("ASM", "asm", tmp + "__SHOW_TRUE__:");
 
-					this->emit("ASM", "mov", "rax", "0x2000004");
+					this->emit("ASM", "mov", "rax", "0x200018D");
 					this->emit("ASM", "mov", "rdi", "0x01");
 					this->emit("INTERRUPT");
 					break;
@@ -666,7 +666,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					this->emit("ASM", "cmp", "rax", "rbx");
 					this->emit("ASM", "jge", "&" + tmp + "__RESERVED_INNER_LOOP__");
 
-					this->emit("ASM", "mov", "rax", "0x2000004");
+					this->emit("ASM", "mov", "rax", "0x200018D");
 					this->emit("ASM", "mov", "rdi", "0x01");
 					this->emit("ASM", "mov", "rsi", "rsp");
 					this->emit("INTERRUPT");
@@ -677,7 +677,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 				case VTYPE_BUFFER:
 					snprintf(buf, sizeof(buf), __IR_REG_FMT__, ++this->_regs_);
 
-					this->emit("PARAM", "0x2000004");
+					this->emit("PARAM", "0x200018D");
 					this->emit("PARAM", "0x01");
 					this->emit("PARAM", x->data());
 					this->emit("LOAD",  buf, x->raw(), "-0x08");
@@ -694,15 +694,18 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 		case AST_DELETE:
 			ALERT(1 != node->length());
 
-			x   = node->child(0);
-			tmp = this->tmpreg();
+			x = node->child(0);
+			snprintf(buf, sizeof(buf), __IR_REG_FMT__, ++this->_regs_);
 			switch(x->vtype()) {
-				case VTYPE_OBJECT:
+				case VTYPE_BUFFER:
 					/* FIXME - Should be a built-in function */
 					this->emit("PARAM", "0x2000049");
-					this->emit("PARAM", x->data());
-					this->emit("LOAD",  tmp, x->data(), "0x08");
-					this->emit("PARAM", tmp);
+					this->emit("LOAD",  buf, x->data());
+					this->emit("SUB",   buf, "0x08");
+					this->emit("PARAM", buf);
+					this->emit("LOAD",  buf, x->raw(), "-0x08");
+					this->emit("ADD",   buf, "0x08");
+					this->emit("PARAM", buf);
 					this->emit("INTERRUPT");
 					break;
 				default:

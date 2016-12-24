@@ -77,7 +77,6 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 								'-' == idx[0] ? "" : "+",
 								idx.c_str());
 				(*this) += new Instruction("mov", dst, buff);
-				_DEBUG();
 			}
 		} else if (dst != src) {
 			(*this) += new Instruction("mov", dst, src);
@@ -312,6 +311,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 			(*this) += new Instruction("push", dst);
 		}
 		this->_param_nr_ ++;
+		this->regsave(dst);
 	} else if (op == "LABEL") {			/* (LABEL, DST, SRC) */
 		/* Set label or set variable */
 		if ("" == src) {

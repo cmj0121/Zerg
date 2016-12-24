@@ -49,6 +49,7 @@ syn keyword ZERGConstant      none true false
 syn keyword ZERGIdentifier    this
 syn keyword ZERGStatement     nop as return yield
 syn keyword ZERGStatement     func class nextgroup=ZERGFunction skipwhite
+syn keyword ZERGStatement     delete
 syn keyword ZERGLogical       eq not in and or not xor
 syn keyword ZERGCondition     if else
 syn keyword ZERGRepeat        while break continue
