@@ -53,7 +53,10 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 	_D(LOG_INFO, "IR emit - %s %s %s %s",
 			op.c_str(), dst.c_str(), src.c_str(), idx.c_str());
 
-	if (op == "LOAD") {					/* (LOAD,  DST, SRC, IDX, SIZE) */
+	if (op == "XCHG") {					/* (XCHG,  DST, SRC) */
+		ALERT("" == dst || "" == src);
+		_D(LOG_CRIT, "Not Implemented");
+	} else if (op == "LOAD") {			/* (LOAD,  DST, SRC, IDX, SIZE) */
 		/* Load data from memory with index if need */
 		int pos = 0;
 		char buff[BUFSIZ] = {0};
@@ -85,6 +88,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		/* Load data from memory with index if need */
 		int pos = 0;
 		char buff[BUFSIZ] = {0};
+		std::string tmpreg = this->tmpreg();
 
 		if (dst == _dst) {			/* save variable */
 			pos = std::find(stack.begin(), stack.end(), dst) - stack.begin();
@@ -99,28 +103,21 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 
 			if (src == __IR_LOCAL_VAR__ && "" != idx) {
 				/* save the parameter into local variable */
-				std::string _reg_ = this->tmpreg();
-
-				(*this) += new Instruction("mov", _reg_, idx);
-				(*this) += new Instruction("mov", buff, _reg_);
+				(*this) += new Instruction("mov", tmpreg, idx);
+				(*this) += new Instruction("mov", buff, tmpreg);
 			} else if ("" == idx) {
 				/* save in local variable*/
 				(*this) += new Instruction("mov", buff, src);
 			} else {
-				std::string tmp = this->tmpreg();
-
-				(*this) += new Instruction("mov", tmp, buff);
+				(*this) += new Instruction("mov", tmpreg, buff);
 				snprintf(buff, sizeof(buff), "%s[%s+%s]",
 								"" == _size ? "" : (_size + " ").c_str(),
-								tmp.c_str(), idx.c_str());
+								tmpreg.c_str(), idx.c_str());
 				(*this) += new Instruction("mov", buff, src);
 			}
 		} else if (dst != src) {	/* register STORE */
 			(*this) += new Instruction("mov", dst, src);
 		}
-	} else if (op == "XCHG") {			/* (XCHG,  DST, SRC) */
-		ALERT("" == dst || "" == src);
-		_D(LOG_CRIT, "Not Implemented");
 	} else if (op == "ADD") {			/* (ADD,   DST, SRC) */
 		/* dst = dst + src */
 		(*this) += new Instruction("add", dst, src);

@@ -823,13 +823,16 @@ void Zerg::regsave(std::string src) {
 	std::vector<std::string> regs = { USED_REGISTERS };
 
 	if (regs.end() != std::find(regs.begin(), regs.end(), src)) {
-		_D(LOG_INFO, "restore register %s", src.c_str());
+		_D(LOG_DEBUG, "restore register %s", src.c_str());
 		this->_alloc_regs_.push_back(src);
 	}
 }
 std::string Zerg::tmpreg(void) {
-	ALERT(0 == _alloc_regs_.size());
-	return _alloc_regs_[0];
+	ALERT(1 > _alloc_regs_.size());
+
+	/* NOTE - the template register should NOT same as the next allocate register */
+	_D(LOG_DEBUG, "template register `%s`", _alloc_regs_[1].c_str());
+	return _alloc_regs_[1];
 }
 void Zerg::basic_namespace(std::map<std::string, VType> &namescope) {
 	AST *cur = NULL, *tmp = NULL;
