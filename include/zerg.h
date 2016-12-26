@@ -11,6 +11,8 @@
 #include "zerg/ir.h"
 #include "zerg/cfg.h"
 
+#define BUILTIN_LIBRARY		"LIBS/__builtin__.zg"
+
 class Zerg : public IR {
 	public:
 		Zerg(std::string dst, bool pie = false, off_t entry = 0x1000, bool symb = false);

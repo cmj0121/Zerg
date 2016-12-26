@@ -54,13 +54,15 @@ typedef enum _ASTType_ {
 	AST_ELSE,
 	AST_FUNC,
 	AST_RETURN,
-	AST_SYSCALL,
-	AST_PRINT,
 	AST_NOP,
 	AST_WHILE,
 	AST_BREAK,
 	AST_CONTINUE,
 	AST_DELETE,
+
+	/* built-in function */
+	AST_PRINT,
+	AST_SYSCALL,
 
 	AST_TRUE,
 	AST_FALSE,

@@ -42,8 +42,6 @@ static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 
 		/* reserved words */
 		DEF("=",		AST_ASSIGN,			0),
-		DEF("print",	AST_PRINT,			0),
-		DEF("syscall",	AST_SYSCALL,		0),
 		DEF("nop",		AST_NOP,			0),
 		DEF("while",	AST_WHILE,			0),
 		DEF("break",	AST_BREAK,			0),
@@ -53,6 +51,10 @@ static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 		DEF("func",		AST_FUNC,			0),
 		DEF("return",	AST_RETURN,			0),
 		DEF("delete",	AST_DELETE,			0),
+
+		/* built-in function*/
+		DEF("print",	AST_PRINT,			0),
+		DEF("syscall",	AST_SYSCALL,		0),
 
 		DEF("True",		AST_TRUE,			1),
 		DEF("False",	AST_FALSE,			1),

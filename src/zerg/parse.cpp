@@ -138,6 +138,17 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					break;
 			}
 			break;
+		case AST_STRING:
+			switch(prev.type()) {
+				case AST_NEWLINE:
+				case AST_INDENT: case AST_DEDENT:
+					/* NOTE - only treated as comments */
+					break;
+				default:
+					_D(LOG_CRIT, "Not Implemented string");
+					break;
+			}
+			break;
 
 		case AST_PRINT:
 			switch(prev.type()) {

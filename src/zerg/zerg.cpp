@@ -1,5 +1,6 @@
 /* Copyright (C) 2014-2016 cmj. All right reserved. */
 
+#include <unistd.h>
 #include <iomanip>
 #include "zerg.h"
 
@@ -21,6 +22,11 @@ void Zerg::compile(std::string src, bool only_ir, bool compile_ir) {
 	} else {
 		this->_only_ir_ = only_ir;
 
+		/* load the built-in library if possible */
+		if (0 == access(BUILTIN_LIBRARY, F_OK)) {
+			_D(LOG_INFO, "Load the built-in library `%s`", BUILTIN_LIBRARY);
+			this->lexer(BUILTIN_LIBRARY);
+		}
 		this->lexer(src);
 
 		this->emit("#! /usr/bin/env zgr");

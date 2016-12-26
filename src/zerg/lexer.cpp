@@ -123,14 +123,35 @@ void Zerg::lexer(std::string src) {
 					prev = this->parser(token, prev);
 					break;
 				case '\'': case '"':					/* STRING */
-					for (pos = cur+1; pos <= line.size(); ++pos) {
-						if (line[pos] == line[cur]) break;
-					}
+					token = line.substr(cur, 1);
+					pos   = ++cur;
 
-					if (line[pos] != line[cur]) {
-						_D(LOG_CRIT, "Invalid syntax for string %s", line.c_str());
-					}
-					token = line.substr(cur, pos-cur+1);
+					do {
+						for (; pos < line.size(); ++pos) {
+							if (line[pos] == token[0]) break;
+						}
+
+						if (line[pos] != token[0] && pos != line.size()) {
+							_D(LOG_CRIT, "Invalid syntax for string %s", line.c_str());
+							break;
+						}
+
+						token += line.substr(cur, pos-cur+1);
+
+						if ('\0' == line[pos] && line[pos] != token[0]) {
+							if (!std::getline(fs, line)) {
+								_D(LOG_CRIT, "Invalid syntax for string %s", token.c_str());
+								break;
+							}
+
+							cur = 0;
+							pos = 0;
+							continue;
+						}
+
+						break;
+					} while (1);
+
 					prev = this->parser(token, prev);
 					cur = pos;
 					break;
