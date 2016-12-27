@@ -289,6 +289,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 
 						switch(type) {
 							case VTYPE_BUFFER:
+							case VTYPE_PARAM:
 								this->emitIR(x, namescope);
 								node->setIndex(x, idxsize);
 								break;

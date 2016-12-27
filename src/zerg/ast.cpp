@@ -52,6 +52,16 @@ AST* AST::insert(AST *node) {
 		case AST_LESS:   case AST_LESS_OR_EQUAL:
 		case AST_GRATE:  case AST_GRATE_OR_EQUAL:
 		case AST_EQUAL:
+			if (AST_EQUAL == node->type() && AST_LOG_NOT == cur->type()) {
+				if (0 != cur->length()) {
+					cur = cur->child(0);
+					cur->replace(node);
+
+					node->insert(cur);
+					break;
+				}
+			}
+
 			if (0 != cur->weight() && cur->weight() < node->weight()) {
 				while (NULL != cur->parent() && 0 != cur->parent()->weight()) {
 					if (cur->parent()->weight() <= node->weight()) {
@@ -84,6 +94,7 @@ AST* AST::insert(AST *node) {
 				}
 				break;
 			}
+
 			Tree<AST>::insert(node);
 			break;
 		case AST_LOG_NOT:

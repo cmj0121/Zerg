@@ -11,11 +11,14 @@ void Zerg::lexer(std::string src) {
 
 	static int _indent_cnt_ = 0;
 
+
 	if (!fs.is_open()) {
 		/* cannot open the source code */
 		_D(LOG_CRIT, "source file `%s` does NOT exist", src.c_str());
 	}
 
+	this->_lineno_ = 0;
+	this->_src_    = src;
 	while (std::getline(fs, line)) {
 		if ('\t' != line[0] && '\0' != line[0]) {
 			while (0 != _indent_cnt_) {

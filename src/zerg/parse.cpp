@@ -64,6 +64,11 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_TRUE: case AST_FALSE:
 				case AST_NUMBER:
 				case AST_IDENTIFIER:
+				case AST_LOG_NOT:
+					if (AST_LOG_NOT == prev.type() && AST_EQUAL != cur.type()) {
+						_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",
+								prev.c_str(), prev.type(), cur.c_str(), cur.type());
+					}
 					node = node->insert(cur);
 					break;
 				default:
@@ -131,7 +136,8 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_TRUE: case AST_FALSE:
 				case AST_NUMBER:
 				case AST_IDENTIFIER:
-					_D(LOG_CRIT, "Syntax error on #%d", this->_lineno_);
+					_D(LOG_CRIT, "Syntax error on %s L#%d",
+										this->_src_.c_str(), this->_lineno_);
 					break;
 				default:
 					node = node->insert(cur);

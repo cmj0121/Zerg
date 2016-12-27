@@ -34,6 +34,7 @@ class Zerg : public IR {
 		void emitIR(AST *node, std::map<std::string, VType> &namescope);
 	private:
 		int _labelcnt_, _lineno_, _regs_;
+		std::string _src_;
 		std::map<std::string, CFG *>_root_;
 
 		std::vector<std::pair<std::string, std::string>> _symb_;
