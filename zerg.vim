@@ -49,13 +49,14 @@ syn keyword ZERGConstant      none true false
 syn keyword ZERGIdentifier    this
 syn keyword ZERGStatement     nop as return yield
 syn keyword ZERGStatement     func class nextgroup=ZERGFunction skipwhite
+syn keyword ZERGStatement     syscall delete
 syn keyword ZERGLogical       eq not in and or not xor
 syn keyword ZERGCondition     if else
 syn keyword ZERGRepeat        while break continue
 syn match   ZERGFunction      "\%(\(func\|class\)\s\+\)\@<=\w\+" contained
 syn keyword ZERGException     try except finally raise
 syn keyword ZERGInclude       from import
-syn keyword ZERGConstant      TRUE FALSE
+syn keyword ZERGConstant      True False
 syn keyword ZERGBuiltinType   __buffer__
 hi def link ZERGConstant      Constant
 hi def link ZERGIdentifier    Identifier
@@ -70,7 +71,7 @@ hi def link ZERGConstant      Constant
 hi def link ZERGBuiltinType   StorageClass
 
 " Reserved Function
-syn keyword ZERGReservedFn    print syscall
+syn keyword ZERGReservedFn    print exit object
 hi def link ZERGReservedFn    Function
 
 let &cpo = s:cpo_save

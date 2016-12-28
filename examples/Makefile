@@ -28,6 +28,13 @@ exit.case: exit.zg
 	@../zerg -o $@ -R $^r
 	@./$@ || test "$$?"            == 4
 
+function.case: function.zg
+	@../zerg -o $@ $^
+	@./$@ || test "$$?"            == 4
+	@../zerg -r $^ > $^r
+	@../zerg -o $@ -R $^r
+	@./$@ || test "$$?"            == 4
+
 condition.case: condition.zg
 	@../zerg -o $@ $^
 	test `./$@ | grep 1 | wc -l` == 2
@@ -54,4 +61,4 @@ buffer.case: buffer.zg
 .PHONY: clean
 
 clean:
-	rm -f $(CASES)
+	rm -f $(CASES) *.zgr

@@ -5,6 +5,8 @@
 #define OPERAND_SIZE_OFFSET		8
 #define OPERAND_SIZE(ctx)	 	((ctx) >> OPERAND_SIZE_OFFSET)
 
+
+#define PARAM_SIZE	0x08
 #define MAX_CMD_LEN	8
 typedef struct _x86_64_inst_tag_ {
 	char cmd[MAX_CMD_LEN];

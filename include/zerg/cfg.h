@@ -26,7 +26,11 @@ class CFG : public AST {
 		bool isCondit(void);
 		void passto(CFG *next);
 		void branch(CFG *truecase, CFG *falsecase);
+		void rename(std::string name);
 		std::string label(void);
+
+		std::string varcnt(void);
+		size_t _varcnt_(void);
 
 		CFG* insert(ZergToken dst);
 		CFG* parent(void);

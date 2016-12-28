@@ -69,9 +69,48 @@ void CFG::branch(CFG *truecase, CFG *falsecase) {
 		falsecase->_parent_ = this;
 	}
 }
+void CFG::rename(std::string name) {
+	/* rename the label */
+	this->_name_ = name;
+}
 std::string CFG::label(void) {
 	/* return the CFG label */
 	return this->_name_;
+}
+
+std::string CFG::varcnt(void) {
+	int cnt = 0;
+	char cntvar[64] = {0};
+	CFG *root = this;
+
+	while (NULL != root->prev()) {
+		root = root->prev();
+	}
+
+	cnt = root->_varcnt_();
+	if (0 != cnt) {
+		snprintf(cntvar, sizeof(cntvar), "0x%X", cnt * PARAM_SIZE);
+	}
+
+	return cntvar;
+}
+size_t CFG::_varcnt_(void) {
+	size_t cnt = 0;
+
+	for (size_t i = 0; i < this->length(); ++i) {
+		AST *child = (AST *)this->child(i);
+
+		if (AST_ASSIGN == child->type()) {
+			cnt ++;
+		} else if (0 == i && AST_FUNC == this->child(0)->type()) {
+			cnt += this->child(0)->child(0)->length();
+		}
+	}
+
+	cnt += (NULL == this->nextCFG(true)  ? 0 : this->nextCFG(true)->_varcnt_());
+	cnt += (NULL == this->nextCFG(false) ? 0 : this->nextCFG(false)->_varcnt_());
+
+	return cnt;
 }
 
 CFG* CFG::insert(ZergToken dst) {

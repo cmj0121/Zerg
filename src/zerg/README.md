@@ -99,7 +99,7 @@ arithmetic and bitwise operation, condition check, function call, transfer betwe
 label and system interrupt.
 
 	:::
-	COPY	LOAD	STORE
+	LOAD	STORE	XCHG
 	ADD		SUB		MUL		DIV		REM		INC		DEC
 	SHL		SHR		AND		OR		XOR		NOT		NEG		ABS
 	EQ		LS		LE		GT		GE
@@ -111,11 +111,10 @@ label and system interrupt.
 	LOCAL	GLOBAL	DELETE
 	ASM
 
-在這其中，會使用到幾個特殊的保留字：LOCAL 表示儲存的資料為區域變數 (Local Variable)，
-實際上儲存的位子有底層 IR emitter 決定，但是在 EPILOGUE 之後就會被清除。
-同理，GLOBAL 表示為全域變數 (Global Variable)，這個變數可以讓變數持續存在，直到被 DELETE 刪除為止。
+在這其中，會使用到幾個特殊的保留字：.local.var 表示儲存的資料為區域變數 (Local Variable)，
+實際上儲存的位子有底層 IR emitter 決定，但是在 EPILOGUE 之後就會被清除。需要注意的是，
+所有的保留字都會使用 '.' 當作開頭，並且不會出現在任何 symbol table 當中。
 
-In these reserved words, LOCAL is used to store the local variable, the actucally storage is
+In these reserved words, LOCAL is used to store the local variable, the actually storage is
 related on the IR emitter, and this storage will be delete after EPILOGUE be called.
-Similar, GLOBAL means the global variable, the data is keep until DELETE be called.
-
+Note, all reserved label should be start with dot ('.') and never show on the symbol table.

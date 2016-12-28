@@ -4,6 +4,9 @@
 
 static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 	#define DEF(key, value, weight)	{key, {value, weight}}
+		DEF("++",	AST_INC,			2),
+		DEF("--",	AST_DEC,			2),
+
 		DEF("*",	AST_MUL,			2),
 		DEF("/",	AST_DIV,			2),
 		DEF("%",	AST_MOD,			2),
@@ -39,17 +42,22 @@ static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 
 		/* reserved words */
 		DEF("=",		AST_ASSIGN,			0),
-		DEF("print",	AST_PRINT,			0),
-		DEF("syscall",	AST_SYSCALL,		0),
 		DEF("nop",		AST_NOP,			0),
 		DEF("while",	AST_WHILE,			0),
 		DEF("break",	AST_BREAK,			0),
 		DEF("continue",	AST_CONTINUE,		0),
 		DEF("if",		AST_IF,				0),
 		DEF("else",		AST_ELSE,			0),
+		DEF("func",		AST_FUNC,			0),
+		DEF("return",	AST_RETURN,			0),
+		DEF("delete",	AST_DELETE,			0),
 
-		DEF("TRUE",		AST_TRUE,			1),
-		DEF("FALSE",	AST_FALSE,			1),
+		/* built-in function*/
+		DEF("print",	AST_PRINT,			0),
+		DEF("syscall",	AST_SYSCALL,		0),
+
+		DEF("True",		AST_TRUE,			1),
+		DEF("False",	AST_FALSE,			1),
 
 		DEF("__buffer__",	AST_BUILDIN_BUFFER,	0),
 	#undef DEF

@@ -10,7 +10,6 @@ typedef enum _ASTType_ {
 	AST_NEWLINE,
 	AST_INDENT,
 	AST_DEDENT,
-	AST_FUNCCALL,
 
 	/* basic type */
 	AST_NUMBER			= 0x10,
@@ -46,17 +45,24 @@ typedef enum _ASTType_ {
 	AST_LOG_XOR,
 	AST_LOG_NOT,
 
+	AST_INC,
+	AST_DEC,
+
 	/* reserved words */
 	AST_RESERVED		= 0x100,
 	AST_IF,
 	AST_ELSE,
 	AST_FUNC,
-	AST_SYSCALL,
-	AST_PRINT,
+	AST_RETURN,
 	AST_NOP,
 	AST_WHILE,
 	AST_BREAK,
 	AST_CONTINUE,
+	AST_DELETE,
+
+	/* built-in function */
+	AST_PRINT,
+	AST_SYSCALL,
 
 	AST_TRUE,
 	AST_FALSE,
@@ -74,6 +80,16 @@ typedef enum _ASTType_ {
 
 #define IS_OPERATOR(type)	(AST_OPERATORS < type && AST_RESERVED > type)
 #define IS_ATOM(node)		(AST_NUMBER == (node)->type() || AST_IDENTIFIER == (node)->type())
+
+typedef struct _tag_ZergArgs_ {
+	int  _entry_;
+	bool _only_ir_;
+	bool _gen_grammar;
+	bool _pie_;
+	bool _symbol_;
+	bool _compile_ir_;
+	bool _no_stdlib_;
+} ZergArgs;
 
 /* token used in Zerg for lexer analysis */
 class ZergToken : public std::string {

@@ -1,4 +1,22 @@
-#! /usr/bin/env python
+#! /usr/bin/env zerg
+#
+# Built-In Function - `buffer`
+# Create a memory buffer with particular size which can access the particular element
+# in buffer.
+#
+# NOTE - The first 8-bytes is store the buffer size.
+
+func buffer(_size_) __buffer__:
+	' Built-In Function - `buffer`
+
+	Create a memory buffer with particular size which can access the particular element
+	in buffer.
+
+	NOTE - The first 8-bytes is store the buffer size.
+	'
+	_      = __buffer__ syscall(0x20000C5, 0x0, _size_ + 0x08, 0x07, 0x1001, 0xFFFFFFFF, 0x0)
+	_[0:4] = _size_
+	return _ + 0x08
 
 x = __buffer__ syscall(0x20000C5, 0x0, 0x400, 0x07, 0x1001, 0xFFFFFFFF, 0x0)
 x[0] = 0x63
@@ -8,3 +26,8 @@ x[3] = 0x00
 
 syscall(0x2000004, 0x01, x, 0x04)
 syscall(0x2000049, x, 0x400)
+
+x = buffer(0x400)
+y = buffer(0x100)
+delete x
+delete y

@@ -1,4 +1,14 @@
 #! /usr/bin/env zerg
+#
+# Built-In Function - `exit`
+# Exit the process, clean-up all resources and reply the status code at the same time.
 
-nop
-syscall(0x2000001, 0x04)
+func exit(_code_):
+	' Built-In Function - `exit`
+
+	Exit the process, clean-up all resources and reply the status code at the same time.
+	'
+
+	syscall(0x2000001, _code_)
+
+exit(0x04)

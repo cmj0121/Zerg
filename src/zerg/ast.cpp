@@ -8,6 +8,7 @@ AST::AST(ZergToken src) : Tree<AST>(src), _raw_(src) {
 	this->_reg_         = 0;
 	this->_type_        = src.type();
 	this->_index_		= NULL;
+	this->_indexsize_	= 0;
 	this->_weight_      = this->_raw_.weight();
 
 	switch(this->_type_) {
@@ -51,6 +52,16 @@ AST* AST::insert(AST *node) {
 		case AST_LESS:   case AST_LESS_OR_EQUAL:
 		case AST_GRATE:  case AST_GRATE_OR_EQUAL:
 		case AST_EQUAL:
+			if (AST_EQUAL == node->type() && AST_LOG_NOT == cur->type()) {
+				if (0 != cur->length()) {
+					cur = cur->child(0);
+					cur->replace(node);
+
+					node->insert(cur);
+					break;
+				}
+			}
+
 			if (0 != cur->weight() && cur->weight() < node->weight()) {
 				while (NULL != cur->parent() && 0 != cur->parent()->weight()) {
 					if (cur->parent()->weight() <= node->weight()) {
@@ -83,6 +94,7 @@ AST* AST::insert(AST *node) {
 				}
 				break;
 			}
+
 			Tree<AST>::insert(node);
 			break;
 		case AST_LOG_NOT:
@@ -90,6 +102,7 @@ AST* AST::insert(AST *node) {
 		case AST_LSHT:   case AST_RSHT:
 		case AST_BIT_OR: case AST_BIT_AND: case AST_BIT_XOR:
 		case AST_LOG_OR: case AST_LOG_AND: case AST_LOG_XOR:
+		case AST_INC:    case AST_DEC:
 			if (0 != cur->weight() && cur->weight() < node->weight()) {
 				while (NULL != cur->parent() && 0 != cur->parent()->weight()) {
 					if (cur->parent()->weight() <= node->weight()) {
@@ -108,6 +121,15 @@ AST* AST::insert(AST *node) {
 			break;
 		case AST_ASSIGN:
 			cur = cur->root();
+
+			ALERT(0 == cur->length());
+			switch(cur->child(0)->type()) {
+				case AST_FUNC:
+					cur = cur->child(0);
+					break;
+				default:
+					break;
+			}
 
 			ALERT(0 == cur->length());
 			cur = cur->child(cur->length()-1);
@@ -142,10 +164,11 @@ int AST::getReg(void) {
 	/* get the number of register */
 	return this->_reg_;
 }
-void AST::setIndex(AST *src) {
+void AST::setIndex(AST *src, int size) {
 	switch(this->_type_) {
 		case AST_IDENTIFIER:
-			this->_index_ = src;
+			this->_index_     = src;
+			this->_indexsize_ = size;
 			break;
 		default:
 			_D(LOG_CRIT, "Not Implemented 0x%x", this->_type_);
@@ -157,6 +180,29 @@ std::string AST::getIndex(void) {
 
 	tmp = NULL == this->_index_ ? "" : this->_index_->data();
 	return tmp;
+}
+std::string AST::getIndexSize(void) {
+	std::string dst = "";
+
+	switch(this->_indexsize_) {
+		case 1:
+			dst = ZASM_MEM_BYTE;
+			break;
+		case 2:
+			dst = ZASM_MEM_WORD;
+			break;
+		case 3:
+			dst = ZASM_MEM_DWORD;
+			break;
+		case 4:
+			dst = ZASM_MEM_QWORD;
+			break;
+		default:
+			dst = "";
+			break;
+	}
+
+	return dst;
 }
 int AST::weight(void) {
 	/* reply the weight of the node in AST */
@@ -172,13 +218,14 @@ ASTType AST::type(void) {
 }
 VType AST::vtype(void) {
 	/* category of the value type in AST */
-	if (VTYPE_UNKNOWN == this->_vtype_ && NULL != this->child(0)) {
+	if (VTYPE_UNKNOWN == this->_vtype_ && 0 < this->length()) {
 		return this->child(0)->vtype();
 	}
 	return this->_vtype_;
 }
 VType AST::vtype(VType src) {
 	/* Set the value type in AST */
+	_D(LOG_DEBUG, "set v-type `%s` -> 0x%X", this->data().c_str(), src);
 	this->_vtype_ = src;
 	return this->_vtype_;
 }
@@ -202,6 +249,9 @@ std::string AST::data(void) {
 	} else {
 		return this->_raw_;
 	}
+}
+std::string AST::raw(void) {
+	return this->_raw_;
 }
 
 void AST::setEmitted(void) {

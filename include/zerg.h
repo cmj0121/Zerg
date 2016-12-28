@@ -11,13 +11,15 @@
 #include "zerg/ir.h"
 #include "zerg/cfg.h"
 
+#define BUILTIN_LIBRARY		"LIBS/__builtin__.zg"
+
 class Zerg : public IR {
 	public:
-		Zerg(std::string dst, bool pie = false, off_t entry = 0x1000, bool symb = false);
+		Zerg(std::string dst, ZergArgs *args);
 		virtual ~Zerg();
 
-		void compile(std::string src, bool only_ir = false, bool compile_ir = false);
-		void emit(std::string op, std::string dst="", std::string src="", std::string extra="");
+		void compile(std::string src, ZergArgs *args);
+		void emit(std::string op, std::string dst="", std::string src="", std::string idx="", std::string size="");
 
 		std::string regalloc(std::string src);
 		void regsave(std::string src);
@@ -25,12 +27,14 @@ class Zerg : public IR {
 	protected:
 		void lexer(std::string src);						/* lexer analysis */
 		ZergToken& parser(ZergToken &cur, ZergToken &prev);	/* syntax and semantic analysis */
+		void basic_namespace(std::map<std::string, VType> &namescope);
 
-		void compileCFG(CFG *node, std::map<std::string, VType> &&namescope={});
+		void compileCFG(CFG *node, std::map<std::string, VType> &namescope);
 		void _compileCFG_(CFG *node, std::map<std::string, VType> &namescope);
 		void emitIR(AST *node, std::map<std::string, VType> &namescope);
 	private:
-		int _labelcnt_, _lineno_;
+		int _labelcnt_, _lineno_, _regs_;
+		std::string _src_;
 		std::map<std::string, CFG *>_root_;
 
 		std::vector<std::pair<std::string, std::string>> _symb_;
