@@ -47,6 +47,9 @@ void CFG::passto(CFG *next) {
 	}
 }
 void CFG::branch(CFG *truecase, CFG *falsecase) {
+	ALERT(NULL != this->_next_[0] && NULL != truecase  && this->_next_[0] != truecase);
+	ALERT(NULL != this->_next_[1] && NULL != falsecase && this->_next_[1] != falsecase);
+
 	this->_next_[0] = truecase;
 	this->_next_[1] = falsecase;
 	this->_condi_ = true;

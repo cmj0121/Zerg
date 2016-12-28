@@ -14,6 +14,8 @@ enum ZergLogLevel {
 	ZASM_LOG_WARNING	= 4,
 	ZASM_LOG_INFO,
 	ZASM_LOG_DEBUG,
+
+	LOG_DEBUG_LEXER,
 };
 
 #include <string>

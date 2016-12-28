@@ -29,6 +29,7 @@ void Zerg::lexer(std::string src) {
 			size_t pos;
 			int base = 10;
 
+			_D(LOG_DEBUG_LEXER, "%s on %zu", line.c_str(), cur);
 			switch(line[cur]) {
 				case '\0':				/* NEWLINE */
 				case '#' :				/* COMMENT */
