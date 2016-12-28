@@ -47,7 +47,7 @@ void Zerg::compile(std::string src, ZergArgs *args) {
 
 			this->emit("# Sub-Routine - " + it.first);
 			/* load the function status */
-			this->basic_namespace(namescope);
+			this->load_namespace(namescope);
 			this->compileCFG(it.second, namescope);
 			this->emit("RET");
 		}
@@ -843,15 +843,20 @@ std::string Zerg::tmpreg(void) {
 	_D(LOG_DEBUG, "template register `%s`", _alloc_regs_[1].c_str());
 	return _alloc_regs_[1];
 }
-void Zerg::basic_namespace(std::map<std::string, VType> &namescope) {
-	AST *cur = NULL, *tmp = NULL;
-
+void Zerg::load_namespace(std::map<std::string, VType> &namescope) {
 	namescope.clear();
 
 	for (auto it : this->_root_) {
 		if (0 == it.second->length()) continue;
+		this->_load_namespace_(it.second, namescope);
+	}
+}
+void Zerg::_load_namespace_(CFG *node, std::map<std::string, VType> &namescope) {
+	AST *cur = NULL, *tmp = NULL;
 
-		tmp = it.second->child(0);
+	if (NULL != node && 0 != node->length()) {
+		tmp = node->child(0);
+
 		switch(tmp->type()) {
 			case AST_FUNC:
 				cur = tmp->child(0);
@@ -872,6 +877,9 @@ void Zerg::basic_namespace(std::map<std::string, VType> &namescope) {
 			default:
 				break;
 		}
+
+		_load_namespace_(node->nextCFG(true), namescope);
+		_load_namespace_(node->nextCFG(false), namescope);
 	}
 }
 

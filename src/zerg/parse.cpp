@@ -187,17 +187,6 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					break;
 			}
 			break;
-		case AST_FUNC:
-			switch(prev.type()) {
-				case AST_NEWLINE:
-				case AST_INDENT: case AST_DEDENT:
-					node = node->insert(cur);
-					break;
-				default:
-					_D(LOG_CRIT, "function declare need be first token in statement");
-					break;
-			}
-			break;
 
 		case AST_NOP:
 		case AST_BREAK:
@@ -208,6 +197,19 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			break;
 
 		/* new CFG case */
+		case AST_FUNC:
+			switch(prev.type()) {
+				case AST_NEWLINE:
+				case AST_INDENT: case AST_DEDENT:
+					tmp  = new CFG(".func.unknown");
+					node = tmp;
+					node = node->insert(cur);
+					break;
+				default:
+					_D(LOG_CRIT, "function declare need be first token in statement");
+					break;
+			}
+			break;
 		case AST_COLON:
 			while (NULL != node->parent() && NULL != node->parent()->parent()) {
 				node = node->parent();
@@ -294,7 +296,8 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_DEDENT:
 			node = node->root();
 
-			if (NULL == node->root()->prev()) {
+			if (NULL == node->prev()) {
+				/* Back to the main logical */
 				ALERT(0 != this->_root_.count(CFG_MAIN));
 
 				node = new CFG(CFG_MAIN);
@@ -333,7 +336,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 						}
 						break;
 					default:
-						_D(LOG_CRIT, "Not Implemented 0X%X", tmp->child(0)->type());
+						node = node->prev();
 						break;
 				}
 			}
