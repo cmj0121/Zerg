@@ -3,10 +3,10 @@
 #include <stdlib.h>
 #include "zerg.h"
 
-IR::IR(std::string dst, off_t entry, bool pie, bool symb) : Binary(dst, pie) {
+IR::IR(std::string dst, ZergArgs *args) : Binary(dst, args->_pie_) {
 	this->_param_nr_	= 0;
-	this->_entry_		= entry;
-	this->_symb_		= symb;
+	this->_entry_		= args->_entry_;
+	this->_symb_		= args->_symbol_;
 }
 IR::~IR(void) {
 	if (!this->_only_ir_) {

@@ -35,7 +35,7 @@ class IRToken {
 
 class IR : public Binary {
 	public:
-		IR(std::string dst, off_t entry = 0x1000, bool pie=false, bool symb=false);
+		IR(std::string dst, ZergArgs *args);
 		~IR(void);
 
 		void emit(IRToken *token);

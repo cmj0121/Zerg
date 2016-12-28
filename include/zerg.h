@@ -15,10 +15,10 @@
 
 class Zerg : public IR {
 	public:
-		Zerg(std::string dst, bool pie = false, off_t entry = 0x1000, bool symb = false);
+		Zerg(std::string dst, ZergArgs *args);
 		virtual ~Zerg();
 
-		void compile(std::string src, bool only_ir = false, bool compile_ir = false);
+		void compile(std::string src, ZergArgs *args);
 		void emit(std::string op, std::string dst="", std::string src="", std::string idx="", std::string size="");
 
 		std::string regalloc(std::string src);

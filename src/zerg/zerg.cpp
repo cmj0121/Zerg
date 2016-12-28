@@ -4,7 +4,7 @@
 #include <iomanip>
 #include "zerg.h"
 
-Zerg::Zerg(std::string dst, bool pie, off_t entry, bool symb) : IR(dst, entry, pie, symb) {
+Zerg::Zerg(std::string dst, ZergArgs *args) : IR(dst, args) {
 	this->_labelcnt_	= 0;
 	this->_lineno_		= 1;
 	this->_regs_		= 0;
@@ -16,14 +16,14 @@ Zerg::~Zerg() {
 	}
 }
 
-void Zerg::compile(std::string src, bool only_ir, bool compile_ir) {
-	if (compile_ir) {
+void Zerg::compile(std::string src, ZergArgs *args) {
+	if (args->_compile_ir_) {
 		IR::compile(src);
 	} else {
-		this->_only_ir_ = only_ir;
+		this->_only_ir_ = args->_only_ir_;
 
 		/* load the built-in library if possible */
-		if (0 == access(BUILTIN_LIBRARY, F_OK)) {
+		if (0 == access(BUILTIN_LIBRARY, F_OK) && false == args->_no_stdlib_) {
 			_D(LOG_INFO, "Load the built-in library `%s`", BUILTIN_LIBRARY);
 			this->lexer(BUILTIN_LIBRARY);
 		}
