@@ -70,15 +70,24 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 				_D(LOG_CRIT, "Local VAR `%s` not declare", src.c_str());
 			}
 
-			snprintf(buff, sizeof(buff), "[rbp-0X%X]", (pos+1) * 0x08);
-			(*this) += new Instruction("mov", dst, buff);
+			if ("" == idx) {
+				snprintf(buff, sizeof(buff), "[rbp-0X%X]", (pos+1) * 0x08);
+				(*this) += new Instruction("mov", dst, buff);
+			} else {
+				std::string tmp = this->tmpreg();
 
-			if ("" != idx) {
+				snprintf(buff, sizeof(buff), "[rbp-0X%X]", (pos+1) * 0x08);
+				(*this) += new Instruction("mov", tmp.c_str(), buff);
+
 				snprintf(buff, sizeof(buff), "%s[%s%s%s]",
 								"" == _size ? "" : (_size + " ").c_str(),
-								dst.c_str(),
+								tmp.c_str(),
 								'-' == idx[0] ? "" : "+",
 								idx.c_str());
+				if ("" != _size && ZASM_MEM_QWORD != _size) {
+					/* clean-up the buffer */
+					(*this) += new Instruction("xor", dst, dst);
+				}
 				(*this) += new Instruction("mov", dst, buff);
 			}
 		} else if (dst != src) {

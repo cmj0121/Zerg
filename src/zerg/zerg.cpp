@@ -274,7 +274,9 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 
 						this->emit("CALL", node->data());
 						node->setReg(SYSCALL_REG);
-						break;
+
+						/* HACK - Need not process anymore */
+						return ;
 					case AST_BRACKET_OPEN:
 						ALERT(0 == node->child(0)->length() || 2 < node->child(0)->length());
 						ALERT(0 == namescope.count(node->data()));
@@ -303,7 +305,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 						_D(LOG_CRIT, "Not Implemented");
 						break;
 				}
-				return ;
+				break ;
 			}
 
 			for (size_t i = 0; i < node->length(); ++i) {
@@ -402,7 +404,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					node->vtype(namescope[node->data()]);
 					node->setReg(++this->_regs_);
 
-					this->emit("LOAD", node->data(), tmp);
+					this->emit("LOAD", node->data(), tmp, node->getIndex(), node->getIndexSize());
 					break;
 			}
 			break;
@@ -590,7 +592,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 
 					tmp->setReg(++this->_regs_);
 					x->vtype(namescope[y->data()]);
-					this->emit("LOAD",  tmp->data(), y->data());
+					this->emit("LOAD",  tmp->data(), y->data(), y->getIndex(), y->getIndexSize());
 					this->emit("STORE", x->data(), tmp->data(), x->getIndex(), x->getIndexSize());
 					delete tmp;
 				}
