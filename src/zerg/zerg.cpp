@@ -46,6 +46,7 @@ void Zerg::compile(std::string src, ZergArgs *args) {
 			_D(LOG_INFO, "compile subroutine `%s`", it.first.c_str());
 
 			this->emit("# Sub-Routine - " + it.first);
+			this->_stack_.clear();
 			/* load the function status */
 			this->load_namespace(namescope);
 			this->compileCFG(it.second, namescope);

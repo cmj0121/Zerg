@@ -43,7 +43,6 @@ void IR::emit(IRToken *token) {
 	return this->emit(op, dst, src, idx, size);
 }
 void IR::emit(std::string op, std::string _dst, std::string _src, std::string _idx, std::string _size) {
-	static std::vector<std::string> stack;
 	std::string src, dst, idx;
 
 	dst = this->regalloc(_dst);
@@ -63,10 +62,10 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 
 		if (src == _src) {
 			/* save local variable */
-			pos = std::find(stack.begin(), stack.end(), src) - stack.begin();
+			pos = std::find(_stack_.begin(), _stack_.end(), src) - _stack_.begin();
 
-			if (stack.size() == pos) {
-				/* save into stack */
+			if (_stack_.size() == pos) {
+				/* save into _stack_ */
 				_D(LOG_CRIT, "Local VAR `%s` not declare", src.c_str());
 			}
 
@@ -100,14 +99,15 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		std::string tmpreg = this->tmpreg();
 
 		if (dst == _dst) {			/* save variable */
-			pos = std::find(stack.begin(), stack.end(), dst) - stack.begin();
+			pos = std::find(_stack_.begin(), _stack_.end(), dst) - _stack_.begin();
 
 			/* HACK - only allow created variable */
-			ALERT(stack.size() == pos && ("" != idx && src != __IR_LOCAL_VAR__));
-			if (stack.size() == pos) {
-				/* save into stack */
-				stack.push_back(dst);
+			ALERT(_stack_.size() == pos && ("" != idx && src != __IR_LOCAL_VAR__));
+			if (_stack_.size() == pos) {
+				/* save into _stack_ */
+				_stack_.push_back(dst);
 			}
+
 			snprintf(buff, sizeof(buff), "[rbp-0X%X]", (pos+1) * 0x08);
 
 			if (src == __IR_LOCAL_VAR__ && "" != idx) {

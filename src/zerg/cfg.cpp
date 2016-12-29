@@ -92,6 +92,7 @@ std::string CFG::varcnt(void) {
 		snprintf(cntvar, sizeof(cntvar), "0x%X", cnt * PARAM_SIZE);
 	}
 
+	_D(LOG_DEBUG, "variable count on %s - %d", root->label().c_str(), cnt);
 	return cntvar;
 }
 size_t CFG::_varcnt_(void) {
@@ -100,10 +101,10 @@ size_t CFG::_varcnt_(void) {
 	for (size_t i = 0; i < this->length(); ++i) {
 		AST *child = (AST *)this->child(i);
 
-		if (AST_ASSIGN == child->type()) {
+		if (AST_ASSIGN == child->type() && 0 == child->child(0)->length()) {
 			cnt ++;
-		} else if (0 == i && AST_FUNC == this->child(0)->type()) {
-			cnt += this->child(0)->child(0)->length();
+		} else if (AST_FUNC == child->type()) {
+			cnt += child->child(0)->child(0)->length();
 		}
 	}
 

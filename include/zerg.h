@@ -11,7 +11,7 @@
 #include "zerg/ir.h"
 #include "zerg/cfg.h"
 
-#define BUILTIN_LIBRARY		"LIBS/__builtin__.zg"
+#define BUILTIN_LIBRARY		"/usr/local/lib/zerg/__builtin__.zg"
 
 class Zerg : public IR {
 	public:

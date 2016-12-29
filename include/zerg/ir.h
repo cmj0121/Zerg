@@ -48,7 +48,7 @@ class IR : public Binary {
 	protected:
 		bool _only_ir_;
 		std::string randstr(int size=24, std::string prefix="__", std::string suffix="__");
-		std::vector<std::string> _repeate_label_;
+		std::vector<std::string> _repeate_label_, _stack_;
 	private:
 		int _param_nr_;
 		bool _symb_;

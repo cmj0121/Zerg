@@ -25,6 +25,8 @@ clean: $(SUBDIR)
 install: $(SUBDIR)
 	install -d ~/.vim/syntax/
 	install -m644 $(VIMRC) ~/.vim/syntax/
+	install -d /usr/local/lib/zerg/
+	install -m644 LIBS/* /usr/local/lib/zerg/
 
 grammar: $(SUBDIR)
 
