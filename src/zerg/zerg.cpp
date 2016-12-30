@@ -169,7 +169,7 @@ void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
 			this->emit("LABEL", node->prev()->label() + "_END");
 		}
 
-		if (NULL != node->child(0) && AST_WHILE == node->child(0)->type()) {
+		if (0 != node->length() && AST_WHILE == node->child(0)->type()) {
 			this->_repeate_label_.pop_back();
 		}
 	}
@@ -270,6 +270,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 
 						x = node->child(0);
 						for (size_t i = 0; i < x->length(); ++i) {
+							this->emitIR(x->child(i), namescope);
 							this->emit("PARAM", x->child(i)->data());
 						}
 
@@ -547,9 +548,11 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 		case AST_EQUAL:
 			ALERT(2 != node->length())
 
-			x = node->child(0);
-			y = node->child(1);
-			this->emit("EQ", x->data(), y->data());
+			x   = node->child(0);
+			y   = node->child(1);
+			tmp = node->child(0)->getIndexSize();
+			tmp = "" == tmp ? node->child(1)->getIndexSize() : tmp;
+			this->emit("EQ", x->data(), y->data(), __IR_DUMMY__, tmp);
 			node->setReg(x);
 			break;
 
@@ -628,7 +631,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					this->emit("ASM", "mov", "rdi", "0x01");
 					this->emit("INTERRUPT");
 					break;
-				case VTYPE_INTEGER:
+				case VTYPE_INTEGER: case VTYPE_OBJECT:
 					this->emit("ASM", "mov", "rax", x->data());
 
 					this->emit("ASM", "asm", tmp + "__INT_TO_STR__:");
@@ -805,13 +808,16 @@ void Zerg::emit(std::string op, std::string dst, std::string src, std::string id
 }
 
 /* register allocation algo. */
-std::string Zerg::regalloc(std::string src) {
+std::string Zerg::regalloc(std::string src, std::string size) {
 	int cnt = 0;
 	std::string tmp;
 
 	if (src == __IR_SYSCALL_REG__) {
 		return SYSCALL_REG;
 	} else if (1 ==  sscanf(src.c_str(), __IR_REG_FMT__, &cnt)) {
+		int pos = 0;
+		std::vector<std::string> regs = { REGISTERS };
+
 		if (0 != _alloc_regs_map_.count(src)) {
 			/* HACK - Found in cache */
 			tmp = _alloc_regs_map_[src];
@@ -822,6 +828,18 @@ std::string Zerg::regalloc(std::string src) {
 			_alloc_regs_.erase(_alloc_regs_.begin());
 		}
 
+		/* HACK - resize the register if need */
+		if (ZASM_MEM_BYTE         == size) {
+			pos = std::find(regs.begin(), regs.end(), tmp) - regs.begin();
+			tmp = regs[(pos & 0xE0) + (pos % 8) + 24];
+		} else if (ZASM_MEM_WORD  == size) {
+			pos = std::find(regs.begin(), regs.end(), tmp) - regs.begin();
+			tmp = regs[(pos & 0xE0) + (pos % 8) + 16];
+		} else if (ZASM_MEM_DWORD == size) {
+			pos = std::find(regs.begin(), regs.end(), tmp) - regs.begin();
+			tmp = regs[(pos & 0xE0) + (pos % 8) + 8];
+		}
+
 		_D(LOG_INFO, "re-allocate register - %s -> %s", src.c_str(), tmp.c_str());
 		_alloc_regs_map_[src] = tmp;
 		return tmp;
@@ -830,9 +848,12 @@ std::string Zerg::regalloc(std::string src) {
 	return src;
 }
 void Zerg::regsave(std::string src) {
+	int pos = 0;
 	std::vector<std::string> regs = { USED_REGISTERS };
 
-	if (regs.end() != std::find(regs.begin(), regs.end(), src)) {
+	pos = std::find(regs.begin(), regs.end(), src) - regs.begin();
+	if (pos != regs.size()) {
+		src = regs[(pos & 0xE0) + (pos % 8)];
 		_D(LOG_DEBUG, "restore register %s", src.c_str());
 		this->_alloc_regs_.push_back(src);
 	}

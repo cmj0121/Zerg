@@ -45,7 +45,7 @@ void IR::emit(IRToken *token) {
 void IR::emit(std::string op, std::string _dst, std::string _src, std::string _idx, std::string _size) {
 	std::string src, dst, idx;
 
-	dst = this->regalloc(_dst);
+	dst = this->regalloc(_dst, _size);
 	src = this->regalloc(_src);
 	idx = this->regalloc(_idx);
 

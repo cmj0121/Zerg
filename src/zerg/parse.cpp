@@ -65,6 +65,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_NUMBER:
 				case AST_IDENTIFIER:
 				case AST_LOG_NOT:
+				case AST_BRACKET_CLOSE: case AST_PARENTHESES_CLOSE:
 					if (AST_LOG_NOT == prev.type() && AST_EQUAL != cur.type()) {
 						_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",
 								prev.c_str(), prev.type(), cur.c_str(), cur.type());
@@ -255,11 +256,15 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			break;
 		case AST_WHILE:
 			snprintf(buff, sizeof(buff), ".while.%04d", this->_lineno_);
-			tmp = new CFG(buff);
+			if (0 != node->length()) {
+				tmp = new CFG(buff);
 
-			node = node->root();
-			node->passto(tmp);
-			node = tmp;
+				node = node->root();
+				node->passto(tmp);
+				node = tmp;
+			} else {
+				node->rename(buff);
+			}
 			node = node->insert(cur);
 			break;
 		case AST_INDENT:
@@ -322,10 +327,21 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 						}
 						break;
 					case AST_WHILE:
-						snprintf(buff, sizeof(buff), "%s_FALSE", tmp->label().c_str());
-						node = new CFG(buff);
+						if (NULL == tmp->nextCFG(false)) {
+							/* exit the while loop */
+							snprintf(buff, sizeof(buff), "%s_FALSE", tmp->label().c_str());
+							node = new CFG(buff);
 
-						tmp->branch(tmp->nextCFG(true), node);
+							tmp->branch(tmp->nextCFG(true), node);
+						} else {
+							/* FIXME - know issue when function in function */
+							if (0 == this->_root_.count(CFG_MAIN)) {
+								tmp = new CFG(CFG_MAIN);
+								this->_root_[CFG_MAIN] = tmp;
+							}
+
+							node = this->_root_[CFG_MAIN];
+						}
 						break;
 					case AST_FUNC:
 						if (0 == this->_root_.count(CFG_MAIN)) {
