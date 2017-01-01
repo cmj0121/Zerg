@@ -38,7 +38,9 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 		return ;
 	} else {
 		if (4 == this->dst().size() || 4 == this->src().size() ||
-			this->src().isEXT() || this->dst().isEXT()) {
+			this->src().isEXT() || this->dst().isEXT() ||
+			(this->src().isMEM2() && this->src().indexReg()->isEXT()) ||
+			(this->dst().isMEM2() && this->dst().indexReg()->isEXT())) {
 			int REX_B = 0, REX_X = 0, REX_R = 0, REX_W = 0;
 
 			/*
