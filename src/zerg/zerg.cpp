@@ -146,7 +146,7 @@ void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
 		std::string label;
 
 		if (NULL == node->nextCFG(false)) {
-			label = node->label() + "_END";
+			label = node->label() + ".end";
 		} else {
 			label = node->nextCFG(false)->label();
 		}
@@ -169,8 +169,8 @@ void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
 
 	if (node->isBranch()) {
 		if (node == node->prev()->nextCFG(false) || NULL == node->prev()->nextCFG(false)) {
-			_D(LOG_DEBUG, "set label %s_END", node->prev()->label().c_str());
-			this->emit("LABEL", node->prev()->label() + "_END");
+			_D(LOG_DEBUG, "set label %s.end", node->prev()->label().c_str());
+			this->emit("LABEL", node->prev()->label() + ".end");
 		}
 
 		if (0 != node->length() && AST_WHILE == node->child(0)->type()) {
@@ -748,7 +748,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			break;
 		case AST_BREAK:
 			tmp = this->_repeate_label_[this->_repeate_label_.size()-1];
-			this->emit("JMP", tmp + "_END");
+			this->emit("JMP", tmp + ".end");
 			break;
 		case AST_CONTINUE:
 			tmp = this->_repeate_label_[this->_repeate_label_.size()-1];

@@ -306,16 +306,20 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		(*this) += new Instruction("ret");
 	} else if (op == "PARAM") {			/* (PARAM, DST) */
 		/* Save the parameter */
+		int pos = 0;
+		char buff[BUFSIZ] = {0};
 		std::vector<std::string> regs = { "rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"};
 
-		if ("rsi" == regs[this->_param_nr_] && '&' == dst[0]) {
-			ALERT(this->_param_nr_ == regs.size());
+		pos = std::find(_stack_.begin(), _stack_.end(), dst) - _stack_.begin();
 
-			(*this) += new Instruction("lea", regs[this->_param_nr_], dst);
-			(*this) += new Instruction("push", regs[this->_param_nr_]);
-		} else {
+		if (pos == _stack_.size()) {
+			/* save dst into local stack*/
 			(*this) += new Instruction("push", dst);
+		} else {
+			snprintf(buff, sizeof(buff), "[rbp-0X%X]", (pos+1) * 0x08);
+			(*this) += new Instruction("push", buff);
 		}
+
 		this->_param_nr_ ++;
 		this->regsave(dst);
 	} else if (op == "LABEL") {			/* (LABEL, DST, SRC) */

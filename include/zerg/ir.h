@@ -17,6 +17,11 @@
 #define __IR_LOCAL_VAR__	".local.var"
 #define __IR_DUMMY__		".dummy"
 
+#define __IR_LABEL_IF__		".if.%04d"
+#define __IR_LABEL_WHILE__	".while.%04d"
+#define __IR_LABEL_END__	"%s.end"
+#define __IR_LABEL_FALSE__	"%s.false"
+
 class IRToken {
 	public:
 		IRToken(std::string src);
