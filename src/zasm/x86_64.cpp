@@ -253,7 +253,9 @@ void Instruction::displacement(X86_64_INST &inst) {
 		return;
 	}
 
-	ret = this->setIMM(token.offset(), 0 == (~0x7F & token.offset()) ? 1 : 4);
+	ret = token.offset();
+	ret = (0 > ret && INST_NONE == inst.op2) ? ~ret : ret;
+	ret = this->setIMM(token.offset(), 0 == (~0x7F & ret) ? 1 : 4);
 	if (ret) _D(ZASM_LOG_WARNING, "Displacement  - %llX", ret);
 }
 void Instruction::immediate(X86_64_INST &inst) {
