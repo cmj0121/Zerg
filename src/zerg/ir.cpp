@@ -46,7 +46,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 	std::string src, dst, idx;
 
 	dst = this->regalloc(_dst, _size);
-	src = this->regalloc(_src);
+	src = __IR_DUMMY__ != _idx ? this->regalloc(_src) : this->regalloc(_src, _size);
 	idx = this->regalloc(_idx);
 
 	_D(LOG_INFO, "IR emit - %s %s %s %s",

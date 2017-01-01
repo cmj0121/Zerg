@@ -16,6 +16,7 @@ enum ZergLogLevel {
 	ZASM_LOG_DEBUG,
 
 	LOG_DEBUG_LEXER,
+	LOG_REGISTER_ALLOC,
 };
 
 #include <string>

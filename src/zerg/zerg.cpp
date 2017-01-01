@@ -45,6 +45,10 @@ void Zerg::compile(std::string src, ZergArgs *args) {
 			std::map<std::string, VType> namescope;
 			_D(LOG_INFO, "compile subroutine `%s`", it.first.c_str());
 
+			/* reset the allocated register */
+			this->_alloc_regs_map_.clear();
+			this->_alloc_regs_ = { USED_REGISTERS };
+
 			this->emit("# Sub-Routine - " + it.first);
 			this->_stack_.clear();
 			/* load the function status */
@@ -840,7 +844,7 @@ std::string Zerg::regalloc(std::string src, std::string size) {
 			tmp = regs[(pos & 0xE0) + (pos % 8) + 8];
 		}
 
-		_D(LOG_INFO, "re-allocate register - %s -> %s", src.c_str(), tmp.c_str());
+		_D(LOG_REGISTER_ALLOC, "re-allocate register - %s -> %s", src.c_str(), tmp.c_str());
 		_alloc_regs_map_[src] = tmp;
 		return tmp;
 	}
@@ -854,7 +858,7 @@ void Zerg::regsave(std::string src) {
 	pos = std::find(regs.begin(), regs.end(), src) - regs.begin();
 	if (pos != regs.size()) {
 		src = regs[(pos & 0xE0) + (pos % 8)];
-		_D(LOG_DEBUG, "restore register %s", src.c_str());
+		_D(LOG_REGISTER_ALLOC, "restore register %s", src.c_str());
 		this->_alloc_regs_.push_back(src);
 	}
 }
