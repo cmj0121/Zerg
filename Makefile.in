@@ -1,4 +1,4 @@
-CXXFLAGS=-Wall -std=c++11 -DDEBUG_CFG
+CXXFLAGS=-Wall -std=c++11
 LDFLAGS=
 
 STRIP=strip
