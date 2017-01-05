@@ -21,6 +21,16 @@ void Zasm::compile(std::fstream &src, bool symb) {
 		if (*token == TOKEN_ENTRY) {
 			entry = this->token(src)->asInt();
 			line.clear();
+		} else if (*token == ZASM_INCLUDE) {
+			std::string file = this->token(src)->unescape();
+
+			_D(ZASM_LOG_INFO, "load external file `%s`", file.c_str());
+			if (0 != access(file.c_str(), F_OK)) {
+				_D(LOG_CRIT, "external file `%s` does NOT exist", file.c_str());
+			}
+
+			std::fstream fp(file, std::fstream::in);
+			this->compile(fp, symb);
 		} else if (*token == "\n") {
 			for (size_t i = 0; i < line.size(); ++i) {
 				if (*line[i] == ZASM_MEM_BYTE  || *line[i] == ZASM_MEM_WORD ||

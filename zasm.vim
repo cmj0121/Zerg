@@ -24,6 +24,7 @@ syn match   ZASMComment       "#.*$" contains=ZASMToDo,@Spell
 syn keyword ZASMToDo          contained XXX TODO FIXME NOTE HACK
 syn keyword ZASMReserved      asm nextgroup=ZASMLabel skipwhite
 syn match   ZASMLabel         "\%(asm\s\+\)\@<=\w\+"
+syn keyword ZASMInclude       include
 syn match   ZASMNumber        "\<\d\+\>"
 syn match   ZASMNumber        "\<0[oO]\=\o\+[Ll]\=\>"
 syn match   ZASMNumber        "\<0[xX]\x\+[Ll]\=\>"
@@ -51,6 +52,7 @@ hi def link ZASMIdentifier      Type
 hi def link ZASMString          String
 hi def link ZASMEscape          Special
 hi def link ZASMStructure       Structure
+hi def link ZASMInclude         Include
 
 let &cpo = s:cpo_save
 unlet s:cpo_save

@@ -9,6 +9,7 @@ static int __line__;
 
 #define TOKEN_ENTRY         "ENTRY"
 #define TOKEN_ASM           "asm"
+#define ZASM_INCLUDE		"include"
 #define ZASM_MEM_BYTE		"byte"
 #define ZASM_MEM_WORD		"word"
 #define ZASM_MEM_DWORD		"dword"
