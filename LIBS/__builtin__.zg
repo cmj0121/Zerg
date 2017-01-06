@@ -1,15 +1,7 @@
 #! /usr/bin/env zerg
 
-func exit(_code_):
-	' Built-In Function - `exit`
-
-	Exit the process, clean-up all resources and reply the status code at the same time.
-	'
-
-	syscall(0x2000001, _code_)
-
 func buffer(_size_) __buffer__:
-	' Built-In Function - `buffer`
+	' built-in function - `buffer`
 
 	Create a memory buffer with particular size which can access the particular element
 	in buffer.
@@ -20,3 +12,21 @@ func buffer(_size_) __buffer__:
 	_[0:4] = _size_
 	return _ + 0x08
 
+func exit(_code_):
+	' built-in function - `exit`
+
+	Exit the process, clean-up all resources and reply the status code at the same time.
+	'
+
+	syscall(0x2000001, _code_)
+
+func strlen(_src_):
+	' built-in function - `strlen`
+
+	Calculate the string lenght which the input is the raw buffer and output the length
+	of the string. String MUST ends with 0x00
+	'
+	_idx_ = 0
+	while 0x0 not eq _src_[_idx_]:
+		_idx_ ++
+	return _idx_

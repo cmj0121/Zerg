@@ -49,8 +49,8 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 	src = __IR_DUMMY__ != _idx ? this->regalloc(_src) : this->regalloc(_src, _size);
 	idx = this->regalloc(_idx);
 
-	_D(LOG_INFO, "IR emit - %s %s %s %s",
-			op.c_str(), dst.c_str(), src.c_str(), idx.c_str());
+	_D(LOG_INFO, "IR emit - %s %s %s %s %s",
+			op.c_str(), dst.c_str(), src.c_str(), idx.c_str(), _size.c_str());
 
 	if (op == "XCHG") {					/* (XCHG,  DST, SRC) */
 		ALERT("" == dst || "" == src);
@@ -96,10 +96,10 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		/* Load data from memory with index if need */
 		int pos = 0;
 		char buff[BUFSIZ] = {0};
-		std::string tmpreg = this->tmpreg();
 
 		if (dst == _dst) {			/* save variable */
 			pos = std::find(_stack_.begin(), _stack_.end(), dst) - _stack_.begin();
+			std::string tmpreg = this->tmpreg();
 
 			/* HACK - only allow created variable */
 			ALERT(_stack_.size() == pos && ("" != idx && src != __IR_LOCAL_VAR__));

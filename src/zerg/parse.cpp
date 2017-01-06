@@ -379,8 +379,11 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					node = node->parent();
 					continue;
 				} else if (AST_PARENTHESES_OPEN == node->child(0)->type()) {
-					/* Found */
-					break;
+					if (AST_PARENTHESES_CLOSE != node->child(node->length()-1)->type()) {
+						/* Found */
+						break;
+					}
+					/* nested */
 				}
 
 				node = node->parent();

@@ -188,6 +188,35 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 	node->setEmitted();
 	/* process first if need */
 	switch(node->type()) {
+		case AST_ASSIGN:
+			ALERT(2 != node->length());
+
+			x = node->child(0);
+			y = node->child(1);
+
+			this->emitIR(y, namescope);
+			this->emitIR(x, namescope);
+			if (AST_BUILDIN_BUFFER != y->type() || x->data() != y->child(0)->data()) {
+				if (0 == namescope.count(y->data())) {
+					x->vtype(y->vtype());
+					this->emit("STORE", x->data(), y->data(), x->getIndex(), x->getIndexSize());
+				} else {
+					AST *tmp = new AST("");
+
+					tmp->setReg(++this->_regs_);
+					x->vtype(namescope[y->data()]);
+					this->emit("LOAD",  tmp->data(), y->data(), y->getIndex(), y->getIndexSize());
+					this->emit("STORE", x->data(), tmp->data(), x->getIndex(), x->getIndexSize());
+					delete tmp;
+				}
+			}
+
+			if (0 == x->length() || AST_BRACKET_OPEN != x->child(0)->type()) {
+				namescope[x->data()] = x->vtype();
+				_D(LOG_DEBUG, "%s -> 0x%X", x->data().c_str(), x->vtype());
+			}
+
+			return ;
 		case AST_INC: case AST_DEC:
 			if (1 != node->length() || AST_IDENTIFIER != node->child(0)->type()) {
 				_D(LOG_CRIT, "Not allow the syntax for `%s`", AST_INC == node->type() ? "++" : "--");
@@ -585,33 +614,6 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			node->setReg(x);
 			break;
 
-		case AST_ASSIGN:
-			ALERT(2 != node->length());
-
-			x = node->child(0);
-			y = node->child(1);
-
-			if (AST_BUILDIN_BUFFER != y->type() || x->data() != y->child(0)->data()) {
-				if (0 == namescope.count(y->data())) {
-					x->vtype(y->vtype());
-					this->emit("STORE", x->data(), y->data(), x->getIndex(), x->getIndexSize());
-				} else {
-					AST *tmp = new AST("");
-
-					tmp->setReg(++this->_regs_);
-					x->vtype(namescope[y->data()]);
-					this->emit("LOAD",  tmp->data(), y->data(), y->getIndex(), y->getIndexSize());
-					this->emit("STORE", x->data(), tmp->data(), x->getIndex(), x->getIndexSize());
-					delete tmp;
-				}
-			}
-
-			if (0 == x->length() || AST_BRACKET_OPEN != x->child(0)->type()) {
-				namescope[x->data()] = x->vtype();
-				_D(LOG_DEBUG, "%s -> 0x%X", x->data().c_str(), x->vtype());
-			}
-
-			break;
 		case AST_PRINT:
 			/* FIXME - handcode for build-in function: str() */
 
@@ -844,7 +846,7 @@ std::string Zerg::regalloc(std::string src, std::string size) {
 			tmp = regs[(pos & 0xE0) + (pos % 8) + 8];
 		}
 
-		_D(LOG_REGISTER_ALLOC, "re-allocate register - %s -> %s", src.c_str(), tmp.c_str());
+		_D(LOG_REGISTER_ALLOC, "%8s -> %4s : re-allocate register", src.c_str(), tmp.c_str());
 		_alloc_regs_map_[src] = tmp;
 		return tmp;
 	}
@@ -853,20 +855,24 @@ std::string Zerg::regalloc(std::string src, std::string size) {
 }
 void Zerg::regsave(std::string src) {
 	int pos = 0;
-	std::vector<std::string> regs = { USED_REGISTERS };
+	std::vector<std::string> regs = { REGISTERS }, used = { USED_REGISTERS };
 
 	pos = std::find(regs.begin(), regs.end(), src) - regs.begin();
 	if (pos != regs.size()) {
 		src = regs[(pos & 0xE0) + (pos % 8)];
-		_D(LOG_REGISTER_ALLOC, "restore register %s", src.c_str());
-		this->_alloc_regs_.push_back(src);
+
+		if (used.end() != std::find(used.begin(), used.end(), src)) {
+			_D(LOG_REGISTER_ALLOC, "%8s <- %4s : restore register", "", src.c_str());
+			this->_alloc_regs_.push_back(src);
+		}
 	}
 }
 std::string Zerg::tmpreg(void) {
-	ALERT(1 > _alloc_regs_.size());
+	ALERT(1 >= _alloc_regs_.size());
 
 	/* NOTE - the template register should NOT same as the next allocate register */
-	_D(LOG_DEBUG, "template register `%s`", _alloc_regs_[1].c_str());
+	_D(LOG_REGISTER_ALLOC, "template register `%s` #%zu",
+										_alloc_regs_[1].c_str(), _alloc_regs_.size());
 	return _alloc_regs_[1];
 }
 void Zerg::load_namespace(std::map<std::string, VType> &namescope) {
