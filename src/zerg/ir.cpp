@@ -286,16 +286,17 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		ALERT("" == dst || "" == src);
 		(*this) += new Instruction("cmp", src, "0x0");
 		(*this) += new Instruction("je", "&" + dst);
-	} else if (op == "CALL") {			/* (CALL,  DST) */
+	} else if (op == "CALL") {			/* (CALL,  DST, SRC) */
 		/* call produce */
+		int nr = atoi(src.c_str());
 		(*this) += new Instruction("call", "&" + dst);
 
 		if (0 != this->_param_nr_) {
 			char buff[BUFSIZ] = {0};
 
-			snprintf(buff, sizeof(buff), "0x%X", this->_param_nr_ * 0x08);
+			snprintf(buff, sizeof(buff), "0x%X", nr * 0x08);
 			(*this) += new Instruction("add", "rsp", buff);
-			this->_param_nr_ = 0;
+			this->_param_nr_ -= nr;
 		}
 	} else if (op == "RET") {			/* (RET,   DST) */
 		/* 	return from procedure */

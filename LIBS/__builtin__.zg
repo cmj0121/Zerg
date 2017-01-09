@@ -20,6 +20,24 @@ func exit(_code_):
 
 	syscall(0x2000001, _code_)
 
+func memrev(_src_, _len_):
+	' built-in function - `memrev`
+
+	memory reverse is a low-level memory utility function which reverse the data
+	in particular memory buffer with specified length
+	'
+	_idx_ = 0
+	_end_ = _len_ - 1
+
+	while _idx_ < _end_:
+		_tmp_ = _src_[_idx_]
+		_src_[_idx_] = _src_[_end_]
+		_src_[_end_] = _tmp_
+
+
+		_idx_ ++
+		_end_ --
+
 func strlen(_src_):
 	' built-in function - `strlen`
 
@@ -30,3 +48,4 @@ func strlen(_src_):
 	while 0x0 not eq _src_[_idx_]:
 		_idx_ ++
 	return _idx_
+
