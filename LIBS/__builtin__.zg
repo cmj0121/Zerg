@@ -38,6 +38,25 @@ func memrev(_src_, _len_):
 		_idx_ ++
 		_end_ --
 
+func str(_src_):
+	' built-in function `str`
+
+	This function now only support integer to string based on 10
+	'
+	_buff_ = buffer(0x400)
+	_idx_  = 0
+
+	_buff_[_idx_] = 0x30
+	while 0x0 not eq _src_:
+		_buff_[_idx_] = _src_ % 10 + 0x30
+		_src_ = _src_ / 10
+		_idx_ ++
+
+	_len_ = strlen(_buff_)
+	memrev(_buff_, _len_)
+
+	return _buff_
+
 func strlen(_src_):
 	' built-in function - `strlen`
 

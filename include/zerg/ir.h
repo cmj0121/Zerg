@@ -50,6 +50,7 @@ class IR : public Binary {
 
 		virtual std::string regalloc(std::string src, std::string size="") = 0;
 		virtual void regsave(std::string src) = 0;
+		virtual void resetreg(void) = 0;
 		virtual std::string tmpreg(void) = 0;
 	protected:
 		bool _only_ir_;

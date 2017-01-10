@@ -43,7 +43,7 @@ void IR::emit(IRToken *token) {
 	return this->emit(op, dst, src, idx, size);
 }
 void IR::emit(std::string op, std::string _dst, std::string _src, std::string _idx, std::string _size) {
-	std::string src, dst, idx;
+	std::string src = "", dst = "", idx = "";
 
 	dst = this->regalloc(_dst, _size);
 	src = __IR_DUMMY__ != _idx ? this->regalloc(_src) : this->regalloc(_src, _size);
@@ -344,6 +344,8 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		(*this) += new Instruction("syscall");
 		this->_param_nr_ = 0;
 	} else if (op == "PROLOGUE") {		/* (PROLOGUE, NR) */
+		this->_stack_.clear();
+		this->resetreg();
 		(*this) += new Instruction("push", "rbp");
 		(*this) += new Instruction("mov", "rbp", "rsp");
 		if ("" != dst) {

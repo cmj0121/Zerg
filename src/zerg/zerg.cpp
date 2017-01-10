@@ -50,7 +50,6 @@ void Zerg::compile(std::string src, ZergArgs *args) {
 			this->_alloc_regs_ = { USED_REGISTERS };
 
 			this->emit("# Sub-Routine - " + it.first);
-			this->_stack_.clear();
 			/* load the function status */
 			this->load_namespace(namescope);
 			this->compileCFG(it.second, namescope);
@@ -639,60 +638,24 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					this->emit("INTERRUPT");
 					break;
 				case VTYPE_INTEGER: case VTYPE_OBJECT:
-					this->emit("ASM", "mov", "rax", x->data());
+					this->emit("PARAM", x->data());
+					this->emit("CALL", "str", "1");
+					this->emit("ASM", "mov", "rsi", SYSCALL_REG);
+					this->emit("PARAM", SYSCALL_REG);
+					this->emit("CALL", "strlen", "1");
+					this->emit("ASM", "mov", "rdx", SYSCALL_REG);
 
-					this->emit("ASM", "asm", tmp + "__INT_TO_STR__:");
-					this->emit("ASM", "push", "rbp");
-					this->emit("ASM", "mov", "rbp", "rsp");
-					this->emit("ASM", "sub", "rsp", "0x40");
-
-					this->emit("ASM", "mov", "rsi", "rsp");
-					this->emit("ASM", "mov", "rdi", "rsi");
-					this->emit("ASM", "mov", "rcx", "0x0A");	/* DIVISOR */
-
-					this->emit("ASM", "cmp", "rax", "0x0");
-					this->emit("ASM", "jge", "&" + tmp + "__INT_TO_STR_INNER_LOOP__");
-					this->emit("ASM", "neg", "rax");
-					this->emit("ASM", "mov", "[rsi]", "0x2D");
-					this->emit("ASM", "inc", "rsi");
-					this->emit("ASM", "inc", "rdi");
-
-					this->emit("ASM", "asm", tmp + "__INT_TO_STR_INNER_LOOP__:");
-					this->emit("ASM", "xor", "rdx", "rdx");
-					this->emit("ASM", "div", "rcx");
-					this->emit("ASM", "add", "rdx", "0x30");
-					this->emit("ASM", "mov", "[rdi]", "rdx");
-					this->emit("ASM", "inc", "rdi");
-					this->emit("ASM", "cmp", "rax", "0x0");
-					this->emit("ASM", "jne", "&" + tmp + "__INT_TO_STR_INNER_LOOP__");
-
-					/* FIXME - hardcode for the build-in function: reserved() */
-					this->emit("ASM", "asm", tmp + "__RESERVED__:");
-					this->emit("ASM", "mov", "[rdi]", "0x0A");
-
-					this->emit("ASM", "mov", "rdx", "rdi");
-					this->emit("ASM", "sub", "rdx", "rsp");
-					this->emit("ASM", "inc", "rdx");
-					this->emit("ASM", "mov", "rax", "rdi");
-					this->emit("ASM", "mov", "rbx", "rsi");
-					this->emit("ASM", "dec", "rax");
-					this->emit("ASM", "asm", tmp + "__RESERVED_INNER_LOOP__:");
-					this->emit("ASM", "mov", "cl", "[rax]");
-					this->emit("ASM", "mov", "ch", "[rbx]");
-					this->emit("ASM", "mov", "[rax]", "ch");
-					this->emit("ASM", "mov", "[rbx]", "cl");
-					this->emit("ASM", "dec", "rax");
-					this->emit("ASM", "inc", "rbx");
-					this->emit("ASM", "cmp", "rax", "rbx");
-					this->emit("ASM", "jge", "&" + tmp + "__RESERVED_INNER_LOOP__");
+					/* HACK - add extra '\n' */
+					tmp = tmpreg();
+					this->emit("ASM", "mov", tmp, "rsi");
+					this->emit("ASM", "add", tmp, "rdx");
+					this->emit("ASM", "mov", "[" + tmp + "]", "0x0A");
+					this->emit("INC", "rdx");
 
 					this->emit("ASM", "mov", "rax", "0x200018D");
 					this->emit("ASM", "mov", "rdi", "0x01");
-					this->emit("ASM", "mov", "rsi", "rsp");
 					this->emit("INTERRUPT");
 
-					this->emit("ASM", "add", "rsp", "0x40");
-					this->emit("ASM", "pop", "rbp");
 					break;
 				case VTYPE_BUFFER:
 					snprintf(buf, sizeof(buf), __IR_REG_FMT__, ++this->_regs_);
@@ -847,7 +810,7 @@ std::string Zerg::regalloc(std::string src, std::string size) {
 			tmp = regs[(pos & 0xE0) + (pos % 8) + 8];
 		}
 
-		_D(LOG_REGISTER_ALLOC, "%8s -> %4s : re-allocate register", src.c_str(), tmp.c_str());
+		_D(LOG_REGISTER_ALLOC, "%8s -> %4s", src.c_str(), tmp.c_str());
 		_alloc_regs_map_[src] = tmp;
 		return tmp;
 	}
@@ -863,7 +826,7 @@ void Zerg::regsave(std::string src) {
 		src = regs[(pos & 0xE0) + (pos % 8)];
 
 		if (used.end() != std::find(used.begin(), used.end(), src)) {
-			_D(LOG_REGISTER_ALLOC, "%8s <- %4s : restore register", "", src.c_str());
+			_D(LOG_REGISTER_ALLOC, "%8s <- %4s", "", src.c_str());
 			this->_alloc_regs_.push_back(src);
 		}
 	}
@@ -872,9 +835,14 @@ std::string Zerg::tmpreg(void) {
 	ALERT(1 >= _alloc_regs_.size());
 
 	/* NOTE - the template register should NOT same as the next allocate register */
-	_D(LOG_REGISTER_ALLOC, "template register `%s` #%zu",
-										_alloc_regs_[1].c_str(), _alloc_regs_.size());
+	_D(LOG_REGISTER_ALLOC, "%8s -> %4s #%zu",
+									"", _alloc_regs_[1].c_str(), _alloc_regs_.size());
 	return _alloc_regs_[1];
+}
+void Zerg::resetreg(void) {
+	/* reset the register usage */
+	_D(LOG_REGISTER_ALLOC, "%8s <- reset all", "");
+	_alloc_regs_ = { USED_REGISTERS };
 }
 void Zerg::load_namespace(std::map<std::string, VType> &namescope) {
 	namescope.clear();
