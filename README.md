@@ -6,6 +6,10 @@ Zerg 是一個設計用來練手的程式語言：本身沒有太多特別的功
 Zerg is a programming language for practice: it does NOT have special functionality or ability.
 It is expected that there will be two source code: zerg (compiler) and zasm (assembler).
 
+## Change Log ##
+
+- 2017-01-10 (v0.1.0.0) Add LICENSE declaim
+
 
 ## Origin / 起源 ##
 
