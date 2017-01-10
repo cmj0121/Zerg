@@ -190,7 +190,8 @@ void Instruction::modRW(X86_64_INST &inst) {
 		}
 
 		/* NOTE - reg is the register position, not always dst or src */
-		reg = this->dst().isREG() ? this->dst().asInt() : this->src().asInt();
+		reg = this->dst().isREG() ? this->dst().asInt() :
+						(this->src().isREG() ? this->src().asInt(): 0x0 );
 		_payload_[_length_++] = 0x04 | (reg & 0x07) << 3 | (mod << 6);
 		_D(ZASM_LOG_WARNING, "Mod R/W       - %02X", _payload_[_length_-1]);
 

@@ -15,6 +15,12 @@
 #define __IR_LABEL_FMT__	".zerg.label.%d"
 #define __IR_SYSCALL_REG__	".reg.sys"
 #define __IR_LOCAL_VAR__	".local.var"
+#define __IR_DUMMY__		".dummy"
+
+#define __IR_LABEL_IF__		".if.%04d"
+#define __IR_LABEL_WHILE__	".while.%04d"
+#define __IR_LABEL_END__	"%s.end"
+#define __IR_LABEL_FALSE__	"%s.false"
 
 class IRToken {
 	public:
@@ -42,8 +48,9 @@ class IR : public Binary {
 		void emit(std::string op, std::string dst, std::string src, std::string idx, std::string size);
 		void compile(std::string src);
 
-		virtual std::string regalloc(std::string src) = 0;
+		virtual std::string regalloc(std::string src, std::string size="") = 0;
 		virtual void regsave(std::string src) = 0;
+		virtual void resetreg(void) = 0;
 		virtual std::string tmpreg(void) = 0;
 	protected:
 		bool _only_ir_;

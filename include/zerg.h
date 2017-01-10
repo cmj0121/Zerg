@@ -21,8 +21,9 @@ class Zerg : public IR {
 		void compile(std::string src, ZergArgs *args);
 		void emit(std::string op, std::string dst="", std::string src="", std::string idx="", std::string size="");
 
-		std::string regalloc(std::string src);
+		std::string regalloc(std::string src, std::string size="");
 		void regsave(std::string src);
+		void resetreg(void);
 		std::string tmpreg(void);
 	protected:
 		void lexer(std::string src);						/* lexer analysis */

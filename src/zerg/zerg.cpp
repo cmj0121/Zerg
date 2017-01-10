@@ -45,8 +45,11 @@ void Zerg::compile(std::string src, ZergArgs *args) {
 			std::map<std::string, VType> namescope;
 			_D(LOG_INFO, "compile subroutine `%s`", it.first.c_str());
 
+			/* reset the allocated register */
+			this->_alloc_regs_map_.clear();
+			this->_alloc_regs_ = { USED_REGISTERS };
+
 			this->emit("# Sub-Routine - " + it.first);
-			this->_stack_.clear();
 			/* load the function status */
 			this->load_namespace(namescope);
 			this->compileCFG(it.second, namescope);
@@ -142,7 +145,7 @@ void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
 		std::string label;
 
 		if (NULL == node->nextCFG(false)) {
-			label = node->label() + "_END";
+			label = node->label() + ".end";
 		} else {
 			label = node->nextCFG(false)->label();
 		}
@@ -165,11 +168,11 @@ void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
 
 	if (node->isBranch()) {
 		if (node == node->prev()->nextCFG(false) || NULL == node->prev()->nextCFG(false)) {
-			_D(LOG_DEBUG, "set label %s_END", node->prev()->label().c_str());
-			this->emit("LABEL", node->prev()->label() + "_END");
+			_D(LOG_DEBUG, "set label %s.end", node->prev()->label().c_str());
+			this->emit("LABEL", node->prev()->label() + ".end");
 		}
 
-		if (NULL != node->child(0) && AST_WHILE == node->child(0)->type()) {
+		if (0 != node->length() && AST_WHILE == node->child(0)->type()) {
 			this->_repeate_label_.pop_back();
 		}
 	}
@@ -184,6 +187,35 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 	node->setEmitted();
 	/* process first if need */
 	switch(node->type()) {
+		case AST_ASSIGN:
+			ALERT(2 != node->length());
+
+			x = node->child(0);
+			y = node->child(1);
+
+			this->emitIR(y, namescope);
+			this->emitIR(x, namescope);
+			if (AST_BUILDIN_BUFFER != y->type() || x->data() != y->child(0)->data()) {
+				if (0 == namescope.count(y->data())) {
+					x->vtype(y->vtype());
+					this->emit("STORE", x->data(), y->data(), x->getIndex(), x->getIndexSize());
+				} else {
+					AST *tmp = new AST("");
+
+					tmp->setReg(++this->_regs_);
+					x->vtype(namescope[y->data()]);
+					this->emit("LOAD",  tmp->data(), y->data(), y->getIndex(), y->getIndexSize());
+					this->emit("STORE", x->data(), tmp->data(), x->getIndex(), x->getIndexSize());
+					delete tmp;
+				}
+			}
+
+			if (0 == x->length() || AST_BRACKET_OPEN != x->child(0)->type()) {
+				namescope[x->data()] = x->vtype();
+				_D(LOG_DEBUG, "%s -> 0x%X", x->data().c_str(), x->vtype());
+			}
+
+			return ;
 		case AST_INC: case AST_DEC:
 			if (1 != node->length() || AST_IDENTIFIER != node->child(0)->type()) {
 				_D(LOG_CRIT, "Not allow the syntax for `%s`", AST_INC == node->type() ? "++" : "--");
@@ -270,10 +302,12 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 
 						x = node->child(0);
 						for (size_t i = 0; i < x->length(); ++i) {
+							this->emitIR(x->child(i), namescope);
 							this->emit("PARAM", x->child(i)->data());
 						}
 
-						this->emit("CALL", node->data());
+						snprintf(buf, sizeof(buf), "%lu", x->length());
+						this->emit("CALL", node->data(), buf);
 						node->setReg(SYSCALL_REG);
 
 						/* HACK - Need not process anymore */
@@ -350,7 +384,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 				char idx[BUFSIZ] = {0};
 
 				y = x->child(i);
-				snprintf(idx, sizeof(idx), "[rbp+0x%zX]", (i+2) * 0x08);
+				snprintf(idx, sizeof(idx), "[rbp+0x%zX]", (x->length()+1-i) * 0x08);
 				this->emit("STORE", y->data(), __IR_LOCAL_VAR__, idx);
 				namescope[y->data()] = VTYPE_PARAM;
 			}
@@ -547,9 +581,11 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 		case AST_EQUAL:
 			ALERT(2 != node->length())
 
-			x = node->child(0);
-			y = node->child(1);
-			this->emit("EQ", x->data(), y->data());
+			x   = node->child(0);
+			y   = node->child(1);
+			tmp = node->child(0)->getIndexSize();
+			tmp = "" == tmp ? node->child(1)->getIndexSize() : tmp;
+			this->emit("EQ", x->data(), y->data(), __IR_DUMMY__, tmp);
 			node->setReg(x);
 			break;
 
@@ -578,33 +614,6 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			node->setReg(x);
 			break;
 
-		case AST_ASSIGN:
-			ALERT(2 != node->length());
-
-			x = node->child(0);
-			y = node->child(1);
-
-			if (AST_BUILDIN_BUFFER != y->type() || x->data() != y->child(0)->data()) {
-				if (0 == namescope.count(y->data())) {
-					x->vtype(y->vtype());
-					this->emit("STORE", x->data(), y->data(), x->getIndex(), x->getIndexSize());
-				} else {
-					AST *tmp = new AST("");
-
-					tmp->setReg(++this->_regs_);
-					x->vtype(namescope[y->data()]);
-					this->emit("LOAD",  tmp->data(), y->data(), y->getIndex(), y->getIndexSize());
-					this->emit("STORE", x->data(), tmp->data(), x->getIndex(), x->getIndexSize());
-					delete tmp;
-				}
-			}
-
-			if (0 == x->length() || AST_BRACKET_OPEN != x->child(0)->type()) {
-				namescope[x->data()] = x->vtype();
-				_D(LOG_DEBUG, "%s -> 0x%X", x->data().c_str(), x->vtype());
-			}
-
-			break;
 		case AST_PRINT:
 			/* FIXME - handcode for build-in function: str() */
 
@@ -628,61 +637,25 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					this->emit("ASM", "mov", "rdi", "0x01");
 					this->emit("INTERRUPT");
 					break;
-				case VTYPE_INTEGER:
-					this->emit("ASM", "mov", "rax", x->data());
+				case VTYPE_INTEGER: case VTYPE_OBJECT:
+					this->emit("PARAM", x->data());
+					this->emit("CALL", "str", "1");
+					this->emit("ASM", "mov", "rsi", SYSCALL_REG);
+					this->emit("PARAM", SYSCALL_REG);
+					this->emit("CALL", "strlen", "1");
+					this->emit("ASM", "mov", "rdx", SYSCALL_REG);
 
-					this->emit("ASM", "asm", tmp + "__INT_TO_STR__:");
-					this->emit("ASM", "push", "rbp");
-					this->emit("ASM", "mov", "rbp", "rsp");
-					this->emit("ASM", "sub", "rsp", "0x40");
-
-					this->emit("ASM", "mov", "rsi", "rsp");
-					this->emit("ASM", "mov", "rdi", "rsi");
-					this->emit("ASM", "mov", "rcx", "0x0A");	/* DIVISOR */
-
-					this->emit("ASM", "cmp", "rax", "0x0");
-					this->emit("ASM", "jge", "&" + tmp + "__INT_TO_STR_INNER_LOOP__");
-					this->emit("ASM", "neg", "rax");
-					this->emit("ASM", "mov", "[rsi]", "0x2D");
-					this->emit("ASM", "inc", "rsi");
-					this->emit("ASM", "inc", "rdi");
-
-					this->emit("ASM", "asm", tmp + "__INT_TO_STR_INNER_LOOP__:");
-					this->emit("ASM", "xor", "rdx", "rdx");
-					this->emit("ASM", "div", "rcx");
-					this->emit("ASM", "add", "rdx", "0x30");
-					this->emit("ASM", "mov", "[rdi]", "rdx");
-					this->emit("ASM", "inc", "rdi");
-					this->emit("ASM", "cmp", "rax", "0x0");
-					this->emit("ASM", "jne", "&" + tmp + "__INT_TO_STR_INNER_LOOP__");
-
-					/* FIXME - hardcode for the build-in function: reserved() */
-					this->emit("ASM", "asm", tmp + "__RESERVED__:");
-					this->emit("ASM", "mov", "[rdi]", "0x0A");
-
-					this->emit("ASM", "mov", "rdx", "rdi");
-					this->emit("ASM", "sub", "rdx", "rsp");
-					this->emit("ASM", "inc", "rdx");
-					this->emit("ASM", "mov", "rax", "rdi");
-					this->emit("ASM", "mov", "rbx", "rsi");
-					this->emit("ASM", "dec", "rax");
-					this->emit("ASM", "asm", tmp + "__RESERVED_INNER_LOOP__:");
-					this->emit("ASM", "mov", "cl", "[rax]");
-					this->emit("ASM", "mov", "ch", "[rbx]");
-					this->emit("ASM", "mov", "[rax]", "ch");
-					this->emit("ASM", "mov", "[rbx]", "cl");
-					this->emit("ASM", "dec", "rax");
-					this->emit("ASM", "inc", "rbx");
-					this->emit("ASM", "cmp", "rax", "rbx");
-					this->emit("ASM", "jge", "&" + tmp + "__RESERVED_INNER_LOOP__");
+					/* HACK - add extra '\n' */
+					tmp = tmpreg();
+					this->emit("ASM", "mov", tmp, "rsi");
+					this->emit("ASM", "add", tmp, "rdx");
+					this->emit("ASM", "mov", "[" + tmp + "]", "0x0A");
+					this->emit("INC", "rdx");
 
 					this->emit("ASM", "mov", "rax", "0x200018D");
 					this->emit("ASM", "mov", "rdi", "0x01");
-					this->emit("ASM", "mov", "rsi", "rsp");
 					this->emit("INTERRUPT");
 
-					this->emit("ASM", "add", "rsp", "0x40");
-					this->emit("ASM", "pop", "rbp");
 					break;
 				case VTYPE_BUFFER:
 					snprintf(buf, sizeof(buf), __IR_REG_FMT__, ++this->_regs_);
@@ -741,7 +714,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			break;
 		case AST_BREAK:
 			tmp = this->_repeate_label_[this->_repeate_label_.size()-1];
-			this->emit("JMP", tmp + "_END");
+			this->emit("JMP", tmp + ".end");
 			break;
 		case AST_CONTINUE:
 			tmp = this->_repeate_label_[this->_repeate_label_.size()-1];
@@ -805,13 +778,16 @@ void Zerg::emit(std::string op, std::string dst, std::string src, std::string id
 }
 
 /* register allocation algo. */
-std::string Zerg::regalloc(std::string src) {
+std::string Zerg::regalloc(std::string src, std::string size) {
 	int cnt = 0;
 	std::string tmp;
 
 	if (src == __IR_SYSCALL_REG__) {
 		return SYSCALL_REG;
 	} else if (1 ==  sscanf(src.c_str(), __IR_REG_FMT__, &cnt)) {
+		int pos = 0;
+		std::vector<std::string> regs = { REGISTERS };
+
 		if (0 != _alloc_regs_map_.count(src)) {
 			/* HACK - Found in cache */
 			tmp = _alloc_regs_map_[src];
@@ -822,7 +798,19 @@ std::string Zerg::regalloc(std::string src) {
 			_alloc_regs_.erase(_alloc_regs_.begin());
 		}
 
-		_D(LOG_INFO, "re-allocate register - %s -> %s", src.c_str(), tmp.c_str());
+		/* HACK - resize the register if need */
+		if (ZASM_MEM_BYTE         == size) {
+			pos = std::find(regs.begin(), regs.end(), tmp) - regs.begin();
+			tmp = regs[(pos & 0xE0) + (pos % 8) + 24];
+		} else if (ZASM_MEM_WORD  == size) {
+			pos = std::find(regs.begin(), regs.end(), tmp) - regs.begin();
+			tmp = regs[(pos & 0xE0) + (pos % 8) + 16];
+		} else if (ZASM_MEM_DWORD == size) {
+			pos = std::find(regs.begin(), regs.end(), tmp) - regs.begin();
+			tmp = regs[(pos & 0xE0) + (pos % 8) + 8];
+		}
+
+		_D(LOG_REGISTER_ALLOC, "%8s -> %4s", src.c_str(), tmp.c_str());
 		_alloc_regs_map_[src] = tmp;
 		return tmp;
 	}
@@ -830,19 +818,31 @@ std::string Zerg::regalloc(std::string src) {
 	return src;
 }
 void Zerg::regsave(std::string src) {
-	std::vector<std::string> regs = { USED_REGISTERS };
+	int pos = 0;
+	std::vector<std::string> regs = { REGISTERS }, used = { USED_REGISTERS };
 
-	if (regs.end() != std::find(regs.begin(), regs.end(), src)) {
-		_D(LOG_DEBUG, "restore register %s", src.c_str());
-		this->_alloc_regs_.push_back(src);
+	pos = std::find(regs.begin(), regs.end(), src) - regs.begin();
+	if (pos != regs.size()) {
+		src = regs[(pos & 0xE0) + (pos % 8)];
+
+		if (used.end() != std::find(used.begin(), used.end(), src)) {
+			_D(LOG_REGISTER_ALLOC, "%8s <- %4s", "", src.c_str());
+			this->_alloc_regs_.push_back(src);
+		}
 	}
 }
 std::string Zerg::tmpreg(void) {
-	ALERT(1 > _alloc_regs_.size());
+	ALERT(1 >= _alloc_regs_.size());
 
 	/* NOTE - the template register should NOT same as the next allocate register */
-	_D(LOG_DEBUG, "template register `%s`", _alloc_regs_[1].c_str());
+	_D(LOG_REGISTER_ALLOC, "%8s -> %4s #%zu",
+									"", _alloc_regs_[1].c_str(), _alloc_regs_.size());
 	return _alloc_regs_[1];
+}
+void Zerg::resetreg(void) {
+	/* reset the register usage */
+	_D(LOG_REGISTER_ALLOC, "%8s <- reset all", "");
+	_alloc_regs_ = { USED_REGISTERS };
 }
 void Zerg::load_namespace(std::map<std::string, VType> &namescope) {
 	namescope.clear();

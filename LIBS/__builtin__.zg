@@ -1,15 +1,7 @@
 #! /usr/bin/env zerg
 
-func exit(_code_):
-	' Built-In Function - `exit`
-
-	Exit the process, clean-up all resources and reply the status code at the same time.
-	'
-
-	syscall(0x2000001, _code_)
-
 func buffer(_size_) __buffer__:
-	' Built-In Function - `buffer`
+	' built-in function - `buffer`
 
 	Create a memory buffer with particular size which can access the particular element
 	in buffer.
@@ -19,4 +11,60 @@ func buffer(_size_) __buffer__:
 	_      = __buffer__ syscall(0x20000C5, 0x0, _size_ + 0x08, 0x07, 0x1001, 0xFFFFFFFF, 0x0)
 	_[0:4] = _size_
 	return _ + 0x08
+
+func exit(_code_):
+	' built-in function - `exit`
+
+	Exit the process, clean-up all resources and reply the status code at the same time.
+	'
+
+	syscall(0x2000001, _code_)
+
+func memrev(_src_, _len_):
+	' built-in function - `memrev`
+
+	memory reverse is a low-level memory utility function which reverse the data
+	in particular memory buffer with specified length
+	'
+	_idx_ = 0
+	_end_ = _len_ - 1
+
+	while _idx_ < _end_:
+		_tmp_ = _src_[_idx_]
+		_src_[_idx_] = _src_[_end_]
+		_src_[_end_] = _tmp_
+
+
+		_idx_ ++
+		_end_ --
+
+func str(_src_):
+	' built-in function `str`
+
+	This function now only support integer to string based on 10
+	'
+	_buff_ = buffer(0x400)
+	_idx_  = 0
+
+	_buff_[_idx_] = 0x30
+	while 0x0 not eq _src_:
+		_buff_[_idx_] = _src_ % 10 + 0x30
+		_src_ = _src_ / 10
+		_idx_ ++
+
+	_len_ = strlen(_buff_)
+	memrev(_buff_, _len_)
+
+	return _buff_
+
+func strlen(_src_):
+	' built-in function - `strlen`
+
+	Calculate the string lenght which the input is the raw buffer and output the length
+	of the string. String MUST ends with 0x00
+	'
+	_idx_ = 0
+	while 0x0 not eq _src_[_idx_]:
+		_idx_ ++
+	return _idx_
 

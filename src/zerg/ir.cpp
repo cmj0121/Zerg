@@ -43,14 +43,14 @@ void IR::emit(IRToken *token) {
 	return this->emit(op, dst, src, idx, size);
 }
 void IR::emit(std::string op, std::string _dst, std::string _src, std::string _idx, std::string _size) {
-	std::string src, dst, idx;
+	std::string src = "", dst = "", idx = "";
 
-	dst = this->regalloc(_dst);
-	src = this->regalloc(_src);
+	dst = this->regalloc(_dst, _size);
+	src = __IR_DUMMY__ != _idx ? this->regalloc(_src) : this->regalloc(_src, _size);
 	idx = this->regalloc(_idx);
 
-	_D(LOG_INFO, "IR emit - %s %s %s %s",
-			op.c_str(), dst.c_str(), src.c_str(), idx.c_str());
+	_D(LOG_INFO, "IR emit - %s %s %s %s %s",
+			op.c_str(), dst.c_str(), src.c_str(), idx.c_str(), _size.c_str());
 
 	if (op == "XCHG") {					/* (XCHG,  DST, SRC) */
 		ALERT("" == dst || "" == src);
@@ -96,10 +96,10 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		/* Load data from memory with index if need */
 		int pos = 0;
 		char buff[BUFSIZ] = {0};
-		std::string tmpreg = this->tmpreg();
 
 		if (dst == _dst) {			/* save variable */
 			pos = std::find(_stack_.begin(), _stack_.end(), dst) - _stack_.begin();
+			std::string tmpreg = this->tmpreg();
 
 			/* HACK - only allow created variable */
 			ALERT(_stack_.size() == pos && ("" != idx && src != __IR_LOCAL_VAR__));
@@ -286,16 +286,17 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		ALERT("" == dst || "" == src);
 		(*this) += new Instruction("cmp", src, "0x0");
 		(*this) += new Instruction("je", "&" + dst);
-	} else if (op == "CALL") {			/* (CALL,  DST) */
+	} else if (op == "CALL") {			/* (CALL,  DST, SRC) */
 		/* call produce */
+		int nr = atoi(src.c_str());
 		(*this) += new Instruction("call", "&" + dst);
 
 		if (0 != this->_param_nr_) {
 			char buff[BUFSIZ] = {0};
 
-			snprintf(buff, sizeof(buff), "0x%X", this->_param_nr_ * 0x08);
+			snprintf(buff, sizeof(buff), "0x%X", nr * 0x08);
 			(*this) += new Instruction("add", "rsp", buff);
-			this->_param_nr_ = 0;
+			this->_param_nr_ -= nr;
 		}
 	} else if (op == "RET") {			/* (RET,   DST) */
 		/* 	return from procedure */
@@ -306,16 +307,20 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		(*this) += new Instruction("ret");
 	} else if (op == "PARAM") {			/* (PARAM, DST) */
 		/* Save the parameter */
+		int pos = 0;
+		char buff[BUFSIZ] = {0};
 		std::vector<std::string> regs = { "rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"};
 
-		if ("rsi" == regs[this->_param_nr_] && '&' == dst[0]) {
-			ALERT(this->_param_nr_ == regs.size());
+		pos = std::find(_stack_.begin(), _stack_.end(), dst) - _stack_.begin();
 
-			(*this) += new Instruction("lea", regs[this->_param_nr_], dst);
-			(*this) += new Instruction("push", regs[this->_param_nr_]);
-		} else {
+		if (pos == _stack_.size()) {
+			/* save dst into local stack*/
 			(*this) += new Instruction("push", dst);
+		} else {
+			snprintf(buff, sizeof(buff), "[rbp-0X%X]", (pos+1) * 0x08);
+			(*this) += new Instruction("push", buff);
 		}
+
 		this->_param_nr_ ++;
 		this->regsave(dst);
 	} else if (op == "LABEL") {			/* (LABEL, DST, SRC) */
@@ -339,6 +344,8 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		(*this) += new Instruction("syscall");
 		this->_param_nr_ = 0;
 	} else if (op == "PROLOGUE") {		/* (PROLOGUE, NR) */
+		this->_stack_.clear();
+		this->resetreg();
 		(*this) += new Instruction("push", "rbp");
 		(*this) += new Instruction("mov", "rbp", "rsp");
 		if ("" != dst) {

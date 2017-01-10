@@ -65,6 +65,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_NUMBER:
 				case AST_IDENTIFIER:
 				case AST_LOG_NOT:
+				case AST_BRACKET_CLOSE: case AST_PARENTHESES_CLOSE:
 					if (AST_LOG_NOT == prev.type() && AST_EQUAL != cur.type()) {
 						_D(LOG_CRIT, "Not Implemented `%s` (0x%X) -> `%s` (0x%X)",
 								prev.c_str(), prev.type(), cur.c_str(), cur.type());
@@ -248,18 +249,22 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			node = node->prev();
 			ALERT(AST_IF != node->child(0)->type());
 
-			snprintf(buff, sizeof(buff), "%s_FALSE", node->label().c_str());
+			snprintf(buff, sizeof(buff), __IR_LABEL_FALSE__, node->label().c_str());
 			tmp  = new CFG(buff);
 			node->branch(node->nextCFG(true), tmp);
 			node = tmp->insert(cur);
 			break;
 		case AST_WHILE:
 			snprintf(buff, sizeof(buff), ".while.%04d", this->_lineno_);
-			tmp = new CFG(buff);
+			if (0 != node->length()) {
+				tmp = new CFG(buff);
 
-			node = node->root();
-			node->passto(tmp);
-			node = tmp;
+				node = node->root();
+				node->passto(tmp);
+				node = tmp;
+			} else {
+				node->rename(buff);
+			}
 			node = node->insert(cur);
 			break;
 		case AST_INDENT:
@@ -296,50 +301,59 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_DEDENT:
 			node = node->root();
 
-			if (NULL == node->prev()) {
-				/* Back to the main logical */
-				ALERT(0 != this->_root_.count(CFG_MAIN));
+			do {
+				if (NULL == node || NULL == node->prev()) {
+					/* Back to the main logical */
+					if (0 == this->_root_.count(CFG_MAIN)) {
+						tmp = new CFG(CFG_MAIN);
+						this->_root_[CFG_MAIN] = tmp;
+					}
+					node = tmp;
+					break;
+				} else if (true == node->isCondit() && NULL == node->nextCFG(false)) {
+					switch(node->child(0)->type()) {
+						case AST_IF:
+							switch(node->child(0)->length()) {
+								case 1:
+								case 2:
+									snprintf(buff, sizeof(buff), __IR_LABEL_END__, node->label().c_str());
+									tmp = new CFG(buff);
 
-				node = new CFG(CFG_MAIN);
-				this->_root_[CFG_MAIN] = node;
-			} else {
-				tmp  = node->prev();
+									node->nextCFG(true)->passto(tmp);
+									node = tmp;
+									break;
+								default:
+									_D(LOG_CRIT, "Not Implemented 0x%zX", node->child(0)->length());
+									break;
+							}
+							break;
+						case AST_WHILE:
+							snprintf(buff, sizeof(buff), __IR_LABEL_FALSE__, node->label().c_str());
+							tmp = new CFG(buff);
 
-				ALERT(0 == node->prev()->length());
-				switch(tmp->child(0)->type()) {
-					case AST_IF:
-						switch(tmp->child(0)->length()) {
-							case 1:
-							case 2:
-								snprintf(buff, sizeof(buff), "%s_END", tmp->label().c_str());
-								tmp = new CFG(buff);
-								node->passto(tmp);
-								node = tmp;
-								break;
-							default:
-								_D(LOG_CRIT, "Not Implemented 0x%zX", tmp->child(0)->length());
-								break;
-						}
-						break;
-					case AST_WHILE:
-						snprintf(buff, sizeof(buff), "%s_FALSE", tmp->label().c_str());
-						node = new CFG(buff);
+							node->branch(node->nextCFG(true), tmp);
+							node = tmp;
+							break;
+						case AST_FUNC:
+							if (0 == this->_root_.count(CFG_MAIN)) {
+								node = new CFG(CFG_MAIN);
+								this->_root_[CFG_MAIN] = node;
+							} else {
+								node = this->_root_[CFG_MAIN];
+							}
+							break;
+						default:
+							node = node->prev();
+							break;
+					}
 
-						tmp->branch(tmp->nextCFG(true), node);
-						break;
-					case AST_FUNC:
-						if (0 == this->_root_.count(CFG_MAIN)) {
-							node = new CFG(CFG_MAIN);
-							this->_root_[CFG_MAIN] = node;
-						} else {
-							node = this->_root_[CFG_MAIN];
-						}
-						break;
-					default:
-						node = node->prev();
-						break;
+					break;
+				} else {
+					node = node->prev();
+					continue;
 				}
-			}
+			} while (1);
+
 			break;
 
 		/* PAIR TOKEN */
@@ -365,8 +379,11 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					node = node->parent();
 					continue;
 				} else if (AST_PARENTHESES_OPEN == node->child(0)->type()) {
-					/* Found */
-					break;
+					if (AST_PARENTHESES_CLOSE != node->child(node->length()-1)->type()) {
+						/* Found */
+						break;
+					}
+					/* nested */
 				}
 
 				node = node->parent();
