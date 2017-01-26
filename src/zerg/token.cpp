@@ -50,7 +50,7 @@ static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 		DEF("else",		AST_ELSE,			0),
 		DEF("func",		AST_FUNC,			0),
 		DEF("return",	AST_RETURN,			0),
-		DEF("delete",	AST_DELETE,			0),
+		DEF("del",	AST_DELETE,			0),
 
 		/* built-in function*/
 		DEF("print",	AST_PRINT,			0),

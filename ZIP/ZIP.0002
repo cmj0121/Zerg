@@ -1,0 +1,65 @@
+ZIP		- 2
+TITLE	- Object in Zerg
+AUTHOR	- cmj<cmj@cmj.tw>
+STATUS	- Activate
+UPDATE	- 2017/01/26
+
+# 簡介 #
+
+物件 (object) 在 Zerg 是一個被包裝過後的記憶體空間，用來描述被封裝的邏輯。
+一個最簡單的物件，本身沒有任何屬性 (property) 與方法 (method)：
+
+	- 記憶體空間由 `buffer` 提供
+	- 建立出來的物件稱之為實體 (instance)
+	- 實體可以被 `del` 釋放空間 [GC]
+	- 實體間的屬性與方法各自獨立
+	- 靜態屬性 (static property) 指到由物件提供的共同記憶體空間
+
+在實作上，靜態編譯過程中會紀錄每一個實體的 reference count，並且當最後一個
+使用的變數不再引用時，自動帶入 `del [變數]` 來釋放記憶體空間。而動態執行的
+部分，則是當 reference count 為 0 的時候自動對本身的實體執行一次 `del` 。
+
+
+## Memory Layout ##
+
+如果用記憶體空間來看，一個在 Zerg 的物件至少會有三個內建屬性：
+型態 (type)、引用次數 (reference count) 與識別字 (identify)。
+而屬性與方法則是成對的 key-value 形式：
+
+	                0         31         63
+	+---- buffer -  +----------+----------+
+	|               |   lengh of buffer   |
+	|  +- object -  +---------------------+
+	|  |            |   type   |  ref cnt |
+	|  |            +---------------------+
+	|  |            |      identify       | -> [ object name ]
+	|  |            +---------------------+
+	|  |            |  property name      |
+	|  |            +---------------------+
+	|  |            |  property logical   |
+	|  |            +---------------------+
+	~  ~            ~                     ~
+
+最基本的物件可以透過 `object` 來呼叫，這個內建函數 (built-in function)
+會產生一個大小為 24 bytes 的記憶體空間。產生出來的物件本身沒有任何屬性，
+型態為 0x00、引用次數 (reference count) 預設為 1 且名稱為空。
+當引用次數歸 0 的時候會自動呼叫 `del` 釋放記憶體空間。
+
+	                0         31         63
+	+---- buffer -  +----------+----------+
+	|               |       len = 8       |
+	|  +- object -  +---------------------+
+	|  |            |   0x00   |  0x01    |
+	|  |            +---------------------+
+	|  |            |     0x00000000      |
+	+--+-  end   -  +---------------------+
+
+
+## Example Code ##
+
+	x = object()
+	print x
+	y = x
+	del y
+	del x
+
