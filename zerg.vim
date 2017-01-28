@@ -71,7 +71,7 @@ hi def link ZERGConstant      Constant
 hi def link ZERGBuiltinType   StorageClass
 
 " Reserved Function
-syn keyword ZERGReservedFn    print buffer exit strlen
+syn keyword ZERGReservedFn    print buffer exit strlen object
 hi def link ZERGReservedFn    Function
 
 let &cpo = s:cpo_save

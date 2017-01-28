@@ -188,6 +188,15 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					break;
 			}
 			break;
+		case AST_OBJECT:
+			switch(prev.type()) {
+				case AST_ASSIGN:
+					node = node->insert(cur);
+					break;
+				default:
+					_D(LOG_CRIT, "Not Support %s %s", prev.c_str(), cur.c_str());
+					break;
+			}
 
 		case AST_NOP:
 		case AST_BREAK:
@@ -362,10 +371,11 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_SYSCALL:
 				case AST_BUILDIN_BUFFER:
 				case AST_IDENTIFIER:
+				case AST_OBJECT:
 					node = node->insert(cur);
 					break;
 				default:
-					_D(LOG_CRIT, "`(` only follow syscall");
+					_D(LOG_CRIT, "%s %s is NOT support", prev.c_str(), cur.c_str());
 					break;
 			}
 			break;

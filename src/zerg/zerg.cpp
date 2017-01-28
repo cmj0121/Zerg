@@ -390,6 +390,14 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			}
 
 			return ;
+		case AST_OBJECT:
+			this->emit("PARAM", "0x12");
+			this->emit("CALL", "buffer");
+			node->setReg(SYSCALL_REG);
+			node->vtype(VTYPE_OBJECT);
+			/* set reference count */
+			this->emit("STORE", node->data(), "0x01", "0x02", "word");
+			return ;
 		default:
 			/* Run DFS */
 			for (size_t i = 0; i < node->length(); ++i) {
@@ -637,7 +645,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					this->emit("ASM", "mov", "rdi", "0x01");
 					this->emit("INTERRUPT");
 					break;
-				case VTYPE_INTEGER: case VTYPE_OBJECT:
+				case VTYPE_INTEGER:
 					this->emit("PARAM", x->data());
 					this->emit("CALL", "str", "1");
 					this->emit("ASM", "mov", "rsi", SYSCALL_REG);
@@ -755,8 +763,8 @@ void Zerg::emit(std::string op, std::string dst, std::string src, std::string id
 		} else if ("ASM" == op) {
 			std::cout << std::right << std::setw(4) << "-> ";
 			std::cout << std::left  << std::setw(10) << dst;
-			std::cout << std::left  << std::setw(6) << src;
-			std::cout << std::left  << std::setw(6) << idx;
+			std::cout << std::left  << std::setw(10) << src;
+			std::cout << std::left  << std::setw(10) << idx;
 			std::cout << size;
 		} else {
 			size_t layout = 12;
@@ -863,10 +871,21 @@ void Zerg::_load_namespace_(CFG *node, std::map<std::string, VType> &namescope) 
 				cur = tmp->child(0);
 				switch(cur->length()) {
 					case 2:
-						namescope[cur->data()] = VTYPE_OBJECT;
+						/* ── cur
+						 *    ├── (
+						 *    └── )
+						 */
+						_D(LOG_DEBUG, "set %s as unknown", cur->data().c_str());
+						namescope[cur->data()] = VTYPE_UNKNOWN;
 						break;
 					case 3:
 						if (AST_BUILDIN_BUFFER == cur->child(2)->type()) {
+							/* ── cur
+							 *    ├── (
+							 *    ├── )
+							 *    └── __buffer__
+							 */
+							_D(LOG_DEBUG, "set %s as buffer", cur->data().c_str());
 							namescope[cur->data()] = VTYPE_BUFFER;
 							break;
 						}

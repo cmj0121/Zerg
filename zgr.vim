@@ -13,34 +13,34 @@ set cpo&vim
 
 let zerg_ir_highlight=1
 
-syn match   ZERGIRComment       "#.*$" contains=ZERGIRToDo,@Spell
-syn keyword ZERGIRToDo          contained XXX TODO FIXME NOTE HACK
-syn match   ZERGIRNumber        "\<\d\+\>"
-syn match   ZERGIRNumber        "\<0[oO]\=\o\+[Ll]\=\>"
-syn match   ZERGIRNumber        "\<0[xX]\x\+[Ll]\=\>"
-syn match   ZERGIRNumber        "\<0[bB][01]\+[Ll]\=\>"
-syn match   ZERGIRNumber        "\<\%([1-9]\d*\|0\)[Ll]\=\>"
-syn match   ZERGIRReference     "&\w\+"
-syn match   ZERGIROpcode        "^\w\+" contained
-syn match   ZERGIROperand       "\w\+" contains=ZERGIROpcode,ZERGIRNumber
-syn match   ZERGIRRegister      "\%(\.\w\+\)\+"
-syn region  ZERGIRString        start=+\z(['"]\)+ end="\z1" skip="\\\z1" contains=ZERGIREscape
-syn match   ZERGIREscape        +\\[abfnrtv'"\\]+ contained
-syn match   ZERGIREscape        +\\x\x\{2}+ contained
-syn region  ZERGIRMemory        start=+\[+ end=+\]+ contained
-syn match   ZERGIRInlineASM     "->.*$" contains=ZERGIRNumber,ZERGIRReference,ZERGIRMemory
+syn match   ZGRComment       "#.*$" contains=ZGRToDo,@Spell
+syn keyword ZGRToDo          contained XXX TODO FIXME NOTE HACK
+syn match   ZGRNumber        "\<\d\+\>"
+syn match   ZGRNumber        "\<0[oO]\=\o\+[Ll]\=\>"
+syn match   ZGRNumber        "\<0[xX]\x\+[Ll]\=\>"
+syn match   ZGRNumber        "\<0[bB][01]\+[Ll]\=\>"
+syn match   ZGRNumber        "\<\%([1-9]\d*\|0\)[Ll]\=\>"
+syn match   ZGRReference     "&\w\+"
+syn match   ZGROpcode        "^\w\+" contained
+syn match   ZGROperand       "\w\+" contains=ZGROpcode,ZGRNumber
+syn match   ZGRRegister      "\%(\.\w\+\)\+"
+syn region  ZGRString        start=+\z(['"]\)+ end="\z1" skip="\\\z1" contains=ZGREscape
+syn match   ZGREscape        +\\[abfnrtv'"\\]+ contained
+syn match   ZGREscape        +\\x\x\{2}+ contained
+syn region  ZGRMemory        start=+\[+ end=+\]+ contained
+syn match   ZGRInlineASM     "->.*$" contains=ZGRNumber,ZGRReference,ZGRMemory,ZGRRegister
 
-hi def link ZERGIRComment   Comment
-hi def link ZERGIRToDo      Todo
-hi def link ZERGIRNumber    Number
-hi def link ZERGIRReference Type
-hi def link ZERGIROpcode    Statement
-hi def link ZERGIROperand   Function
-hi def link ZERGIRRegister  Structure
-hi def link ZERGIRString    String
-hi def link ZERGIREscape    Special
-hi def link ZERGIRMemory    StorageClass
-hi def link ZERGIRInlineASM Special
+hi def link ZGRComment   Comment
+hi def link ZGRToDo      Todo
+hi def link ZGRNumber    Number
+hi def link ZGRReference Type
+hi def link ZGROpcode    Statement
+hi def link ZGROperand   Function
+hi def link ZGRRegister  Structure
+hi def link ZGRString    String
+hi def link ZGREscape    Special
+hi def link ZGRMemory    StorageClass
+hi def link ZGRInlineASM Special
 
 let &cpo = s:cpo_save
 unlet s:cpo_save
