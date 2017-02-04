@@ -17,7 +17,7 @@ void Zerg::lexer(std::string src) {
 		_D(LOG_CRIT, "source file `%s` does NOT exist", src.c_str());
 	}
 
-	this->_lineno_ = 0;
+	this->_lineno_ = 1;
 	this->_src_    = src;
 	while (std::getline(fs, line)) {
 		if ('\t' != line[0] && '\0' != line[0]) {

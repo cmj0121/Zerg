@@ -116,7 +116,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			break;
 
 		case AST_IDENTIFIER:
-			if (AST_FUNC == prev.type()) {
+			if (AST_FUNC == prev.type() || AST_CLASS == prev.type()) {
 				/* remove the current node and set into new AST */
 				for (auto it : this->_root_) {
 					if (it.second == node->root()) {
@@ -137,8 +137,8 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_TRUE: case AST_FALSE:
 				case AST_NUMBER:
 				case AST_IDENTIFIER:
-					_D(LOG_CRIT, "Syntax error on %s L#%d",
-										this->_src_.c_str(), this->_lineno_);
+					_D(LOG_CRIT, "Syntax error on %s L#%d `%s`",
+										this->_src_.c_str(), this->_lineno_, cur.c_str());
 					break;
 				default:
 					node = node->insert(cur);
@@ -220,6 +220,19 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					break;
 			}
 			break;
+		case AST_CLASS:
+			switch(prev.type()) {
+				case AST_NEWLINE:
+				case AST_INDENT: case AST_DEDENT:
+					tmp  = new CFG(".cls.unknown");
+					node = tmp;
+					node = node->insert(cur);
+					break;
+				default:
+					_D(LOG_CRIT, "class declare need be first token in statement");
+					break;
+			}
+			break;
 		case AST_COLON:
 			while (NULL != node->parent() && NULL != node->parent()->parent()) {
 				node = node->parent();
@@ -230,7 +243,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_IF:
 				case AST_ELSE:
 				case AST_WHILE:
-				case AST_FUNC:
+				case AST_FUNC: case AST_CLASS:
 				case AST_BRACKET_OPEN:
 					break;
 				default:
@@ -299,11 +312,21 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					node->passto(tmp);
 					node = tmp;
 					break;
+				case AST_CLASS:
+					node = node->root();
+
+					ALERT("" == node->label());
+					snprintf(buff, sizeof(buff), "%s_CLS", node->label().c_str());
+					tmp = new CFG(buff);
+
+					node->passto(tmp);
+					node = tmp;
+					break;
 				case AST_ROOT:
 				case AST_ELSE:
 					break;
 				default:
-					_D(LOG_CRIT, "syntax error `%s`", node->data().c_str());
+					_D(LOG_CRIT, "syntax error `%s` when INDENT", node->data().c_str());
 					break;
 			}
 			break;
@@ -325,14 +348,16 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 							switch(node->child(0)->length()) {
 								case 1:
 								case 2:
-									snprintf(buff, sizeof(buff), __IR_LABEL_END__, node->label().c_str());
+									snprintf(buff, sizeof(buff), __IR_LABEL_END__,
+																	node->label().c_str());
 									tmp = new CFG(buff);
 
 									node->nextCFG(true)->passto(tmp);
 									node = tmp;
 									break;
 								default:
-									_D(LOG_CRIT, "Not Implemented 0x%zX", node->child(0)->length());
+									_D(LOG_CRIT, "Not Implemented 0x%zX",
+																node->child(0)->length());
 									break;
 							}
 							break;
@@ -343,7 +368,8 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 							node->branch(node->nextCFG(true), tmp);
 							node = tmp;
 							break;
-						case AST_FUNC:
+						case AST_FUNC: case AST_CLASS:
+							/* get the main CFG */
 							if (0 == this->_root_.count(CFG_MAIN)) {
 								node = new CFG(CFG_MAIN);
 								this->_root_[CFG_MAIN] = node;

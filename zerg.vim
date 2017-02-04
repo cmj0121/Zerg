@@ -48,12 +48,12 @@ hi def link ZERGEscape        Special
 syn keyword ZERGConstant      none true false
 syn keyword ZERGIdentifier    this
 syn keyword ZERGStatement     nop as return yield
-syn keyword ZERGStatement     func class nextgroup=ZERGFunction skipwhite
+syn keyword ZERGStatement     func cls nextgroup=ZERGFunction skipwhite
 syn keyword ZERGStatement     syscall delete
 syn keyword ZERGLogical       eq not in and or not xor
 syn keyword ZERGCondition     if else
 syn keyword ZERGRepeat        while break continue
-syn match   ZERGFunction      "\%(\(func\|class\)\s\+\)\@<=\w\+" contained
+syn match   ZERGFunction      "\%(\(func\|cls\)\s\+\)\@<=\w\+" contained
 syn keyword ZERGException     try except finally raise
 syn keyword ZERGInclude       from import
 syn keyword ZERGConstant      True False

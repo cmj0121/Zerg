@@ -332,7 +332,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 								break;
 							default:
 								_D(LOG_CRIT, "`%s` need to be declare as __buffer__ 0x%X",
-																	node->data().c_str(), type);
+															node->data().c_str(), type);
 								break;
 						}
 						break;
@@ -389,6 +389,16 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 				namescope[y->data()] = VTYPE_PARAM;
 			}
 
+			return ;
+		case AST_CLASS:
+			cur = node->child(0);
+			x   = cur->child(0);
+
+			ALERT(2 != cur->length());
+			if (0 != x->length()) {
+				/* inherit other class */
+				_D(LOG_CRIT, "Not support inherit on class `%s`", cur->data().c_str());
+			}	
 			return ;
 		case AST_OBJECT:
 			this->emit("PARAM", "0x12");
