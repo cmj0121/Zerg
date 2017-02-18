@@ -41,7 +41,12 @@ AST* AST::insert(AST *node) {
 
 	ALERT(node == NULL);
 
-	_D(LOG_INFO, "AST insert %s", node->data().c_str());
+	if (0 != this->length() && AST_CLASS == this->child(0)->type()) {
+		_D(LOG_INFO, "special case `cls`");
+		return this->child(0)->insert(node);
+	}
+
+	_D(LOG_INFO, "AST insert %s on `%s`", node->data().c_str(), cur->data().c_str());
 	switch(node->type()) {
 		case AST_ADD:    case AST_SUB:     case AST_LIKE:
 			if (!IS_ATOM(cur)) {
@@ -124,7 +129,7 @@ AST* AST::insert(AST *node) {
 
 			ALERT(0 == cur->length());
 			switch(cur->child(0)->type()) {
-				case AST_FUNC:
+				case AST_FUNC: case AST_CLASS:
 					cur = cur->child(0);
 					break;
 				default:
@@ -137,6 +142,7 @@ AST* AST::insert(AST *node) {
 			node->insert(cur);
 			break;
 		default:
+			_D(LOG_DEBUG, "tree insert into `%s`", this->data().c_str());
 			Tree<AST>::insert(node);
 			break;
 	}

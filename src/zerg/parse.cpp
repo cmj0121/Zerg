@@ -14,7 +14,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		this->_root_[CFG_MAIN] = node;
 	}
 
-	_D(LOG_DEBUG, "parse %s (%X)", cur.c_str(), cur.type());
+	_D(LOG_DEBUG, "parse %s (%X) with %s", cur.c_str(), cur.type(), prev.c_str());
 	switch(cur.type()) {
 		case AST_NEWLINE:
 			switch(prev.type()) {
@@ -116,21 +116,26 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			break;
 
 		case AST_IDENTIFIER:
-			if (AST_FUNC == prev.type() || AST_CLASS == prev.type()) {
-				/* remove the current node and set into new AST */
-				for (auto it : this->_root_) {
-					if (it.second == node->root()) {
-						_D(LOG_DEBUG, "remove AST %s", it.first.c_str());
-						this->_root_.erase(it.first);
-						break;
+			switch(prev.type()) {
+				case AST_FUNC: case AST_CLASS:
+					/* remove the current node and set into new AST */
+					for (auto it : this->_root_) {
+						if (it.second == node->root()) {
+							_D(LOG_DEBUG, "remove AST %s", it.first.c_str());
+							this->_root_.erase(it.first);
+							break;
+						}
 					}
-				}
 
-				node->root()->rename(cur.data());
-				this->_root_[cur.data()] = node->root();
-				node = node->insert(cur);
-				break ;
+					node->root()->rename(cur.data());
+					this->_root_[cur.data()] = node->root();
+					node = node->insert(cur);
+					break ;
+				default:
+					node = node->insert(cur);
+					break;
 			}
+			break;
 		case AST_TRUE: case AST_FALSE:
 		case AST_NUMBER:
 			switch(prev.type()) {
@@ -313,15 +318,6 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					node = tmp;
 					break;
 				case AST_CLASS:
-					node = node->root();
-
-					ALERT("" == node->label());
-					snprintf(buff, sizeof(buff), "%s_CLS", node->label().c_str());
-					tmp = new CFG(buff);
-
-					node->passto(tmp);
-					node = tmp;
-					break;
 				case AST_ROOT:
 				case AST_ELSE:
 					break;
@@ -476,3 +472,4 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 
 	return cur;
 }
+

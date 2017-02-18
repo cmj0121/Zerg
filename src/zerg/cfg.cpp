@@ -101,10 +101,18 @@ size_t CFG::_varcnt_(void) {
 	for (size_t i = 0; i < this->length(); ++i) {
 		AST *child = (AST *)this->child(i);
 
-		if (AST_ASSIGN == child->type() && 0 == child->child(0)->length()) {
-			cnt ++;
-		} else if (AST_FUNC == child->type()) {
-			cnt += child->child(0)->child(0)->length();
+		switch(child->type()) {
+			case AST_ASSIGN:
+				if (0 == child->child(0)->length()) {
+					cnt ++;
+				}
+				break;
+			case AST_FUNC:
+				cnt += child->child(0)->child(0)->length();
+				break;
+			default:
+				_D(LOG_DEBUG, "Need NOT count on %s", child->data().c_str());
+				break;
 		}
 	}
 
