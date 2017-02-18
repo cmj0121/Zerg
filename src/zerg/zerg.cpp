@@ -297,7 +297,10 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 
 				switch(node->child(0)->type()) {
 					case AST_PARENTHESES_OPEN:
-						ALERT(0 == namescope.count(node->data()));
+						if (0 == namescope.count(node->data())) {
+							_D(LOG_CRIT, "`%s` not define", node->data().c_str());
+							return ;
+						}
 						node->vtype(namescope[node->data()]);
 
 						x = node->child(0);

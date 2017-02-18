@@ -49,7 +49,7 @@ syn keyword ZERGConstant      none true false
 syn keyword ZERGIdentifier    this
 syn keyword ZERGStatement     nop as return yield
 syn keyword ZERGStatement     func cls nextgroup=ZERGFunction skipwhite
-syn keyword ZERGStatement     syscall delete
+syn keyword ZERGStatement     syscall del
 syn keyword ZERGLogical       eq not in and or not xor
 syn keyword ZERGCondition     if else
 syn keyword ZERGRepeat        while break continue

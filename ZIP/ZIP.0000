@@ -2,11 +2,17 @@ ZIP		- 0
 TITLE	- Zerg Improvement Proposal (initial)
 AUTHOR	- cmj<cmj@cmj.tw>
 STATUS	- Activate
-UPDATE	- 2016/10/10
+UPDATE	- 2017/02/04
 
 # 簡介 #
-ZIP (Zerg Improvement Proposal) 是用來記錄任何對 Zerg 語言的改善建議。
-ZIP 0 是用來記錄每一個建議的狀態、編號、建議與建立者。
+ZIP (Zerg Improvement Proposal) 是用來記錄任何對 Zerg 語言的改善建議。ZIP 0 是用來記錄每一
+個建議的狀態、編號、建議與建立者。
+
+
+# ZIP 寫法 ##
+ZIP 並沒有一個制式的寫法，唯開頭五行需要描述 ZIP 編號、Title、作者與信箱、狀態與最後更新日
+期。而接下來會有若干章節，每個章節開頭標題前後使用兩個 #、章節之間間隔至少兩個空白。
+
 
 ## ZIP 索引 ##
 
@@ -14,4 +20,5 @@ STATUS    NUMBER    OWNER    TITLE
 -------------------------------------------------------------------------------
 Activate  0000      cmj      Zerg 改善計畫 / Zerg Improvement Proposal
 Activate  0001      cmj      Zerg 版號描述 / Zerg version description
+Activate  0002      cmj      物件 / Object in Zerg
 

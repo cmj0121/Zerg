@@ -23,4 +23,4 @@ x[1] = 0x6D
 x[2] = 0x6A
 x[3] = 0x00
 print x
-delete x
+del x
