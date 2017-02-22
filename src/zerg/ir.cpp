@@ -125,7 +125,17 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 				(*this) += new Instruction("mov", buff, src);
 			}
 		} else if (dst != src) {	/* register STORE */
-			(*this) += new Instruction("mov", dst, src);
+			if ("" != idx) {
+				snprintf(buff, sizeof(buff), "%s[%s+%s]",
+								"" == _size ? "" : (_size + " ").c_str(),
+								dst.c_str(),
+								idx.c_str());
+				(*this) += new Instruction("mov", buff, src);
+			} else {
+				(*this) += new Instruction("mov", dst, src);
+			}
+		} else {
+			_D(LOG_INFO, "Need NOT assemble mov `%s` `%s`", dst.c_str(), src.c_str());
 		}
 	} else if (op == "ADD") {			/* (ADD,   DST, SRC) */
 		/* dst = dst + src */

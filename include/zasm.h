@@ -7,6 +7,8 @@ static int __line__;
 
 #include "utils.h"
 
+#define ZASM_VERSION		"1.0"
+#define ZASM_ENTRY_POINT	".entry.point." ZASM_VERSION
 #define TOKEN_ENTRY         "ENTRY"
 #define TOKEN_ASM           "asm"
 #define ZASM_INCLUDE		"include"
@@ -15,6 +17,10 @@ static int __line__;
 #define ZASM_MEM_DWORD		"dword"
 #define ZASM_MEM_QWORD		"qword"
 
+
+#define VALID_SYMBOL(_symb_)	\
+	(_symb_ == ZASM_ENTRY_POINT || \
+	 ("" != _symb_ && '.' != _symb_[0] && '_' != _symb_[0]))
 
 #include <sstream>
 #include <iostream>
@@ -76,6 +82,7 @@ class Instruction {
 		virtual ~Instruction() {};
 
 		bool readdressable(void);
+		bool isLabel(void);
 		off_t setIMM(off_t imm, int size, bool reset=false);
 		off_t setIMM(std::string imm, int size, bool reset=false);
 		off_t length(void);
@@ -98,13 +105,14 @@ class Instruction {
 
 		off_t offset(void);
 		std::vector<ZasmToken *>_inst_;
-#ifdef __x86_64__
+
+	#ifdef __x86_64__
 		void legacyPrefix(X86_64_INST &inst);
 		void opcode(X86_64_INST &inst);
 		void modRW(X86_64_INST &inst);
 		void displacement(X86_64_INST &inst);
 		void immediate(X86_64_INST &inst);
-#endif /* __x86_64__ */
+	#endif /* __x86_64__ */
 };
 
 #include <inttypes.h>

@@ -77,7 +77,7 @@ off_t Binary::dump(off_t entry, bool showSymb) {
 			for (int idx = 0; idx < _inst_.size(); ++idx) {
 				std::string symb = _inst_[idx]->label();
 
-				if ("" != symb && '.' != symb[0] && '_' != symb[0]) {
+				if (_inst_[idx]->isLabel() && VALID_SYMBOL(symb)) {
 					struct nlist_64 symlist;
 
 					symlist.n_un.n_strx = symboff;

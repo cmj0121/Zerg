@@ -103,12 +103,14 @@ size_t CFG::_varcnt_(void) {
 
 		switch(child->type()) {
 			case AST_ASSIGN:
-				if (0 == child->child(0)->length()) {
+				if (0 != child->length() && 0 == child->child(0)->length()) {
 					cnt ++;
 				}
 				break;
 			case AST_FUNC:
-				cnt += child->child(0)->child(0)->length();
+				if (0 != child->length() && 0 != child->child(0)->length()) {
+					cnt += child->child(0)->child(0)->length();
+				}
 				break;
 			default:
 				_D(LOG_DEBUG, "Need NOT count on %s", child->data().c_str());

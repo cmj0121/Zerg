@@ -31,12 +31,12 @@ void Zerg::compile(std::string src, ZergArgs *args) {
 
 		this->emit("#! /usr/bin/env zgr");
 		this->emit("#! ZERG IR - v" __IR_VERSION__);
-		this->emit("ASM", "call", "&" CFG_MAIN);
+		this->emit("ASM", "call", "&" ZASM_ENTRY_POINT);
 		this->emit("ASM", "mov", "rax", "0x2000001");
 		this->emit("INTERRUPT");
 
 		if (0 == this->_root_.count(CFG_MAIN)) {
-			this->emit("LABEL", CFG_MAIN);
+			this->emit("LABEL", ZASM_ENTRY_POINT);
 			this->emit("RET");
 		}
 
@@ -75,7 +75,8 @@ void Zerg::compileCFG(CFG *node, std::map<std::string, VType> &namescope) {
 		return ;
 	}
 
-	this->emit("LABEL", node->label());
+	this->emit("LABEL", CFG_MAIN == node->label() ? ZASM_ENTRY_POINT : node->label());
+
 	if (0 == node->length()) {
 		/* need NOT process this node */
 		/* PROLOGUE */
@@ -86,6 +87,27 @@ void Zerg::compileCFG(CFG *node, std::map<std::string, VType> &namescope) {
 
 		/* EPILOGUE */
 		this->emit("EPILOGUE", node->varcnt());
+	} else if (AST_CLASS == node->child(0)->type()) {
+		/* generate the class code-block */
+		char buff[BUFSIZ] = {0};
+
+		/* PROLOGUE */
+		this->emit("PROLOGUE", node->varcnt());
+
+		namescope[node->label()] = VTYPE_OBJECT;
+		snprintf(buff, sizeof(buff), "0x%lX", PARAM_SIZE*2* (node->child(0)->length()-1));
+		node->child(0)->setReg(++this->_regs_);
+
+		this->emit("PARAM", buff);
+		this->emit("CALL", "buffer", "1");
+		this->emit("STORE", node->child(0)->data(), __IR_SYSCALL_REG__);
+
+		/* set the properties */
+		this->_compileCFG_(node, namescope);
+
+		/* EPILOGUE */
+		this->emit("EPILOGUE", node->varcnt());
+		this->emit("RET", node->child(0)->data());
 	} else {
 		/* PROLOGUE */
 		this->emit("PROLOGUE", node->varcnt());
@@ -139,6 +161,8 @@ void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
 			this->_repeate_label_.push_back(node->label());
 		}
 	}
+
+	/* main - emit IR*/
 	this->emitIR(node, namescope);
 
 	if (node->isCondit()) {		/* CONDITION NODE */
@@ -303,6 +327,11 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 						}
 						node->vtype(namescope[node->data()]);
 
+						if (VTYPE_CLASS == node->vtype()) {
+							/* create an instance */
+							node->vtype(VTYPE_OBJECT);
+						}
+
 						x = node->child(0);
 						for (size_t i = 0; i < x->length(); ++i) {
 							this->emitIR(x->child(i), namescope);
@@ -394,14 +423,39 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 
 			return ;
 		case AST_CLASS:
-			cur = node->child(0);
-			x   = cur->child(0);
+			ALERT(0 == node->length() || 2 != node->child(0)->length());
 
-			ALERT(2 != cur->length());
-			if (0 != x->length()) {
+			cur = node->child(0);
+			if (0 != cur->child(0)->length()) {
 				/* inherit other class */
 				_D(LOG_CRIT, "Not support inherit on class `%s`", cur->data().c_str());
-			}	
+			} else if (1 >= node->length()) {
+				/* no any property */
+				_D(LOG_CRIT, "class `%s` syntax error", cur->data().c_str());
+			}
+
+			for (int i = 0; i < node->length()-1; ++i) {
+				char buf[BUFSIZ] = {0};
+
+				cur = node->child(i+1);
+				switch(cur->type()) {
+					case AST_ASSIGN:
+						ALERT(2 != cur->length());
+
+						x = cur->child(0);
+						y = cur->child(1);
+						this->emitIR(y, namescope);
+						snprintf(buf, sizeof(buf), "0x%X", i*2*PARAM_SIZE);
+						this->emit("STORE", node->data(), y->data(), buf, ZASM_MEM_QWORD);
+						/* FIXME - save the property name */
+						break;
+					case AST_FUNC:
+					default:
+						_D(LOG_CRIT, "Not Implemented set property `%s`",
+																	cur->data().c_str());
+						break;
+				}
+			}
 			return ;
 		case AST_OBJECT:
 			this->emit("PARAM", "0x12");
@@ -688,8 +742,12 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					this->emit("PARAM", buf);
 					this->emit("INTERRUPT");
 					break;
+				case VTYPE_CLASS:
+					_D(LOG_CRIT, "Not Implemented print class `%s`", x->raw().c_str());
+					break;
 				default:
-					_D(LOG_CRIT, "Not Implemented `%s` [0x%X]", x->data().c_str(), x->vtype());
+					_D(LOG_CRIT, "Not Implemented print `%s` [0x%X]",
+															x->raw().c_str(), x->vtype());
 					break;
 			}
 
@@ -906,6 +964,11 @@ void Zerg::_load_namespace_(CFG *node, std::map<std::string, VType> &namescope) 
 						_D(LOG_BUG, "Should never reach here %zd", cur->length());
 						break;
 				}
+				break;
+			case AST_CLASS:
+				cur = tmp->child(0);
+				_D(LOG_DEBUG, "set %s as class", cur->data().c_str());
+				namescope[cur->data()] = VTYPE_CLASS;
 				break;
 			default:
 				break;
