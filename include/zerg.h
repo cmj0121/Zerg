@@ -2,10 +2,6 @@
 #ifndef __ZERG_H__
 #  define __ZERG_H__
 
-#include <ostream>
-#include <string>
-#include <map>
-
 #include "utils.h"
 #include "zerg/token.h"
 #include "zerg/ir.h"
@@ -13,6 +9,8 @@
 
 #define BUILTIN_LIBRARY		"/usr/local/lib/zerg/__builtin__.zg"
 
+#include <string>
+#include <map>
 class Zerg : public IR {
 	public:
 		Zerg(std::string dst, ZergArgs *args);

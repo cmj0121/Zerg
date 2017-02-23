@@ -2,9 +2,6 @@
 #ifndef __ZASM_H__
 #  define __ZASM_H__
 
-#include <stdio.h>
-static int __line__;
-
 #include "utils.h"
 
 #define TOKEN_ENTRY         "ENTRY"
@@ -16,11 +13,10 @@ static int __line__;
 #define ZASM_MEM_QWORD		"qword"
 
 
-#include <sstream>
-#include <iostream>
-#include <fstream>
-#include <algorithm>
-#include <vector>
+#ifdef __x86_64__
+#  define MAX_INSTRUCTION_LEN	16
+#  include "zasm/x86_64_inst.h"
+#endif /* __x86_64__ */
 
 class Utils {
 	public:
@@ -64,11 +60,7 @@ class ZasmToken {
 };
 static ZasmToken EMPTY_TOKEN("");
 
-#ifdef __x86_64__
-#  include "zasm/x86_64_inst.h"
-#endif /* __x86_64__ */
-
-#define MAX_INSTRUCTION_LEN	16
+#include <fstream>
 class Instruction {
 	public:
 		Instruction(ZasmToken *cmd, ZasmToken *op1 = NULL, ZasmToken *op2=NULL);
@@ -98,36 +90,37 @@ class Instruction {
 
 		off_t offset(void);
 		std::vector<ZasmToken *>_inst_;
-#ifdef __x86_64__
+	#ifdef __x86_64__
 		void legacyPrefix(X86_64_INST &inst);
 		void opcode(X86_64_INST &inst);
 		void modRW(X86_64_INST &inst);
 		void displacement(X86_64_INST &inst);
 		void immediate(X86_64_INST &inst);
-#endif /* __x86_64__ */
+	#endif /* __x86_64__ */
 };
 
-#include <inttypes.h>
-#include <stdlib.h>
+#include <vector>
 class Binary : public Utils {
 	public:
 		Binary(std::string src, bool pie=false);
 		virtual ~Binary();
 
+		/* binary-specified function */
 		off_t dump(off_t entry = 0x1000, bool symb=false);
+
+		void reallocreg(void);
 		off_t length(void);
 		off_t nrInst(void);
 		void insert(Instruction* inst, int pos);
 		Instruction *getInst(int pos);
 		std::string get(int pos);
-
 		Binary& operator+= (Instruction *inst);
 	private:
 		bool _pie_;
 		std::string  _src_;
 		std::fstream _bin_;
 		std::vector<Instruction *> _inst_;
-		std::vector<std::pair<std::string, struct nlist_64>> _symb_;
+		std::vector<std::string> _symb_;
 };
 
 class Zasm : public Binary {
@@ -136,10 +129,6 @@ class Zasm : public Binary {
 		void compile(std::fstream &src, bool symb=false);
 		ZasmToken* token(std::fstream &src);
 };
-
-#ifdef __x86_64__
-#  include "zasm/x86_64_inst.h"
-#endif /* __x86_64__ */
 
 #endif /* __ZASM_H__ */
 

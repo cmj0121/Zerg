@@ -1,7 +1,9 @@
 /* Copyright (C) 2014-2016 cmj. All right reserved. */
 
-#include <unistd.h>
+#include <iostream>
 #include <iomanip>
+
+#include <unistd.h>
 #include "zerg.h"
 
 Zerg::Zerg(std::string dst, ZergArgs *args) : IR(dst, args) {
@@ -104,7 +106,7 @@ void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
 	}
 
 	_D(LOG_DEBUG, "compile CFG - %s", node->label().c_str());
-	#ifdef DEBUG_CFG
+	#if defined(DEBUG_CFG) || defined(DEBUG)
 	std::cerr << *node << std::endl;
 	#endif /* DEBUG_CFG */
 	/*
@@ -304,7 +306,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 						node->vtype(namescope[node->data()]);
 
 						x = node->child(0);
-						for (size_t i = 0; i < x->length(); ++i) {
+						for (ssize_t i = 0; i < x->length(); ++i) {
 							this->emitIR(x->child(i), namescope);
 							this->emit("PARAM", x->child(i)->data());
 						}
@@ -346,13 +348,13 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 				break ;
 			}
 
-			for (size_t i = 0; i < node->length(); ++i) {
+			for (ssize_t i = 0; i < node->length(); ++i) {
 				this->emitIR(node->child(i), namescope);
 			}
 			break;
 		case AST_SYSCALL:
 			if (2 == node->length() && AST_PARENTHESES_OPEN == node->child(0)->type()) {
-				for (size_t i = 0; i < node->child(0)->length(); ++i) {
+				for (ssize_t i = 0; i < node->child(0)->length(); ++i) {
 					cur = node->child(0)->child(i);
 
 					switch(cur->type()) {
@@ -375,7 +377,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 				return;
 			}
 
-			for (size_t i = 0; i < node->length(); ++i) {
+			for (ssize_t i = 0; i < node->length(); ++i) {
 				this->emitIR(node->child(i), namescope);
 			}
 			break;
@@ -383,7 +385,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			cur = node->child(0);
 			x   = cur->child(0);
 
-			for (size_t i = 0; i < x->length(); ++i) {
+			for (ssize_t i = 0; i < x->length(); ++i) {
 				char idx[BUFSIZ] = {0};
 
 				y = x->child(i);
@@ -413,7 +415,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			return ;
 		default:
 			/* Run DFS */
-			for (size_t i = 0; i < node->length(); ++i) {
+			for (ssize_t i = 0; i < node->length(); ++i) {
 				this->emitIR(node->child(i), namescope);
 			}
 			break;
@@ -839,7 +841,7 @@ std::string Zerg::regalloc(std::string src, std::string size) {
 	return src;
 }
 void Zerg::regsave(std::string src) {
-	int pos = 0;
+	unsigned int pos = 0;
 	std::vector<std::string> regs = { REGISTERS }, used = { USED_REGISTERS };
 
 	pos = std::find(regs.begin(), regs.end(), src) - regs.begin();

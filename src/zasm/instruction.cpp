@@ -4,6 +4,22 @@
 #include <sstream>
 #include "zasm.h"
 
+static X86_64_INST InstructionSets[] = {
+	#define INST_ASM_OP(cmd, op, x, y, flag) 			{ #cmd, op, x, y, flag },
+	#define INST_ASM_OP_TWOBYTE(cmd, op, x, y, flag)	INST_ASM_OP( cmd, op, x, y, flag | INST_TWO_BYTE)
+	#define INST_ASM_OP0(cmd, op) 						INST_ASM_OP( cmd, op, INST_NONE, INST_NONE, INST_NONE)
+	#define INST_ASM_OP1(cmd, op, x)					INST_ASM_OP( cmd, op, x,         INST_NONE, INST_NONE)
+	#define INST_ASM_OP2(cmd, op, x, y)					INST_ASM_OP( cmd, op, x,         y,		    INST_NONE)
+
+	#  include "zasm/x86_64_opcodes.h"
+
+	#undef INST_ASM_OP
+	#undef INST_ASM_OP_TWOBYTE
+	#undef INST_ASM_OP0
+	#undef INST_ASM_OP1
+};
+
+
 Instruction::Instruction(ZasmToken *cmd, ZasmToken *op1, ZasmToken *op2) {
 	this->_inst_.push_back(cmd);
 	if (NULL != op1) this->_inst_.push_back(op1);
@@ -111,7 +127,7 @@ off_t Instruction::setIMM(std::string imm, int size, bool reset) {
 off_t Instruction::setIMM(off_t imm, int size, bool reset) {
 	off_t off = imm;
 
-	_D(ZASM_LOG_DEBUG, "add immediate %llX, %d", imm, size);
+	_D(ZASM_LOG_DEBUG, "add immediate " OFF_T ", %d", imm, size);
 	if (reset) {
 		this->_length_ -= size;
 	}
@@ -123,7 +139,7 @@ off_t Instruction::setIMM(off_t imm, int size, bool reset) {
 	}
 
 	if (off != 0 && off != (off_t)-1) {
-		_D(LOG_CRIT, "Not Implemented %llX %llX", imm, off);
+		_D(LOG_CRIT, "Not Implemented " OFF_T " " OFF_T, imm, off);
 		exit(-1);
 	}
 
@@ -131,7 +147,7 @@ off_t Instruction::setIMM(off_t imm, int size, bool reset) {
 }
 
 void Instruction::assemble(void) {
-	int idx = 0;
+	unsigned int idx = 0;
 	X86_64_INST inst;
 
 	_D(ZASM_LOG_WARNING, "Assemble `%s` `%s` `%s`",

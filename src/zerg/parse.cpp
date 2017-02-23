@@ -1,5 +1,6 @@
 /* Copyright (C) 2014-2016 cmj. All right reserved. */
 
+#include <iostream>
 #include <iomanip>
 #include "zerg.h"
 
@@ -462,7 +463,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			break;
 	}
 
-	#ifdef DEBUG_AST
+	#if defined(DEBUG_AST) || defined(DEBUG)
 		do {
 			AST* tmp = node->root();
 

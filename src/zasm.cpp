@@ -4,16 +4,18 @@
 #include <string>
 #include <vector>
 
+#include <unistd.h>
 #include <getopt.h>
 
 #include "zasm.h"
 
+int  __line__    = 0;
 int  __verbose__ = 0;
 bool __pie__     = false;
 bool __symbol__  = false;
 
 void Zasm::compile(std::fstream &src, bool symb) {
-	off_t entry = 0x1000;
+	off_t entry = 0x100000;
 	std::vector<ZasmToken *> line;
 	ZasmToken *token = NULL;
 

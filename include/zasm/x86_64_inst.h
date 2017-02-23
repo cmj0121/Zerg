@@ -4,10 +4,27 @@
 
 #define OPERAND_SIZE_OFFSET		8
 #define OPERAND_SIZE(ctx)	 	((ctx) >> OPERAND_SIZE_OFFSET)
+#define PARAM_SIZE				0x08
+#define MAX_CMD_LEN				8
 
+#define REG_GENERAL_64		"rax", "rcx", "rdx", "rbx", "rsp", "rbp", "rsi", "rdi"
+#define REG_GENERAL_32		"eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi"
+#define REG_GENERAL_16		 "ax",  "cx",  "dx",  "bx",  "sp",  "bp",  "si",  "di"
+#define REG_GENERAL_8		 "al",  "cl",  "dl",  "bl", "spl", "bpl", "sil", "dil", \
+							 "ah",  "ch",  "dh",  "bh"
+#define REG_GENERAL			REG_GENERAL_64, REG_GENERAL_32, REG_GENERAL_16, REG_GENERAL_8
 
-#define PARAM_SIZE	0x08
-#define MAX_CMD_LEN	8
+#define REG_EXTENSION_64	"r8",  "r9",  "r10",  "r11",  "r12",  "r13",  "r14",  "r15"
+#define REG_EXTENSION_32	"r8d", "r9d", "r10d", "r11d", "r12d", "r13d", "r14d", "r15d"
+#define REG_EXTENSION_16	"r8w", "r9w", "r10w", "r11w", "r12w", "r13w", "r14w", "r15w"
+#define REG_EXTENSION_8		"r8b", "r9b", "r10b", "r11b", "r12b", "r13b", "r14b", "r15b"
+#define REG_EXTENSION		REG_EXTENSION_64, REG_EXTENSION_32, REG_EXTENSION_16, REG_EXTENSION_8
+
+#define REGISTERS			REG_EXTENSION, REG_GENERAL
+#define USED_REGISTERS		"rcx", "rbx", "r8", "r9", "r10", "r11", 
+
+#define SYSCALL_REG			"rax"
+
 typedef struct _x86_64_inst_tag_ {
 	char cmd[MAX_CMD_LEN];
 	unsigned char opcode;
@@ -72,46 +89,14 @@ enum _x86_64_inst_type_ {
 	INST_SINGLE_FP		= 0x80000,
 	INST_DOUBLE_FP		= 0x100000,
 
-#ifdef __x86_64__		/* Special src */
 	INST_REG_RAX		= 0x1000000,
 	INST_REG_AH			= 0x1000001,
 	INST_REG_AL			= 0x1000002,
 	INST_REG_RCX		= 0x2000000,
 	INST_REG_CL			= 0x2000001,
 	INST_REG_SPECIFY	= 0xF000000,
-#endif /* __x86_64__ */
+
 	INST_ERR			= 0xFFFFFFFF,
 };
 
-static X86_64_INST InstructionSets[] = {
-	#define INST_ASM_OP(cmd, op, x, y, flag) 			{ #cmd, op, x, y, flag },
-	#define INST_ASM_OP_TWOBYTE(cmd, op, x, y, flag)	INST_ASM_OP( cmd, op, x, y, flag | INST_TWO_BYTE)
-	#define INST_ASM_OP0(cmd, op) 						INST_ASM_OP( cmd, op, INST_NONE, INST_NONE, INST_NONE)
-	#define INST_ASM_OP1(cmd, op, x)					INST_ASM_OP( cmd, op, x,         INST_NONE, INST_NONE)
-	#define INST_ASM_OP2(cmd, op, x, y)					INST_ASM_OP( cmd, op, x,         y,		    INST_NONE)
-
-	#  include "x86_64_opcodes.h"
-	#undef INST_ASM_OP
-	#undef INST_ASM_OP_TWOBYTE
-	#undef INST_ASM_OP0
-	#undef INST_ASM_OP1
-};
-
-#define REG_GENERAL_64		"rax", "rcx", "rdx", "rbx", "rsp", "rbp", "rsi", "rdi"
-#define REG_GENERAL_32		"eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi"
-#define REG_GENERAL_16		 "ax",  "cx",  "dx",  "bx",  "sp",  "bp",  "si",  "di"
-#define REG_GENERAL_8		 "al",  "cl",  "dl",  "bl", "spl", "bpl", "sil", "dil", \
-							 "ah",  "ch",  "dh",  "bh"
-#define REG_GENERAL			REG_GENERAL_64, REG_GENERAL_32, REG_GENERAL_16, REG_GENERAL_8
-
-#define REG_EXTENSION_64	"r8",  "r9",  "r10",  "r11",  "r12",  "r13",  "r14",  "r15"
-#define REG_EXTENSION_32	"r8d", "r9d", "r10d", "r11d", "r12d", "r13d", "r14d", "r15d"
-#define REG_EXTENSION_16	"r8w", "r9w", "r10w", "r11w", "r12w", "r13w", "r14w", "r15w"
-#define REG_EXTENSION_8		"r8b", "r9b", "r10b", "r11b", "r12b", "r13b", "r14b", "r15b"
-#define REG_EXTENSION		REG_EXTENSION_64, REG_EXTENSION_32, REG_EXTENSION_16, REG_EXTENSION_8
-
-#define REGISTERS			REG_EXTENSION, REG_GENERAL
-#define USED_REGISTERS		"rcx", "rbx", "r8", "r9", "r10", "r11", 
-
-#define SYSCALL_REG			"rax"
 #endif /* __ZASM_X86_64_INST_H__ */

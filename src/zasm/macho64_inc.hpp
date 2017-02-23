@@ -4,20 +4,7 @@
 #include <mach-o/stab.h>
 #include <mach/vm_prot.h>
 
-typedef std::pair<std::string, struct nlist_64> MACHO64SYMB;
-
-void header(std::fstream &src, int ncmds, off_t offset, bool pie=false);
-void seg_pagezero(std::fstream &src);
-void seg_text(std::fstream &src, int size, off_t entry, off_t offset);
-void sec_text(std::fstream &src, int size, off_t entry, off_t offset);
-void seg_linkedit (std::fstream &src);
-void seg_unixthread(std::fstream &src, int entry, off_t offset);
-void dyld_info (std::fstream &src);
-void dyld_link (std::fstream &src);
-
-/* Static Method */
-
-void header(std::fstream &src, int ncmds, off_t offset, bool pie) {
+static void header(std::fstream &src, int ncmds, off_t offset, bool pie) {
 	struct mach_header_64 hdr;
 
 	src.seekp(0);
@@ -33,7 +20,7 @@ void header(std::fstream &src, int ncmds, off_t offset, bool pie) {
 
 	src.write((char *)&hdr, sizeof(struct mach_header_64));
 }
-void seg_pagezero(std::fstream &src) {
+static void seg_pagezero(std::fstream &src) {
 	struct segment_command_64		hdr;
 
 	memset(&hdr, 0x00, sizeof(hdr));
@@ -52,27 +39,7 @@ void seg_pagezero(std::fstream &src) {
 	src.write((char *)&hdr, sizeof(struct segment_command_64));
 }
 
-void seg_text(std::fstream &src, int size, off_t entry, off_t offset) {
-	struct segment_command_64 hdr;
-
-	memset(&hdr, 0x00, sizeof(hdr));
-	hdr.cmd		= LC_SEGMENT_64;
-	hdr.cmdsize	= sizeof(struct segment_command_64) + sizeof(struct section_64);
-	StrCP(hdr.segname, SEG_TEXT);
-	hdr.vmaddr		= entry;
-	hdr.vmsize		= 0x1000000;	/* 1M - NOTE when total size > 1M need enlarge this value */
-	hdr.fileoff		= 0x0;
-	hdr.filesize	= size + offset;
-	hdr.maxprot		= VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE;
-	hdr.initprot	= VM_PROT_READ | VM_PROT_EXECUTE;
-	hdr.nsects		= 0x1;
-	hdr.flags		= 0x0;
-
-	src.write((char *)&hdr, sizeof(segment_command_64));
-	sec_text(src, size, entry, offset);
-}
-
-void sec_text(std::fstream &src, int size, off_t entry, off_t offset) {
+static void sec_text(std::fstream &src, int size, off_t entry, off_t offset) {
 	struct section_64 hdr;
 
 	memset(&hdr, 0x00, sizeof(hdr));
@@ -92,12 +59,32 @@ void sec_text(std::fstream &src, int size, off_t entry, off_t offset) {
 	src.write((char *)&hdr, sizeof(struct section_64));
 }
 
-void seg_linkedit (std::fstream &src, std::vector<MACHO64SYMB> symb) {
+static void seg_text(std::fstream &src, int size, off_t entry, off_t offset) {
+	struct segment_command_64 hdr;
+
+	memset(&hdr, 0x00, sizeof(hdr));
+	hdr.cmd		= LC_SEGMENT_64;
+	hdr.cmdsize	= sizeof(struct segment_command_64) + sizeof(struct section_64);
+	StrCP(hdr.segname, SEG_TEXT);
+	hdr.vmaddr		= entry;
+	hdr.vmsize		= 0x1000000;	/* 1M - NOTE when total size > 1M need enlarge this value */
+	hdr.fileoff		= 0x0;
+	hdr.filesize	= size + offset;
+	hdr.maxprot		= VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE;
+	hdr.initprot	= VM_PROT_READ | VM_PROT_EXECUTE;
+	hdr.nsects		= 0x1;
+	hdr.flags		= 0x0;
+
+	src.write((char *)&hdr, sizeof(segment_command_64));
+	sec_text(src, size, entry, offset);
+}
+
+static void seg_linkedit (std::fstream &src, std::vector<std::string> symb) {
 	struct segment_command_64 hdr;
 	uint32_t strlen = 0;
 
 	for (auto it : symb) {
-		strlen += it.first.size() + 1;
+		strlen += it.size() + 1;
 	}
 
 	strlen += symb.size() * sizeof(struct nlist_64);
@@ -117,7 +104,7 @@ void seg_linkedit (std::fstream &src, std::vector<MACHO64SYMB> symb) {
 	src.write((char *)&hdr, sizeof(struct segment_command_64));
 }
 
-void seg_unixthread(std::fstream &src, int entry, off_t offset) {
+static void seg_unixthread(std::fstream &src, int entry, off_t offset) {
 	uint32_t				flavor, count;
 	struct thread_command	thread;
 	x86_thread_state64_t	thread_state;
@@ -137,7 +124,7 @@ void seg_unixthread(std::fstream &src, int entry, off_t offset) {
 	src.write((char *)&thread_state, sizeof(x86_thread_state64_t));
 }
 
-void dyld_info (std::fstream &src) {
+static void dyld_info (std::fstream &src) {
 	struct dyld_info_command dyld;
 
 	dyld.cmd			= LC_DYLD_INFO_ONLY;
@@ -156,13 +143,13 @@ void dyld_info (std::fstream &src) {
 	src.write((char *)&dyld, sizeof(struct dyld_info_command));
 }
 
-void seg_symtab(std::fstream &src, std::vector<MACHO64SYMB> symb) {
+static void seg_symtab(std::fstream &src, std::vector<std::string> symb) {
 	off_t offset = 0x1000;	/* Don't know why need large than __LINKEDIT */
 	uint32_t strlen = 0;
 	struct symtab_command  symtab;
 
 	for (auto it : symb) {
-		strlen += it.first.size() + 1;
+		strlen += it.size() + 1;
 	}
 
 	symtab.cmd			= LC_SYMTAB;
@@ -176,7 +163,7 @@ void seg_symtab(std::fstream &src, std::vector<MACHO64SYMB> symb) {
 	src.write((char *)&symtab, sizeof(struct symtab_command));
 }
 
-void seg_dysymtab(std::fstream &src) {
+static void seg_dysymtab(std::fstream &src) {
 	struct dysymtab_command dysymtab;
 
 	dysymtab.cmd			= LC_DYSYMTAB;
@@ -205,7 +192,7 @@ void seg_dysymtab(std::fstream &src) {
 }
 
 #define DYDL	"/usr/lib/dyld\00\00\x00\x00\x00\x00"
-void dyld_link (std::fstream &src) {
+static void dyld_link (std::fstream &src) {
 	struct dylinker_command dylink;
 
 	dylink.cmd			= LC_LOAD_DYLINKER;

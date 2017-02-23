@@ -2,8 +2,6 @@
 #ifndef __ZERG_CFG_H__
 #	define __ZERG_CFG_H__
 
-#include <vector>
-
 #include "ast.h"
 #define CFG_MAIN	"__MAIN__"
 
@@ -16,6 +14,7 @@
  *     1- Always pass-to
  *     2- Boolean case, i.e. True and False
  */
+#include <vector>
 class CFG : public AST {
 	public:
 		CFG(std::string name);
@@ -44,7 +43,7 @@ class CFG : public AST {
 		std::string _name_;
 		CFG *_next_[2], *_parent_;
 
-	#ifdef DEBUG_CFG
+	#if defined(DEBUG_CFG) || defined(DEBUG)
 			/* CFG relation map */
 			std::vector<CFG *>stages;
 			bool **_map_;

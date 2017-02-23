@@ -1,5 +1,8 @@
 /* Copyright (C) 2014-2016 cmj. All right reserved. */
 
+#include <iostream>
+#include <sstream>
+#include <algorithm>
 #include "zasm.h"
 
 #ifndef REGISTERS
@@ -11,7 +14,7 @@ ZasmToken::ZasmToken(std::string src) : _src_(src) {
 
 bool ZasmToken::isREG(void) {
 	const std::vector<std::string> regs = { REGISTERS };
-	int idx = std::find(regs.begin(), regs.end(), this->_src_) - regs.begin();
+	unsigned int idx = std::find(regs.begin(), regs.end(), this->_src_) - regs.begin();
 
 	return idx != regs.size() || this->isSSE();
 }
@@ -51,7 +54,7 @@ bool ZasmToken::isIMM(void) {
 	if (*this == "") {
 		goto END;
 	} else if ("0x" == this->_src_.substr(0, 2) || "0X" == this->_src_.substr(0, 2)) {
-		for (int idx = 2; idx < this->_src_.size(); ++idx) {
+		for (unsigned int idx = 2; idx < this->_src_.size(); ++idx) {
 			if ('0' <= this->_src_[idx] && this->_src_[idx] <= '9') {
 				continue;
 			} else if ('a' <= (this->_src_[idx] | 0x20) && (this->_src_[idx] | 0x20) <= 'f') {
@@ -62,7 +65,7 @@ bool ZasmToken::isIMM(void) {
 	} else if (this->isREF()) {
 		blRet = true;
 	} else {
-		for (int idx = 0; idx < this->_src_.size(); ++idx) {
+		for (unsigned int idx = 0; idx < this->_src_.size(); ++idx) {
 			if ('0' <= this->_src_[idx] && this->_src_[idx] <= '9') {
 				continue;
 			}
@@ -77,7 +80,7 @@ bool ZasmToken::isEXT(void) {
 	if (this->isREF()) {
 		return false;
 	} else if (this->isREG()) {
-		int idx = 0;
+		unsigned int idx = 0;
 		const std::vector<std::string> regs = { REG_EXTENSION };
 
 		idx = std::find(regs.begin(), regs.end(), this->_src_) - regs.begin();
@@ -134,7 +137,7 @@ ZasmToken* ZasmToken::asReg(void) {
 	} else if (this->isREG()) {
 		return this;
 	} else {
-		int start, end;
+		unsigned int start, end;
 
 		for (start = 0; start < _src_.size(); ++start) {
 			if ('[' == _src_[start]) break;
@@ -154,10 +157,10 @@ ZasmToken* ZasmToken::indexReg(void) {
 	std::string substr;
 	ZasmToken *token = NULL, *tmpToken = NULL;
 
-	for (int s = 0; s < _src_.size(); ++s) {
+	for (unsigned int s = 0; s < _src_.size(); ++s) {
 		if ('[' != _src_[s]) continue;
 
-		for (int e = s+1; e < _src_.size(); ++e) {
+		for (unsigned int e = s+1; e < _src_.size(); ++e) {
 			if (']' != this->_src_[e]) continue;
 			substr = this->_src_.substr(s+1, e-s-1);
 			break;
@@ -166,7 +169,7 @@ ZasmToken* ZasmToken::indexReg(void) {
 	}
 
 	if ("" != substr) {
-		int cnt = 0, idx, pos;
+		unsigned int cnt = 0, idx, pos;
 		std::string tmp;
 
 		for (idx = 0, pos = 0; idx < substr.size(); ++idx) {
@@ -212,7 +215,7 @@ off_t ZasmToken::offset(void) {
 		offset = 0;
 	}
 
-	for (int s = 0, e = 0; s < this->_src_.size(); ++s) {
+	for (unsigned int s = 0, e = 0; s < this->_src_.size(); ++s) {
 		int sign = 1;
 		if ('+' != this->_src_[s] && '-' != this->_src_[s]) continue;
 
@@ -234,7 +237,7 @@ off_t ZasmToken::offset(void) {
 		}
 	}
 
-	_D(ZASM_LOG_DEBUG, "offset %s -> %llX",this->_src_.c_str(), offset);
+	_D(ZASM_LOG_DEBUG, "offset %s -> " OFF_T, this->_src_.c_str(), offset);
 	return offset;
 }
 
@@ -295,7 +298,7 @@ std::string ZasmToken::unescape(void) {
 	char tmp = 0x0;
 
 	ALERT('"' != this->_src_[0] || '"' != this->_src_[this->_src_.size()-1]);
-	for (int i = 1; i < this->_src_.size()-1; ++i) {
+	for (unsigned int i = 1; i < this->_src_.size()-1; ++i) {
 		if ('\\' == this->_src_[i]) {
 			switch (this->_src_[++i]) {
 				case 'a':
@@ -323,7 +326,7 @@ std::string ZasmToken::unescape(void) {
 					ALERT(i+2 >= this->_src_.size());
 
 					tmp = 0x0;
-					for (int j = i+1; j < i+3; ++j) {
+					for (unsigned int j = i+1; j < i+3; ++j) {
 						if ('0' <= this->_src_[j] && '9' >= this->_src_[j]) {
 							/* digit */
 							tmp = (tmp << 4) + this->_src_[j] - '0';

@@ -1,5 +1,6 @@
 /* Copyright (C) 2014-2016 cmj. All right reserved. */
 
+#include <sstream>
 #include <iomanip>
 #include "zasm.h"
 
@@ -10,7 +11,7 @@ bool Utils::isInt(std::string src) {
 	bool blRet = false;
 
 	if ("0x" == src.substr(0, 2) || "0X" == src.substr(0, 2)) {
-		for (int idx = 2; idx < src.size(); ++idx) {
+		for (unsigned int idx = 2; idx < src.size(); ++idx) {
 			if ('0' <= src[idx] && src[idx] <= '9') {
 				continue;
 			} else if ('a' <= (src[idx] | 0x20) && (src[idx] | 0x20) <= 'f') {
@@ -19,7 +20,7 @@ bool Utils::isInt(std::string src) {
 			goto END;
 		}
 	} else {
-		for (int idx = 0; idx < src.size(); ++idx) {
+		for (unsigned int idx = 0; idx < src.size(); ++idx) {
 			if ('0' <= src[idx] && src[idx] <= '9') {
 				continue;
 			}
@@ -59,7 +60,7 @@ std::string Utils::toHex(unsigned char *payload, size_t size) {
 std::string Utils::unescape(std::string src) {
 	std::string dst = "";
 
-	for (int i = 0; i < src.size(); ++i) {
+	for (unsigned int i = 0; i < src.size(); ++i) {
 		if ('\\' != src[i]) {
 			dst += src[i];
 		} else {

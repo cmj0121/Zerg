@@ -2,56 +2,19 @@
 #ifndef _ZERG_UTILS_H_
 #  define _ZERG_UTILS_H_
 
-extern int __verbose__;
-enum ZergLogLevel {
-	LOG_CRIT	= -1,	/* critical issue, need stop program */
-	LOG_BUG		= 0,	/* system bugs */
-	LOG_WARNING,		/* warning message */
-	LOG_INFO,			/* information */
-	LOG_DEBUG,			/* debug message */
+#if __APPLE__
+	#define OFF_T	"%llX"
+#elif __linux__
+	#define OFF_T	"%zX"
+#endif /* end-of OS detected */
 
-	ZASM_LOG_DISASM		= 1,
-	ZASM_LOG_WARNING	= 4,
-	ZASM_LOG_INFO,
-	ZASM_LOG_DEBUG,
-
-	LOG_DEBUG_LEXER,
-	LOG_REGISTER_ALLOC,
-};
-
-#include <string>
-#include <vector>
-typedef std::string STRING;
-
-#include <stdio.h>
-#define _D(lv, msg, ...) 										\
-	do {														\
-		if (LOG_CRIT == lv) {									\
-			fprintf(stderr, "%-16s L#%04d - " msg "\n",			\
-					__FILE__, __LINE__, ##__VA_ARGS__);			\
-			exit(-1);											\
-		} else if (lv <= __verbose__) {							\
-			fprintf(stderr, "%-16s L#%04d (%02d) - " msg "\n",	\
-					__FILE__, __LINE__, lv, ##__VA_ARGS__);		\
-		}														\
-	} while (0)
-#define _S(tokens)									\
-	do {											\
-		std::string line;							\
-		for (auto &it : tokens) line += it + " ";	\
-		_D(LOG_CRIT, "Syntax Error `%s` on %s", 	\
-				token.c_str(), line.c_str());		\
-	} while (0)
-#define _DEBUG()	_D(0, "\x1b[1;34m ~ debug ~\x1b[m")
-#define ALERT(expr)								\
-	if (expr) {									\
-		_D(LOG_CRIT, "BUG - `%s`", #expr);	\
-	}
-
+/* general help function */
 #define StrCP(dst, src)		snprintf(dst, sizeof(dst), "%s", src)
 #define ARRAY_SIZE(ctx)		(sizeof(ctx)/sizeof(ctx[0]))
 #define FREE(ctx)			{ if (NULL != ctx) free(ctx); (ctx) = NULL; }
 
+#include <string>
+#include <vector>
 inline static std::string strip(std::string src) {
 	if (' ' != src[0] && ' ' != src[src.size()-1]) {
 		return src;
@@ -83,9 +46,50 @@ inline static std::vector<std::string> split(std::string src, std::string tok) {
 	return ret;
 }
 
-#ifdef DEBUG
-#  define DEBUG_AST
-#  define DEBUG_CFG
-#endif /* DEBUG */
+/* Log-Related */
+extern int __verbose__;
+
+enum ZergLogLevel {
+	LOG_CRIT	= -1,	/* critical issue, need stop program */
+	LOG_BUG		= 0,	/* system bugs */
+	LOG_WARNING,		/* warning message */
+	LOG_INFO,			/* information */
+	LOG_DEBUG,			/* debug message */
+
+	ZASM_LOG_DISASM		= 1,
+	ZASM_LOG_WARNING	= 4,
+	ZASM_LOG_INFO,
+	ZASM_LOG_DEBUG,
+
+	LOG_DEBUG_LEXER,
+	LOG_REGISTER_ALLOC,
+};
+
+#include <stdio.h>
+
+#define _D(lv, msg, ...) 										\
+	do {														\
+		if (LOG_CRIT == lv) {									\
+			fprintf(stderr, "%-16s L#%04d - " msg "\n",			\
+					__FILE__, __LINE__, ##__VA_ARGS__);			\
+			exit(-1);											\
+		} else if (lv <= __verbose__) {							\
+			fprintf(stderr, "%-16s L#%04d (%02d) - " msg "\n",	\
+					__FILE__, __LINE__, lv, ##__VA_ARGS__);		\
+		}														\
+	} while (0)
+#define _S(tokens)									\
+	do {											\
+		std::string line;							\
+		for (auto &it : tokens) line += it + " ";	\
+		_D(LOG_CRIT, "Syntax Error `%s` on %s", 	\
+				token.c_str(), line.c_str());		\
+	} while (0)
+#define _DEBUG()	_D(0, "\x1b[1;34m ~ debug ~\x1b[m")
+#define ALERT(expr)								\
+	if (expr) {									\
+		_D(LOG_CRIT, "BUG - `%s`", #expr);	\
+	}
+
 #endif /* _ZERG_UTILS_H_ */
 

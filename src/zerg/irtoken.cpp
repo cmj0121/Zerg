@@ -46,7 +46,7 @@ std::string IRToken::size(void) const {
 	return 5 > this->length() ? "" : this->_src_[4];
 }
 
-size_t IRToken::length(void) const {
+ssize_t IRToken::length(void) const {
 	/* return the length of the IR */
 	return this->_src_.size();
 }

@@ -10,20 +10,20 @@ CFG::CFG(std::string name) : AST(""), _name_(name), _parent_(NULL) {
 	this->_next_[0] = NULL;
 	this->_next_[1] = NULL;
 
-	#ifdef DEBUG_CFG
+	#if defined(DEBUG_CFG) || defined(DEBUG)
 		/* only used on CFG relationship graph */
 		this->_map_ = NULL;
 	#endif /* DEBUG */
 }
 CFG::~CFG(void) {
-#ifdef DEBUG_CFG
+	#if defined(DEBUG_CFG) || defined(DEBUG)
 	if (NULL != this->_map_) {
 		for (unsigned int i = 0; i < this->stages.size(); ++i) {
 			delete this->_map_[i];
 		}
 		delete this->_map_;
 	}
-#endif /* DEBUG */
+	#endif /* DEBUG */
 }
 
 bool CFG::isRefed(void) {
@@ -98,7 +98,7 @@ std::string CFG::varcnt(void) {
 size_t CFG::_varcnt_(void) {
 	size_t cnt = 0;
 
-	for (size_t i = 0; i < this->length(); ++i) {
+	for (ssize_t i = 0; i < this->length(); ++i) {
 		AST *child = (AST *)this->child(i);
 
 		switch(child->type()) {
@@ -152,7 +152,7 @@ std::ostream& operator <<(std::ostream &stream, const CFG &src) {
 	return stream;
 }
 
-#ifdef DEBUG_CFG
+#if defined(DEBUG_CFG) || defined(DEBUG)
 /* Build the CFG relationship as 2D matrix */
 void CFG::buildRelation(CFG *node) {
 	/* First, get all stages */

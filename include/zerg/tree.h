@@ -2,6 +2,7 @@
 #ifndef __ZERG_TREE_H__
 #	define __ZERG_TREE_H__
 
+#include <algorithm>
 #include <ostream>
 #include <vector>
 #include "../utils.h"
@@ -131,7 +132,7 @@ class STR_TREE : public Tree<STR_TREE> {
 				return this;
 			}
 
-			for (size_t i = 0; i < this->length(); ++i) {
+			for (ssize_t i = 0; i < this->length(); ++i) {
 				if (NULL != (ret = this->child(i)->find(src))) {
 					return ret;
 				}

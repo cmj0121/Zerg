@@ -3,6 +3,7 @@
 
 #include <iomanip>
 #include <sstream>
+#include <string.h>
 #include "zasm.h"
 
 #include "zasm/x86_64_inst.h"
@@ -257,7 +258,7 @@ void Instruction::displacement(X86_64_INST &inst) {
 	ret = token.offset();
 	ret = (0 > ret && INST_NONE == inst.op2) ? ~ret : ret;
 	ret = this->setIMM(token.offset(), 0 == (~0x7F & ret) ? 1 : 4);
-	if (ret) _D(ZASM_LOG_WARNING, "Displacement  - %llX", ret);
+	if (ret) _D(ZASM_LOG_WARNING, "Displacement  - " OFF_T, ret);
 }
 void Instruction::immediate(X86_64_INST &inst) {
 	off_t ret = 0;
@@ -278,7 +279,7 @@ void Instruction::immediate(X86_64_INST &inst) {
 			if (this->dst().isIMM() && 1 == size) size = 4;
 		}
 		ret  = this->setIMM(token.asInt(), size);
-		_D(ZASM_LOG_WARNING, "Immediate     - %llX", ret);
+		_D(ZASM_LOG_WARNING, "Immediate     - " OFF_T, ret);
 	}
 }
 #endif /* __x86_64__ */

@@ -57,7 +57,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		_D(LOG_CRIT, "Not Implemented");
 	} else if (op == "LOAD") {			/* (LOAD,  DST, SRC, IDX, SIZE) */
 		/* Load data from memory with index if need */
-		int pos = 0;
+		unsigned int pos = 0;
 		char buff[BUFSIZ] = {0};
 
 		if (src == _src) {
@@ -94,7 +94,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		}
 	} else if (op == "STORE") {			/* (STORE, DST, SRC, IDX, SIZE) */
 		/* Load data from memory with index if need */
-		int pos = 0;
+		unsigned int pos = 0;
 		char buff[BUFSIZ] = {0};
 
 		if (dst == _dst) {			/* save variable */
@@ -217,7 +217,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		/* dst = dst eq src */
 		std::string tmp;
 		std::vector<std::string> regs = { REGISTERS };
-		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+		unsigned int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
 
 		ALERT(pos == regs.size());
 		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
@@ -229,7 +229,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		/* dst = dst < src */
 		std::string tmp;
 		std::vector<std::string> regs = { REGISTERS };
-		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+		unsigned int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
 
 		ALERT(pos == regs.size());
 		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
@@ -241,7 +241,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		/* dst = dst <= src */
 		std::string tmp;
 		std::vector<std::string> regs = { REGISTERS };
-		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+		unsigned int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
 
 		ALERT(pos == regs.size());
 		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
@@ -253,7 +253,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		/* dst = dst >= src */
 		std::string tmp;
 		std::vector<std::string> regs = { REGISTERS };
-		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+		unsigned int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
 
 		ALERT(pos == regs.size());
 		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
@@ -265,7 +265,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		/* dst = dst > src */
 		std::string tmp;
 		std::vector<std::string> regs = { REGISTERS };
-		int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
+		unsigned int pos = std::find(regs.begin(), regs.end(), dst) - regs.begin();
 
 		ALERT(pos == regs.size());
 		tmp = pos >= 32 ? regs[pos%8 + (8*8)] : regs[pos%8 + (8*3)];
@@ -307,7 +307,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		(*this) += new Instruction("ret");
 	} else if (op == "PARAM") {			/* (PARAM, DST) */
 		/* Save the parameter */
-		int pos = 0;
+		unsigned int pos = 0;
 		char buff[BUFSIZ] = {0};
 		std::vector<std::string> regs = { "rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"};
 
@@ -370,7 +370,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 	this->regsave(src);
 	this->regsave(idx);
 }
-std::string IR::randstr(int size, std::string prefix, std::string suffix) {
+std::string IR::randstr(unsigned int size, std::string prefix, std::string suffix) {
 	/* generated a random label string */
 	std::string ret = prefix;
 	char CH_POOL[] = {	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',

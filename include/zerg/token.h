@@ -2,8 +2,6 @@
 #ifndef __ZERG_TOKEN_H__
 #	define __ZERG_TOKEN_H__
 
-#include <string>
-
 typedef enum _ASTType_ {
 	AST_UNKNOWN			= 0x00,
 	AST_ROOT,
@@ -94,6 +92,7 @@ typedef struct _tag_ZergArgs_ {
 } ZergArgs;
 
 /* token used in Zerg for lexer analysis */
+#include <string>
 class ZergToken : public std::string {
 	public:
 		ZergToken (const char *src="");

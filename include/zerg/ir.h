@@ -3,9 +3,6 @@
 #ifndef __ZERG_IR_H__
 #	define __ZERG_IR_H__
 
-#include <vector>
-#include <fstream>
-#include <string>
 
 #include "zasm.h"
 
@@ -22,11 +19,13 @@
 #define __IR_LABEL_END__	"%s.end"
 #define __IR_LABEL_FALSE__	"%s.false"
 
+#include <vector>
+#include <string>
 class IRToken {
 	public:
 		IRToken(std::string src);
 
-		size_t length(void) const;
+		ssize_t length(void) const;
 
 		std::string op(void)   const;
 		std::string dst(void)  const;
@@ -54,7 +53,7 @@ class IR : public Binary {
 		virtual std::string tmpreg(void) = 0;
 	protected:
 		bool _only_ir_;
-		std::string randstr(int size=24, std::string prefix="__", std::string suffix="__");
+		std::string randstr(unsigned int size=24, std::string prefix="__", std::string suffix="__");
 		std::vector<std::string> _repeate_label_, _stack_;
 	private:
 		int _param_nr_;

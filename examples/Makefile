@@ -1,6 +1,12 @@
 ZASM_SRC=$(wildcard *.zs)
 ZERG_SRC=$(wildcard *.zg)
+
+OS=$(shell uname)
+ifeq ($(OS), Darwin)
 CASES=$(subst .zs,.case,$(ZASM_SRC)) $(subst .zg,.case,$(ZERG_SRC))
+else
+CASES=
+endif
 
 .PHONY: all
 
