@@ -31,7 +31,7 @@ void Zerg::compile(std::string src, ZergArgs *args) {
 
 		this->emit("#! /usr/bin/env zgr");
 		this->emit("#! ZERG IR - v" __IR_VERSION__);
-		this->emit("ASM", "call", "&" ZASM_ENTRY_POINT);
+		this->emit("ASM", "call", __IR_REFERENCE__ ZASM_ENTRY_POINT);
 		this->emit("ASM", "mov", "rax", "0x2000001");
 		this->emit("INTERRUPT");
 
@@ -435,7 +435,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			}
 
 			for (int i = 0; i < node->length()-1; ++i) {
-				char buf[BUFSIZ] = {0};
+				char buff[BUFSIZ] = {0}, name[BUFSIZ] = {0};
 
 				cur = node->child(i+1);
 				switch(cur->type()) {
@@ -445,9 +445,17 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 						x = cur->child(0);
 						y = cur->child(1);
 						this->emitIR(y, namescope);
-						snprintf(buf, sizeof(buf), "0x%X", i*2*PARAM_SIZE);
-						this->emit("STORE", node->data(), y->data(), buf, ZASM_MEM_QWORD);
-						/* FIXME - save the property name */
+						snprintf(buff, sizeof(buff), "0x%X", i*2*PARAM_SIZE);
+						this->emit("STORE", node->data(), y->data(), buff, ZASM_MEM_QWORD);
+
+						snprintf(buff, sizeof(buff), "0x%X", (i*2+1)*PARAM_SIZE);
+						snprintf(name, sizeof(name),  __IR_REFERENCE__ __IR_PROPERTY__,
+															node->child(0)->raw().c_str(),
+															x->raw().c_str());
+
+						this->emit("STORE", node->data(), name, buff, ZASM_MEM_QWORD);
+						/* HACK */
+						this->_symb_.push_back(std::make_pair(name+1, x->raw()));
 						break;
 					case AST_FUNC:
 					default:
@@ -456,6 +464,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 						break;
 				}
 			}
+
 			return ;
 		case AST_OBJECT:
 			this->emit("PARAM", "0x12");
@@ -699,10 +708,10 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			switch(x->vtype()) {
 				case VTYPE_BOOLEAN:
 					this->emit("ASM", "cmp", x->data(), "0x0");
-					this->emit("ASM", "jz", "&" + tmp + "__SHOW_FALSE__");
+					this->emit("ASM", "jz", __IR_REFERENCE__ + tmp + "__SHOW_FALSE__");
 					this->emit("ASM", "lea", "rsi", "&TRUE");
 					this->emit("ASM", "mov", "rdx", "0x06");
-					this->emit("ASM", "jmp", "&" + tmp + "__SHOW_TRUE__");
+					this->emit("ASM", "jmp", __IR_REFERENCE__ + tmp + "__SHOW_TRUE__");
 					this->emit("ASM", "asm", tmp + "__SHOW_FALSE__:");
 					this->emit("ASM", "lea", "rsi", "&FALSE");
 					this->emit("ASM", "mov", "rdx", "0x07");
@@ -712,7 +721,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					this->emit("ASM", "mov", "rdi", "0x01");
 					this->emit("INTERRUPT");
 					break;
-				case VTYPE_INTEGER:
+				case VTYPE_INTEGER: case VTYPE_OBJECT:
 					this->emit("PARAM", x->data());
 					this->emit("CALL", "str", "1");
 					this->emit("ASM", "mov", "rsi", SYSCALL_REG);
@@ -947,7 +956,7 @@ void Zerg::_load_namespace_(CFG *node, std::map<std::string, VType> &namescope) 
 						 *    └── )
 						 */
 						_D(LOG_DEBUG, "set %s as unknown", cur->data().c_str());
-						namescope[cur->data()] = VTYPE_UNKNOWN;
+						namescope[cur->data()] = VTYPE_OBJECT;
 						break;
 					case 3:
 						if (AST_BUILDIN_BUFFER == cur->child(2)->type()) {

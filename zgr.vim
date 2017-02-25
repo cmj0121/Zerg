@@ -20,10 +20,10 @@ syn match   ZGRNumber        "\<0[oO]\=\o\+[Ll]\=\>"
 syn match   ZGRNumber        "\<0[xX]\x\+[Ll]\=\>"
 syn match   ZGRNumber        "\<0[bB][01]\+[Ll]\=\>"
 syn match   ZGRNumber        "\<\%([1-9]\d*\|0\)[Ll]\=\>"
-syn match   ZGRReference     "&\w\+"
+syn match   ZGRReference     "&[\.a-zA-Z0-9_]\+"
 syn match   ZGROpcode        "^\w\+" contained
 syn match   ZGROperand       "\w\+" contains=ZGROpcode,ZGRNumber
-syn match   ZGRRegister      "\%(\.\w\+\)\+"
+syn match   ZGRRegister      "\.[\.a-zA-Z0-9_]\+"
 syn region  ZGRString        start=+\z(['"]\)+ end="\z1" skip="\\\z1" contains=ZGREscape
 syn match   ZGREscape        +\\[abfnrtv'"\\]+ contained
 syn match   ZGREscape        +\\x\x\{2}+ contained

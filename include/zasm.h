@@ -8,7 +8,7 @@ static int __line__;
 #include "utils.h"
 
 #define ZASM_VERSION		"1.0"
-#define ZASM_ENTRY_POINT	".entry.point." ZASM_VERSION
+#define ZASM_ENTRY_POINT	".zasm.entry." ZASM_VERSION
 #define TOKEN_ENTRY         "ENTRY"
 #define TOKEN_ASM           "asm"
 #define ZASM_INCLUDE		"include"

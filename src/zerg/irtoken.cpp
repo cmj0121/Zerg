@@ -17,7 +17,7 @@ IRToken::IRToken(std::string line) {
 				break;
 			default:
 				for (pos = cur+1; pos <= line.size(); ++pos) {
-					if (' ' == line[pos]) break;
+					if (' ' == line[pos] || '\t' == line[pos]) break;
 				}
 				token = line.substr(cur, pos-cur);
 				cur   = pos;

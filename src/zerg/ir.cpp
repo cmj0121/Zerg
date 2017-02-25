@@ -285,21 +285,21 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		(*this) += new Instruction("and",  tmp, "0x1");
 	} else if (op == "JMP") {			/* (JMP,   DST) */
 		/* directly jump */
-		(*this) += new Instruction("jmp", "&" + dst);
+		(*this) += new Instruction("jmp", __IR_REFERENCE__ + dst);
 	} else if (op == "JMP_TRUE") {		/* (JMP_TRUE, DST, SRC) */
 		/* jump if true */
 		ALERT("" == dst || "" == src);
 		(*this) += new Instruction("cmp", src, "0x0");
-		(*this) += new Instruction("jne", "&" + dst);
+		(*this) += new Instruction("jne", __IR_REFERENCE__ + dst);
 	} else if (op == "JMP_FALSE") {		/* (JMP_FALSE, DST, SRC) */
 		/* jump if false */
 		ALERT("" == dst || "" == src);
 		(*this) += new Instruction("cmp", src, "0x0");
-		(*this) += new Instruction("je", "&" + dst);
+		(*this) += new Instruction("je", __IR_REFERENCE__ + dst);
 	} else if (op == "CALL") {			/* (CALL,  DST, SRC) */
 		/* call produce */
 		int nr = atoi(src.c_str());
-		(*this) += new Instruction("call", "&" + dst);
+		(*this) += new Instruction("call", __IR_REFERENCE__ + dst);
 
 		if (0 != this->_param_nr_) {
 			char buff[BUFSIZ] = {0};
