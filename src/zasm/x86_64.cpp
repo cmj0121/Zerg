@@ -69,7 +69,7 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 			if (this->src().isREG() && this->dst().isREG()) {
 				if (this->src().isEXT())
 					REX_R = 1;
-			} else if (this->src().isMEM() && ! this->src().isREF() && this->dst().isEXT()) {
+			} else if (this->src().isMEM() && this->dst().isEXT()) {
 				REX_R = 1;
 			} else if (this->dst().isMEM() && this->src().isREG() && this->src().isEXT()) {
 				REX_R = 1;
@@ -157,12 +157,8 @@ void Instruction::modRW(X86_64_INST &inst) {
 	 */
 	int mod = 0x0, reg = 0x0, rm = 0x0;
 
-	if (! this->dst() || ! this->src()) {
+	if (! this->dst() || ! this->src() || (INST_REG_SPECIFY & inst.op2)) {
 		return ;
-	#ifdef __x86_64__
-	} else if (INST_REG_SPECIFY & inst.op2) {
-		return ;
-	#endif /* __x86_64__ */
 	} else if (this->dst().isREG() && this->src().isREG()) {
 		mod = 0x03;
 		reg = this->src().asInt();
@@ -212,11 +208,11 @@ void Instruction::modRW(X86_64_INST &inst) {
 		} else if (this->src().isMEM() && !this->src().isREF()) {
 			ZasmToken *base = this->src().asReg();
 
-			mod = (*base == "rsp" || *base == "rbp") ? 0x01 : 0x00;
+			mod = base->isPosREG() ? 0x01 : 0x00;
 		} else if (this->dst().isMEM() && !this->dst().isREF()) {
 			ZasmToken *base = this->dst().asReg();
 
-			mod = (*base == "rsp" || *base == "rbp") ? 0x01 : 0x00;
+			mod = base->isPosREG() ? 0x01 : 0x00;
 		}
 
 
@@ -246,9 +242,13 @@ void Instruction::displacement(X86_64_INST &inst) {
 	off_t ret;
 	ZasmToken token;
 
-	if (this->dst().isMEM() && this->dst().offset()) {
+	if (this->src().isREF()) {
+		return ;
+	} else if (this->dst().isMEM() && this->dst().offset()) {
 		token = this->dst();
 	} else if (this->src().isMEM() && this->src().offset()) {
+		token = this->src();
+	} else if (this->src().isMEM() && this->src().asReg()->isPosREG()) {
 		token = this->src();
 	} else {
 		return;

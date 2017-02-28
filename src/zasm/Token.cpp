@@ -15,6 +15,9 @@ bool ZasmToken::isREG(void) {
 
 	return idx != regs.size() || this->isSSE();
 }
+bool ZasmToken::isPosREG(void) {
+	return this->isREG() && (4 == this->asInt() % 8 || 5 == this->asInt() % 8);
+}
 bool ZasmToken::isMEM(void) {
 	bool blRet = false;
 

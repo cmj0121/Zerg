@@ -44,6 +44,7 @@ class ZasmToken {
 		ZasmToken(std::string src);
 
 		bool isREG(void);
+		bool isPosREG(void);
 		bool isMEM(void);
 		bool isMEM2(void);	/* Memory with two registers */
 		bool isIMM(void);
