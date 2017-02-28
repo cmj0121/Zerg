@@ -124,7 +124,7 @@ AST* AST::insert(AST *node) {
 			}
 			Tree<AST>::insert(node);
 			break;
-		case AST_ASSIGN:
+		case AST_ASSIGN: case AST_DOT:
 			cur = cur->root();
 
 			ALERT(0 == cur->length());

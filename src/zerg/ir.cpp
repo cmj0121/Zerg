@@ -60,8 +60,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		int pos = 0;
 		char buff[BUFSIZ] = {0};
 
-		if (src == _src) {
-			/* save local variable */
+		if (src == _src) {						 /* save local variable */
 			pos = std::find(_stack_.begin(), _stack_.end(), src) - _stack_.begin();
 
 			if (_stack_.size() == pos) {
@@ -89,15 +88,33 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 				}
 				(*this) += new Instruction("mov", dst, buff);
 			}
-		} else if (dst != src) {
-			(*this) += new Instruction("mov", dst, src);
+		} else if (dst != src || "" != idx) {	/* register STORE */
+			if ("" != idx) {
+				snprintf(buff, sizeof(buff), "%s[%s+%s]",
+								"" == _size ? "" : (_size + " ").c_str(),
+								src.c_str(),
+								idx.c_str());
+				(*this) += new Instruction("mov", dst, buff);
+			} else {
+				(*this) += new Instruction("mov", dst, src);
+			}
+		} else {
+			_D(LOG_BUG, "Need NOT assemble mov `%s` `%s`", dst.c_str(), src.c_str());
 		}
 	} else if (op == "STORE") {			/* (STORE, DST, SRC, IDX, SIZE) */
 		/* Load data from memory with index if need */
 		int pos = 0;
 		char buff[BUFSIZ] = {0};
 
-		if (dst == _dst) {			/* save variable */
+		/* Reference */
+		if (src[0] == __IR_REFERENCE__[0]) {
+			std::string tmp = this->tmpreg();
+
+			(*this) += new Instruction("lea", tmp, src);
+			src = tmp;
+		}
+
+		if (dst == _dst) {						/* save variable */
 			pos = std::find(_stack_.begin(), _stack_.end(), dst) - _stack_.begin();
 			std::string tmpreg = this->tmpreg();
 
@@ -124,7 +141,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 								tmpreg.c_str(), idx.c_str());
 				(*this) += new Instruction("mov", buff, src);
 			}
-		} else if (dst != src) {	/* register STORE */
+		} else if (dst != src || "" != idx) {	/* register STORE */
 			if ("" != idx) {
 				snprintf(buff, sizeof(buff), "%s[%s+%s]",
 								"" == _size ? "" : (_size + " ").c_str(),
@@ -135,7 +152,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 				(*this) += new Instruction("mov", dst, src);
 			}
 		} else {
-			_D(LOG_INFO, "Need NOT assemble mov `%s` `%s`", dst.c_str(), src.c_str());
+			_D(LOG_BUG, "Need NOT assemble mov `%s` `%s`", dst.c_str(), src.c_str());
 		}
 	} else if (op == "ADD") {			/* (ADD,   DST, SRC) */
 		/* dst = dst + src */

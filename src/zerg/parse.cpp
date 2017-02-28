@@ -36,6 +36,17 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			}
 			break;
 
+		case AST_DOT:
+			switch(prev.type()) {
+				case AST_IDENTIFIER:
+					node = node->insert(cur);
+					break;
+				default:
+					_D(LOG_CRIT, "Only instance has property, not %s", cur.c_str());
+					break;
+			}
+			break;
+
 		case AST_ADD:    case AST_SUB:     case AST_LIKE:
 		case AST_LOG_NOT:
 			switch(prev.type()) {
@@ -477,11 +488,11 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 	}
 
 	#ifdef DEBUG_AST
-		do {
+		if (NULL != node) {
 			AST* tmp = node->root();
 
 			std::cout << *tmp << std::endl;
-		} while (0);
+		};
 	#endif /* DEBUG_AST */
 
 	return cur;

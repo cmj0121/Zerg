@@ -21,6 +21,7 @@ typedef enum _ASTType_ {
 	AST_COLON,
 	AST_COMMA,
 	AST_ASSIGN,
+	AST_DOT,
 
 	AST_ADD					= 0x30,
 	AST_SUB,
