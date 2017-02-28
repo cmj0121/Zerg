@@ -15,7 +15,7 @@ bool _compile_ir_ = false;
 bool _no_stdlib_  = false;
 
 void help(void) {
-	fprintf(stderr, "ZERG - A useless compiler\n");
+	fprintf(stderr, "ZERG (v%s)- A useless compiler\n", ZERG_VERSION);
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Usage - zerg [option]\n");
 	fprintf(stderr, "\n");

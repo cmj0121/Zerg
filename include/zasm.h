@@ -4,6 +4,8 @@
 
 #include "utils.h"
 
+#define ZASM_VERSION		"1.0"
+#define ZASM_ENTRY_POINT	".zasm.entry." ZASM_VERSION
 #define TOKEN_ENTRY         "ENTRY"
 #define TOKEN_ASM           "asm"
 #define ZASM_INCLUDE		"include"
@@ -17,6 +19,11 @@
 #  define MAX_INSTRUCTION_LEN	16
 #  include "zasm/x86_64_inst.h"
 #endif /* __x86_64__ */
+
+#define VALID_SYMBOL(_symb_)	\
+	(_symb_ == ZASM_ENTRY_POINT || \
+	 ("" != _symb_ && '.' != _symb_[0] && '_' != _symb_[0]))
+
 
 class Utils {
 	public:
@@ -34,6 +41,7 @@ class ZasmToken {
 		ZasmToken(std::string src);
 
 		bool isREG(void);
+		bool isPosREG(void);
 		bool isMEM(void);
 		bool isMEM2(void);	/* Memory with two registers */
 		bool isIMM(void);
@@ -68,6 +76,7 @@ class Instruction {
 		virtual ~Instruction() {};
 
 		bool readdressable(void);
+		bool isLabel(void);
 		off_t setIMM(off_t imm, int size, bool reset=false);
 		off_t setIMM(std::string imm, int size, bool reset=false);
 		off_t length(void);
@@ -90,6 +99,7 @@ class Instruction {
 
 		off_t offset(void);
 		std::vector<ZasmToken *>_inst_;
+
 	#ifdef __x86_64__
 		void legacyPrefix(X86_64_INST &inst);
 		void opcode(X86_64_INST &inst);

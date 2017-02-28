@@ -9,10 +9,20 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 	CFG *tmp = NULL;
 
 	static CFG* node = NULL;
+	static bool shouldIndent = false;
 
 	if (NULL == node) {
 		node = new CFG(CFG_MAIN);
 		this->_root_[CFG_MAIN] = node;
+	} else if (true == shouldIndent) {
+		switch(cur.type()) {
+			case AST_INDENT:
+			case AST_NEWLINE:
+				break;
+			default:
+				_D(LOG_CRIT, "syntax error - should indent %s", cur.c_str());
+				break;
+		}
 	}
 
 	_D(LOG_DEBUG, "parse %s (%X) with %s", cur.c_str(), cur.type(), prev.c_str());
@@ -23,6 +33,17 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					break;
 				default:
 					node = node->root();
+					break;
+			}
+			break;
+
+		case AST_DOT:
+			switch(prev.type()) {
+				case AST_IDENTIFIER:
+					node = node->insert(cur);
+					break;
+				default:
+					_D(LOG_CRIT, "Only instance has property, not %s", cur.c_str());
 					break;
 			}
 			break;
@@ -197,6 +218,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_OBJECT:
 			switch(prev.type()) {
 				case AST_ASSIGN:
+				case AST_PARENTHESES_OPEN:
 					node = node->insert(cur);
 					break;
 				default:
@@ -250,6 +272,8 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_ELSE:
 				case AST_WHILE:
 				case AST_FUNC: case AST_CLASS:
+					_D(LOG_DEBUG, "should indent");
+					shouldIndent = true;
 				case AST_BRACKET_OPEN:
 					break;
 				default:
@@ -296,6 +320,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			node = node->insert(cur);
 			break;
 		case AST_INDENT:
+			shouldIndent = false;
 			switch(node->type()) {
 				case AST_IF:
 				case AST_WHILE:
@@ -464,11 +489,11 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 	}
 
 	#if defined(DEBUG_AST) || defined(DEBUG)
-		do {
+		if (NULL != node) {
 			AST* tmp = node->root();
 
 			std::cout << *tmp << std::endl;
-		} while (0);
+		};
 	#endif /* DEBUG_AST */
 
 	return cur;

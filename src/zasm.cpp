@@ -129,7 +129,7 @@ ZasmToken* Zasm::token(std::fstream &src) {
 	return new ZasmToken(token);
 }
 void help(void) {
-	fprintf(stderr, "ZASM - Zerg assembler\n");
+	fprintf(stderr, "ZASM (v%s)- Zerg assembler\n", ZASM_VERSION);
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Usage - zasm [option] src\n");
 	fprintf(stderr, "\n");

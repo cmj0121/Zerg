@@ -33,12 +33,12 @@ void Zerg::compile(std::string src, ZergArgs *args) {
 
 		this->emit("#! /usr/bin/env zgr");
 		this->emit("#! ZERG IR - v" __IR_VERSION__);
-		this->emit("ASM", "call", "&" CFG_MAIN);
+		this->emit("ASM", "call", __IR_REFERENCE__ ZASM_ENTRY_POINT);
 		this->emit("ASM", "mov", "rax", "0x2000001");
 		this->emit("INTERRUPT");
 
 		if (0 == this->_root_.count(CFG_MAIN)) {
-			this->emit("LABEL", CFG_MAIN);
+			this->emit("LABEL", ZASM_ENTRY_POINT);
 			this->emit("RET");
 		}
 
@@ -77,7 +77,8 @@ void Zerg::compileCFG(CFG *node, std::map<std::string, VType> &namescope) {
 		return ;
 	}
 
-	this->emit("LABEL", node->label());
+	this->emit("LABEL", CFG_MAIN == node->label() ? ZASM_ENTRY_POINT : node->label());
+
 	if (0 == node->length()) {
 		/* need NOT process this node */
 		/* PROLOGUE */
@@ -88,6 +89,44 @@ void Zerg::compileCFG(CFG *node, std::map<std::string, VType> &namescope) {
 
 		/* EPILOGUE */
 		this->emit("EPILOGUE", node->varcnt());
+	} else if (AST_CLASS == node->child(0)->type()) {
+		/* generate the class code-block */
+		char buff[BUFSIZ] = {0}, name[BUFSIZ] = {0};
+		size_t bufsiz = 0;
+
+		/* PROLOGUE */
+		this->emit("PROLOGUE", node->varcnt());
+
+		namescope[node->label()] = VTYPE_OBJECT;
+		bufsiz  = (node->child(0)->length()-1) * 2;
+		bufsiz += 2;
+		bufsiz *= PARAM_SIZE;
+		snprintf(buff, sizeof(buff), "0x%lX", bufsiz);
+		node->child(0)->setReg(++this->_regs_);
+
+		this->emit("PARAM", buff);
+		this->emit("CALL", "buffer", "1");
+		this->emit("STORE", node->child(0)->data(), __IR_SYSCALL_REG__);
+		/* object type */
+		snprintf(buff, sizeof(buff), "0x%x", 0x0);
+		/* FIXME - type */
+		this->emit("STORE", node->child(0)->data(), "0x80000000", buff, ZASM_MEM_DWORD);
+		/* reference count */
+		snprintf(buff, sizeof(buff), "0x%x", PARAM_SIZE/2);
+		this->emit("STORE", node->child(0)->data(), "0x1", buff, ZASM_MEM_DWORD);
+		/* class name */
+		snprintf(buff, sizeof(buff), "0x%x", PARAM_SIZE);
+		snprintf(name, sizeof(name), __IR_REFERENCE__ __IR_CLS_NAME__,
+												node->child(0)->child(0)->raw().c_str());
+		this->emit("STORE", node->child(0)->data(), name, buff, ZASM_MEM_QWORD);
+		this->_symb_.push_back(std::make_pair(name+1, node->child(0)->child(0)->raw()));
+
+		/* set the properties */
+		this->_compileCFG_(node, namescope);
+
+		/* EPILOGUE */
+		this->emit("EPILOGUE", node->varcnt());
+		this->emit("RET", node->child(0)->data());
 	} else {
 		/* PROLOGUE */
 		this->emit("PROLOGUE", node->varcnt());
@@ -141,6 +180,8 @@ void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
 			this->_repeate_label_.push_back(node->label());
 		}
 	}
+
+	/* main - emit IR*/
 	this->emitIR(node, namescope);
 
 	if (node->isCondit()) {		/* CONDITION NODE */
@@ -305,6 +346,11 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 						}
 						node->vtype(namescope[node->data()]);
 
+						if (VTYPE_CLASS == node->vtype()) {
+							/* create an instance */
+							node->vtype(VTYPE_OBJECT);
+						}
+
 						x = node->child(0);
 						for (ssize_t i = 0; i < x->length(); ++i) {
 							this->emitIR(x->child(i), namescope);
@@ -396,14 +442,51 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 
 			return ;
 		case AST_CLASS:
-			cur = node->child(0);
-			x   = cur->child(0);
+			ALERT(0 == node->length() || 2 != node->child(0)->length());
 
-			ALERT(2 != cur->length());
-			if (0 != x->length()) {
+			cur = node->child(0);
+			if (0 != cur->child(0)->length()) {
 				/* inherit other class */
 				_D(LOG_CRIT, "Not support inherit on class `%s`", cur->data().c_str());
-			}	
+			} else if (1 >= node->length()) {
+				/* no any property */
+				_D(LOG_CRIT, "class `%s` syntax error", cur->data().c_str());
+			}
+
+			for (int i = 0; i < node->length()-1; ++i) {
+				char buff[BUFSIZ] = {0}, name[BUFSIZ] = {0};
+
+				cur = node->child(i+1);
+				switch(cur->type()) {
+					case AST_NOP:
+						/* NOP */
+						break;
+					case AST_ASSIGN:
+						ALERT(2 != cur->length());
+
+						x = cur->child(0);
+						y = cur->child(1);
+						this->emitIR(y, namescope);
+						snprintf(buff, sizeof(buff), "0x%X", (i+1)*2*PARAM_SIZE);
+						this->emit("STORE", node->data(), y->data(), buff, ZASM_MEM_QWORD);
+
+						snprintf(buff, sizeof(buff), "0x%X", ((i+1)*2+1)*PARAM_SIZE);
+						snprintf(name, sizeof(name),  __IR_REFERENCE__ __IR_CLS_REG__,
+															node->child(0)->raw().c_str(),
+															x->raw().c_str());
+
+						this->emit("STORE", node->data(), name, buff, ZASM_MEM_QWORD);
+						/* HACK */
+						this->_symb_.push_back(std::make_pair(name+1, x->raw()));
+						break;
+					case AST_FUNC:
+					default:
+						_D(LOG_CRIT, "Not Implemented set property `%s`",
+																	cur->data().c_str());
+						break;
+				}
+			}
+
 			return ;
 		case AST_OBJECT:
 			this->emit("PARAM", "0x12");
@@ -647,10 +730,10 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			switch(x->vtype()) {
 				case VTYPE_BOOLEAN:
 					this->emit("ASM", "cmp", x->data(), "0x0");
-					this->emit("ASM", "jz", "&" + tmp + "__SHOW_FALSE__");
+					this->emit("ASM", "jz", __IR_REFERENCE__ + tmp + "__SHOW_FALSE__");
 					this->emit("ASM", "lea", "rsi", "&TRUE");
 					this->emit("ASM", "mov", "rdx", "0x06");
-					this->emit("ASM", "jmp", "&" + tmp + "__SHOW_TRUE__");
+					this->emit("ASM", "jmp", __IR_REFERENCE__ + tmp + "__SHOW_TRUE__");
 					this->emit("ASM", "asm", tmp + "__SHOW_FALSE__:");
 					this->emit("ASM", "lea", "rsi", "&FALSE");
 					this->emit("ASM", "mov", "rdx", "0x07");
@@ -690,8 +773,24 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 					this->emit("PARAM", buf);
 					this->emit("INTERRUPT");
 					break;
+				case VTYPE_CLASS:
+					_D(LOG_CRIT, "Not Implemented print class `%s`", x->raw().c_str());
+					break;
+				case VTYPE_OBJECT:
+					/* FIXME- Correct way is call the __str__ property */
+					this->emit("PARAM", "0x200018D");
+					this->emit("PARAM", "0x01");
+					snprintf(buf, sizeof(buf), "0x%x", PARAM_SIZE);
+					this->emit("LOAD", x->data(), x->data(), buf, ZASM_MEM_QWORD);
+					this->emit("PARAM", x->data());
+					this->emit("PARAM", x->data());
+					this->emit("CALL",  "strlen", "1");
+					this->emit("PARAM", __IR_SYSCALL_REG__);
+					this->emit("INTERRUPT");
+					break;
 				default:
-					_D(LOG_CRIT, "Not Implemented `%s` [0x%X]", x->data().c_str(), x->vtype());
+					_D(LOG_CRIT, "Not Implemented print `%s` [0x%X]",
+															x->raw().c_str(), x->vtype());
 					break;
 			}
 
@@ -891,7 +990,7 @@ void Zerg::_load_namespace_(CFG *node, std::map<std::string, VType> &namescope) 
 						 *    └── )
 						 */
 						_D(LOG_DEBUG, "set %s as unknown", cur->data().c_str());
-						namescope[cur->data()] = VTYPE_UNKNOWN;
+						namescope[cur->data()] = VTYPE_OBJECT;
 						break;
 					case 3:
 						if (AST_BUILDIN_BUFFER == cur->child(2)->type()) {
@@ -908,6 +1007,11 @@ void Zerg::_load_namespace_(CFG *node, std::map<std::string, VType> &namescope) 
 						_D(LOG_BUG, "Should never reach here %zd", cur->length());
 						break;
 				}
+				break;
+			case AST_CLASS:
+				cur = tmp->child(0);
+				_D(LOG_DEBUG, "set %s as class", cur->data().c_str());
+				namescope[cur->data()] = VTYPE_CLASS;
 				break;
 			default:
 				break;

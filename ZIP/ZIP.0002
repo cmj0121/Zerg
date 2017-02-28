@@ -27,7 +27,7 @@ UPDATE	- 2017/02/04
 
 	                0         31         63
 	+---- buffer -  +----------+----------+
-	|               |   lengh of buffer   |
+	|               |   length of buffer  |
 	|  +- object -  +---------------------+
 	|  |            |   type   |  ref cnt |
 	|  |            +---------------------+

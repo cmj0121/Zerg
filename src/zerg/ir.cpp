@@ -60,8 +60,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		unsigned int pos = 0;
 		char buff[BUFSIZ] = {0};
 
-		if (src == _src) {
-			/* save local variable */
+		if (src == _src) {						 /* save local variable */
 			pos = std::find(_stack_.begin(), _stack_.end(), src) - _stack_.begin();
 
 			if (_stack_.size() == pos) {
@@ -89,15 +88,33 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 				}
 				(*this) += new Instruction("mov", dst, buff);
 			}
-		} else if (dst != src) {
-			(*this) += new Instruction("mov", dst, src);
+		} else if (dst != src || "" != idx) {	/* register STORE */
+			if ("" != idx) {
+				snprintf(buff, sizeof(buff), "%s[%s+%s]",
+								"" == _size ? "" : (_size + " ").c_str(),
+								src.c_str(),
+								idx.c_str());
+				(*this) += new Instruction("mov", dst, buff);
+			} else {
+				(*this) += new Instruction("mov", dst, src);
+			}
+		} else {
+			_D(LOG_BUG, "Need NOT assemble mov `%s` `%s`", dst.c_str(), src.c_str());
 		}
 	} else if (op == "STORE") {			/* (STORE, DST, SRC, IDX, SIZE) */
 		/* Load data from memory with index if need */
 		unsigned int pos = 0;
 		char buff[BUFSIZ] = {0};
 
-		if (dst == _dst) {			/* save variable */
+		/* Reference */
+		if (src[0] == __IR_REFERENCE__[0]) {
+			std::string tmp = this->tmpreg();
+
+			(*this) += new Instruction("lea", tmp, src);
+			src = tmp;
+		}
+
+		if (dst == _dst) {						/* save variable */
 			pos = std::find(_stack_.begin(), _stack_.end(), dst) - _stack_.begin();
 			std::string tmpreg = this->tmpreg();
 
@@ -124,8 +141,18 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 								tmpreg.c_str(), idx.c_str());
 				(*this) += new Instruction("mov", buff, src);
 			}
-		} else if (dst != src) {	/* register STORE */
-			(*this) += new Instruction("mov", dst, src);
+		} else if (dst != src || "" != idx) {	/* register STORE */
+			if ("" != idx) {
+				snprintf(buff, sizeof(buff), "%s[%s+%s]",
+								"" == _size ? "" : (_size + " ").c_str(),
+								dst.c_str(),
+								idx.c_str());
+				(*this) += new Instruction("mov", buff, src);
+			} else {
+				(*this) += new Instruction("mov", dst, src);
+			}
+		} else {
+			_D(LOG_BUG, "Need NOT assemble mov `%s` `%s`", dst.c_str(), src.c_str());
 		}
 	} else if (op == "ADD") {			/* (ADD,   DST, SRC) */
 		/* dst = dst + src */
@@ -275,21 +302,21 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 		(*this) += new Instruction("and",  tmp, "0x1");
 	} else if (op == "JMP") {			/* (JMP,   DST) */
 		/* directly jump */
-		(*this) += new Instruction("jmp", "&" + dst);
+		(*this) += new Instruction("jmp", __IR_REFERENCE__ + dst);
 	} else if (op == "JMP_TRUE") {		/* (JMP_TRUE, DST, SRC) */
 		/* jump if true */
 		ALERT("" == dst || "" == src);
 		(*this) += new Instruction("cmp", src, "0x0");
-		(*this) += new Instruction("jne", "&" + dst);
+		(*this) += new Instruction("jne", __IR_REFERENCE__ + dst);
 	} else if (op == "JMP_FALSE") {		/* (JMP_FALSE, DST, SRC) */
 		/* jump if false */
 		ALERT("" == dst || "" == src);
 		(*this) += new Instruction("cmp", src, "0x0");
-		(*this) += new Instruction("je", "&" + dst);
+		(*this) += new Instruction("je", __IR_REFERENCE__ + dst);
 	} else if (op == "CALL") {			/* (CALL,  DST, SRC) */
 		/* call produce */
 		int nr = atoi(src.c_str());
-		(*this) += new Instruction("call", "&" + dst);
+		(*this) += new Instruction("call", __IR_REFERENCE__ + dst);
 
 		if (0 != this->_param_nr_) {
 			char buff[BUFSIZ] = {0};

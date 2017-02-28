@@ -122,7 +122,7 @@ void Zerg::lexer(std::string src) {
 					break;
 				case '.': case ',': case ':':			/* OPERATOR */
 				case '(': case ')': case '[': case ']':
-				case '{': case '}':
+				case '{': case '}': case '=':
 					token = line.substr(cur, 1);
 					prev = this->parser(token, prev);
 					break;

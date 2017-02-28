@@ -6,6 +6,7 @@ static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 	#define DEF(key, value, weight)	{key, {value, weight}}
 		DEF("++",	AST_INC,			2),
 		DEF("--",	AST_DEC,			2),
+		DEF(".",	AST_DOT,			2),
 
 		DEF("*",	AST_MUL,			2),
 		DEF("/",	AST_DIV,			2),

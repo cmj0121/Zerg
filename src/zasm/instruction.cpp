@@ -76,6 +76,9 @@ bool Instruction::readdressable(void) {
 	/* Reply this instruction is need to readdress or not */
 	return this->cmd() != TOKEN_ASM && (this->dst().isREF() || this->src().isREF());
 }
+bool Instruction::isLabel(void) {
+	return TOKEN_ASM == this->cmd().raw() && "" == this->src().raw();
+}
 Instruction& Instruction::operator << (std::fstream &dst) {
 	if (this->cmd() == TOKEN_ASM && this->src()) {
 		dst.write(this->src().unescape().c_str(), this->length());
@@ -188,7 +191,7 @@ void Instruction::assemble(void) {
 	}
 
 	if (idx == ARRAY_SIZE(InstructionSets)) {
-		_D(LOG_CRIT, "Not Implemented %s %s %s",
+		_D(LOG_CRIT, "Not Implemented `%s` `%s` `%s`",
 			this->cmd().raw().c_str(), this->dst().raw().c_str(), this->src().raw().c_str());
 		exit(-1);
 	}

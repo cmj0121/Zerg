@@ -32,7 +32,8 @@ void Binary::reallocreg(void) {
 
 		for(int pos = idx-1; pos >= 0; --pos) {
 			if (_inst_[pos]->label() == _inst_[idx]->refer()) {
-				while (pos < idx) {
+				/* HACK - Fix the compiler warning sign-compare */
+				while (pos < (int)idx) {
 					offset -= _inst_[pos+1]->length();
 					pos ++;
 				}

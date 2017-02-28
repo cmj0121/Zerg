@@ -6,7 +6,7 @@
 
 #include "zasm.h"
 
-#define MAX_ZASMP_PARAM	10
+#define __IR_REFERENCE__	"&"
 #define __IR_VERSION__		"0.1 (" __DATE__ " " __TIME__ ")"
 #define __IR_REG_FMT__		".reg.%02d"
 #define __IR_LABEL_FMT__	".zerg.label.%d"
@@ -14,10 +14,17 @@
 #define __IR_LOCAL_VAR__	".local.var"
 #define __IR_DUMMY__		".dummy"
 
+/* Control-Flow */
 #define __IR_LABEL_IF__		".if.%04d"
 #define __IR_LABEL_WHILE__	".while.%04d"
 #define __IR_LABEL_END__	"%s.end"
 #define __IR_LABEL_FALSE__	"%s.false"
+
+/* Category of class property */
+#define __IR_CLS_NAME__		".name.%s"
+#define __IR_CLS_REG__		".reg.%s.%s"
+#define __IR_CLS_FUNC__		".fun.%s.%s"
+#define __IR_CLS_OBJ__		".obj.%s.%s"
 
 #include <vector>
 #include <string>
@@ -59,7 +66,6 @@ class IR : public Binary {
 		int _param_nr_;
 		bool _symb_;
 		off_t _entry_;
-		std::string _param_[MAX_ZASMP_PARAM];
 };
 
 #endif /* __ZERG_IR_H__ */
