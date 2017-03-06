@@ -97,7 +97,7 @@ void Zerg::compileCFG(CFG *node, std::map<std::string, VType> &namescope) {
 		/* PROLOGUE */
 		this->emit("PROLOGUE", node->varcnt());
 
-		namescope[node->label()] = VTYPE_OBJECT;
+		namescope[node->label()] = VTYPE_CLASS;
 		bufsiz  = (node->child(0)->length()-1) * 2;
 		bufsiz += 2;
 		bufsiz *= PARAM_SIZE;
@@ -223,6 +223,7 @@ void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
 void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 	static std::vector<std::string> stack;
 
+	size_t pos = 0;
 	char buf[BUFSIZ] = {0};
 	std::string tmp;
 	AST *x = NULL, *y = NULL, *cur = NULL;
@@ -256,12 +257,20 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			if (0 == x->length() || AST_BRACKET_OPEN != x->child(0)->type()) {
 				namescope[x->data()] = x->vtype();
 				_D(LOG_DEBUG, "%s -> 0x%X", x->data().c_str(), x->vtype());
+
+				if (VTYPE_OBJECT == y->vtype()) {
+					this->_obj_instance_[x->raw()] = y->raw();
+				}
 			}
 
 			return ;
 		case AST_INC: case AST_DEC:
 			if (1 != node->length() || AST_IDENTIFIER != node->child(0)->type()) {
-				_D(LOG_CRIT, "Not allow the syntax for `%s`", AST_INC == node->type() ? "++" : "--");
+				x = node->child(0);
+
+				_D(LOG_CRIT, "Not allow the syntax for `%s` on %s",
+												AST_INC == node->type() ? "++" : "--",
+												x->data().c_str());
 				return ;
 			}
 
@@ -478,6 +487,8 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 						this->emit("STORE", node->data(), name, buff, ZASM_MEM_QWORD);
 						/* HACK */
 						this->_symb_.push_back(std::make_pair(name+1, x->raw()));
+						/* set the property map */
+						this->_obj_property_[node->child(0)->data()].push_back(x->data());
 						break;
 					case AST_FUNC:
 					default:
@@ -486,6 +497,15 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 						break;
 				}
 			}
+
+			#if defined(DEBUG) || defined(DEBUG_CLASS)
+			_D(LOG_BUG, "class %s with properties", node->child(0)->data().c_str());
+			for (unsigned int i = 0; i < this->_obj_property_.size(); ++i) {
+				std::string name = this->_obj_property_[node->child(0)->data()][i];
+
+				_D(LOG_BUG, "#%2u %s", i, name.c_str());
+			}
+			#endif /* DEBUG_CLASS */
 
 			return ;
 		case AST_OBJECT:
@@ -496,6 +516,44 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			/* set reference count */
 			this->emit("STORE", node->data(), "0x01", "0x02", "word");
 			return ;
+		case AST_DOT:
+			ALERT(2 != node->length());
+
+			x = node->child(0);
+			y = node->child(1);
+
+			switch(x->type()) {
+				case AST_IDENTIFIER:
+					if (0 == this->_obj_instance_.count(x->raw())) {
+						_D(LOG_CRIT, "class `%s` not declare", x->data().c_str());
+						break;
+					}
+
+					tmp = this->_obj_instance_[x->raw()];
+					pos = std::find(_obj_property_[tmp].begin(),
+									_obj_property_[tmp].end(),
+									y->data()) - _obj_property_[tmp].begin();
+
+					if (pos == _obj_property_[tmp].size()) {
+						_D(LOG_CRIT, "property `%s` not defined on %s (#%lu)",
+													y->data().c_str(), tmp.c_str(), pos);
+						break;
+					}
+
+					snprintf(buf, sizeof(buf), "0x%zX", (pos + 2) * PARAM_SIZE);
+					this->emitIR(x, namescope);
+
+					/* FIXME */
+					node->setReg(++this->_regs_);
+					node->vtype(VTYPE_INTEGER);
+					this->emit("LOAD", node->data(), x->data(), buf, ZASM_MEM_QWORD);
+					return ;
+				default:
+					_D(LOG_CRIT, "Not Implemented search property");
+					break;
+			}
+
+			break;
 		default:
 			/* Run DFS */
 			for (ssize_t i = 0; i < node->length(); ++i) {
@@ -721,7 +779,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			break;
 
 		case AST_PRINT:
-			/* FIXME - handcode for build-in function: str() */
+			/* FIXME - hand-code for build-in function: str() */
 
 			tmp = this->randstr(10, "__", "");
 			ALERT(0 == node->length());

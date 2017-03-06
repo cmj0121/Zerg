@@ -108,6 +108,7 @@ AST* AST::insert(AST *node) {
 		case AST_BIT_OR: case AST_BIT_AND: case AST_BIT_XOR:
 		case AST_LOG_OR: case AST_LOG_AND: case AST_LOG_XOR:
 		case AST_INC:    case AST_DEC:
+		case AST_DOT:
 			if (0 != cur->weight() && cur->weight() < node->weight()) {
 				while (NULL != cur->parent() && 0 != cur->parent()->weight()) {
 					if (cur->parent()->weight() <= node->weight()) {
@@ -124,7 +125,7 @@ AST* AST::insert(AST *node) {
 			}
 			Tree<AST>::insert(node);
 			break;
-		case AST_ASSIGN: case AST_DOT:
+		case AST_ASSIGN:
 			cur = cur->root();
 
 			ALERT(0 == cur->length());

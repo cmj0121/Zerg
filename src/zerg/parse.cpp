@@ -107,7 +107,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_IDENTIFIER:
 					do {
 						if (NULL == node->parent()) {
-							std::cout << *node << std::endl;
+							std::cerr << *node << std::endl;
 							_D(LOG_CRIT, "Not Implemented");
 							break;
 						} else if (AST_PARENTHESES_OPEN == node->parent()->child(0)->type()) {
@@ -153,6 +153,10 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 					this->_root_[cur.data()] = node->root();
 					node = node->insert(cur);
 					break ;
+				case AST_PARENTHESES_CLOSE: case AST_BRACKET_CLOSE:
+					_D(LOG_CRIT, "Syntax error on %s L#%d `%s`",
+										this->_src_.c_str(), this->_lineno_, cur.c_str());
+					break;
 				default:
 					node = node->insert(cur);
 					break;
@@ -164,6 +168,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_TRUE: case AST_FALSE:
 				case AST_NUMBER:
 				case AST_IDENTIFIER:
+				case AST_PARENTHESES_CLOSE: case AST_BRACKET_CLOSE:
 					_D(LOG_CRIT, "Syntax error on %s L#%d `%s`",
 										this->_src_.c_str(), this->_lineno_, cur.c_str());
 					break;
@@ -430,7 +435,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_PARENTHESES_CLOSE:
 			do {
 				if (NULL == node->parent()) {
-					std::cout << *node << std::endl;
+					std::cerr << *node << std::endl;
 					_D(LOG_CRIT, "Syntax error - parentheses does NOT pair");
 					break;
 				} else if (0 == node->length()) {
@@ -462,7 +467,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		case AST_BRACKET_CLOSE:
 			do {
 				if (NULL == node->parent()) {
-					std::cout << *node << std::endl;
+					std::cerr << *node << std::endl;
 					_D(LOG_CRIT, "Syntax error - brackets does NOT pair");
 					break;
 				} else if (0 == node->length()) {
@@ -492,7 +497,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		if (NULL != node) {
 			AST* tmp = node->root();
 
-			std::cout << *tmp << std::endl;
+			std::cerr << *tmp << std::endl;
 		};
 	#endif /* DEBUG_AST */
 

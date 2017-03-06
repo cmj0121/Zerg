@@ -1,5 +1,6 @@
 /* Copyright (C) 2014-2016 cmj. All right reserved. */
 
+#include <iostream>
 #include <iomanip>
 #include "zerg.h"
 
@@ -200,21 +201,21 @@ void CFG::buildRelation(CFG *node) {
 		ssize_t len = this->stages.size();
 
 		for (ssize_t i = 0; i < len+1; ++i) {
-			std::cout << std::setw(layout) << std::left;
+			std::cerr << std::setw(layout) << std::left;
 			if (i == 0) {
-				std::cout << "";
+				std::cerr << "";
 				for (ssize_t j = 0; j < len; ++j) {
-					std::cout << std::setw(layout) << stages[j]->_name_;
+					std::cerr << std::setw(layout) << stages[j]->_name_;
 				}
 			} else {
-				std::cout << stages[i-1]->_name_;
+				std::cerr << stages[i-1]->_name_;
 				for (ssize_t j = 0; j < len; ++j) {
-					std::cout << std::setw(layout) << _map_[i-1][j];
+					std::cerr << std::setw(layout) << _map_[i-1][j];
 				}
 			}
-			std::cout << std::endl;
+			std::cerr << std::endl;
 		}
-		std::cout << std::endl;
+		std::cerr << std::endl;
 	}
 }
 #endif /* DEBUG */
