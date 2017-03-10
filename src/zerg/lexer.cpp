@@ -180,4 +180,13 @@ void Zerg::lexer(std::string src) {
 			}
 		}
 	}
+
+	/* DEDENT to the first-level */
+	while (0 < _indent_cnt_) {
+		token = "\r";
+		prev  = this->parser(token, prev);
+		_indent_cnt_ --;
+	}
+	token = "\n";
+	prev = this->parser(token, prev);
 }
