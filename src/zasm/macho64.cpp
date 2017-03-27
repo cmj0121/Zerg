@@ -23,9 +23,9 @@ off_t Binary::dump(off_t entry, bool showSymb) {
 
 		seg_pagezero(_bin_);
 		seg_text(_bin_, size, entry, header_offset);
-		seg_linkedit(_bin_, this->_symb_);
+		seg_linkedit(_bin_, showSymb ? this->_symb_ : std::vector<std::string>{});
 		dyld_info(_bin_);
-		seg_symtab(_bin_, this->_symb_);
+		seg_symtab(_bin_, showSymb ? this->_symb_ : std::vector<std::string>{});
 		seg_dysymtab(_bin_);
 		dyld_link(_bin_);
 		seg_unixthread(_bin_, entry, header_offset);
@@ -33,7 +33,7 @@ off_t Binary::dump(off_t entry, bool showSymb) {
 		header_offset 	= _bin_.tellg();
 		binoff			= entry + header_offset;
 
-		if (true == showSymb && 0 == i) {
+		if (0 ==i) {
 			for (int idx = 0; idx < _inst_.size(); ++idx) {
 				std::string symb = _inst_[idx]->label();
 
@@ -47,12 +47,17 @@ off_t Binary::dump(off_t entry, bool showSymb) {
 					symlist.n_value		= binoff;
 
 					symblist.push_back(std::make_pair(symb,  symlist));
+					if (this->_symb_.end() != std::find(this->_symb_.begin(),
+															this->_symb_.end(), symb)) {
+						_D(LOG_CRIT, "Duplicate symbol `%s`", symb.c_str());
+					}
 					this->_symb_.push_back(symb);
 
 					symboff += symb.size() + 1;
 				}
 
-				binoff += _inst_[idx]->length();
+				if (showSymb)
+					binoff += _inst_[idx]->length();
 			}
 		}
 	}
