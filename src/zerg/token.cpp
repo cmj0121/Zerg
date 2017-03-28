@@ -73,6 +73,26 @@ ZergToken::ZergToken(std::string src) : std::string(src), _weight_(0) {
 	this->classify(src);
 }
 
+const char* ZergToken::c_str(void) const {
+	switch(this->_type_) {
+		case AST_ROOT:
+			StrCP(this->_buff_, "[ROOT]");
+			break;
+		case AST_NEWLINE:
+			StrCP(this->_buff_, "[NEWLINE]");
+			break;
+		case AST_INDENT:
+			StrCP(this->_buff_, "[INDENT]");
+			break;
+		case AST_DEDENT:
+			StrCP(this->_buff_, "[DEDENT]");
+			break;
+		default:
+			return std::string::c_str();
+	}
+	return (const char *)this->_buff_;
+}
+
 void ZergToken::setType(ASTType type) {
 	/* reset the type of the token */
 	this->_type_ = type;
@@ -154,5 +174,5 @@ void ZergToken::classify(std::string src) {
 			break;
 	}
 
-	_D(LOG_DEBUG, "classify token [0x%02X] %s", this->_type_, src.c_str());
+	_D(LOG_DEBUG3, "classify token [0x%02X] %s", this->_type_, src.c_str());
 }

@@ -505,7 +505,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 	}
 
 	/* translate AST to IR */
-	_D(LOG_DEBUG, "emit IR on %s #%zu", node->data().c_str(), namescope.size());
+	_D(LOG_INFO, "emit IR on %s (vars: #%zu)", node->data().c_str(), namescope.size());
 	switch(node->type()) {
 		case AST_ROOT:
 			/* NOP */
@@ -989,7 +989,7 @@ void Zerg::_load_namespace_(CFG *node, std::map<std::string, VType> &namescope) 
 						 *    ├── (
 						 *    └── )
 						 */
-						_D(LOG_DEBUG, "set %s as unknown", cur->data().c_str());
+						_D(LOG_DEBUG2, "set %s as unknown", cur->data().c_str());
 						namescope[cur->data()] = VTYPE_OBJECT;
 						break;
 					case 3:
@@ -1004,7 +1004,7 @@ void Zerg::_load_namespace_(CFG *node, std::map<std::string, VType> &namescope) 
 							break;
 						}
 					default:
-						_D(LOG_BUG, "Should never reach here %zd", cur->length());
+						_D(LOG_ERROR, "Should never reach here %zd", cur->length());
 						break;
 				}
 				break;

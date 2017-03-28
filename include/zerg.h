@@ -26,7 +26,7 @@ class Zerg : public IR {
 		std::string tmpreg(void);
 	protected:
 		void lexer(std::string src);						/* lexer analysis */
-		ZergToken& parser(ZergToken &cur, ZergToken &prev);	/* syntax and semantic analysis */
+		ZergToken& parser(ZergToken &cur, ZergToken prev);	/* syntax and semantic analysis */
 		void load_namespace(std::map<std::string, VType> &namescope);
 		void _load_namespace_(CFG *node, std::map<std::string, VType> &namescope);
 

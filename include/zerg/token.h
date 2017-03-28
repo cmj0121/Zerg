@@ -99,6 +99,7 @@ class ZergToken : public std::string {
 		ZergToken (const char *src="");
 		ZergToken (std::string src);
 
+		const char *c_str(void) const;
 		void setType(ASTType type);
 		ASTType type(void);
 		void setIndex(ZergToken *src);
@@ -109,6 +110,7 @@ class ZergToken : public std::string {
 		void classify(std::string src);
 	private:
 		int _weight_;
+		char _buff_[64];
 		ASTType _type_;
 };
 

@@ -4,12 +4,17 @@
 #include <iomanip>
 #include "zerg.h"
 
-ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
+ZergToken& Zerg::parser(ZergToken &cur, ZergToken prev) {
 	char buff[BUFSIZ] = {0};
 	CFG *tmp = NULL;
 
 	static CFG* node = NULL;
 	static bool shouldIndent = false;
+
+	if (AST_NEWLINE == cur.type() && AST_NEWLINE == prev.type()) {
+		_D(LOG_DEBUG3, "pass empty line");
+		goto END;
+	}
 
 	if (NULL == node) {
 		node = new CFG(CFG_MAIN);
@@ -25,7 +30,8 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 		}
 	}
 
-	_D(LOG_DEBUG, "parse %s (%X) with %s", cur.c_str(), cur.type(), prev.c_str());
+	_D(LOG_INFO, "parse %s (%X) with %s on L#%d", cur.c_str(), cur.type(),
+													prev.c_str(), _lineno_);
 	switch(cur.type()) {
 		case AST_NEWLINE:
 			switch(prev.type()) {
@@ -272,7 +278,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 				case AST_ELSE:
 				case AST_WHILE:
 				case AST_FUNC: case AST_CLASS:
-					_D(LOG_DEBUG, "should indent");
+					_D(LOG_DEBUG, "should INDENT");
 					shouldIndent = true;
 				case AST_BRACKET_OPEN:
 					break;
@@ -487,12 +493,12 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken &prev) {
 			_D(LOG_CRIT, "Not Implemented `%s` (0x%X)", cur.c_str(), cur.type());
 			break;
 	}
-
+END:
 	#if defined(DEBUG_AST) || defined(DEBUG)
 		if (NULL != node) {
 			AST* tmp = node->root();
 
-			std::cout << *tmp << std::endl;
+			std::cerr << *tmp << std::endl;
 		};
 	#endif /* DEBUG_AST */
 

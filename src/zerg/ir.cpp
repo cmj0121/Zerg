@@ -99,7 +99,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 				(*this) += new Instruction("mov", dst, src);
 			}
 		} else {
-			_D(LOG_BUG, "Need NOT assemble mov `%s` `%s`", dst.c_str(), src.c_str());
+			_D(LOG_ERROR, "Need NOT assemble mov `%s` `%s`", dst.c_str(), src.c_str());
 		}
 	} else if (op == "STORE") {			/* (STORE, DST, SRC, IDX, SIZE) */
 		/* Load data from memory with index if need */
@@ -152,7 +152,7 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string _i
 				(*this) += new Instruction("mov", dst, src);
 			}
 		} else {
-			_D(LOG_BUG, "Need NOT assemble mov `%s` `%s`", dst.c_str(), src.c_str());
+			_D(LOG_ERROR, "Need NOT assemble mov `%s` `%s`", dst.c_str(), src.c_str());
 		}
 	} else if (op == "ADD") {			/* (ADD,   DST, SRC) */
 		/* dst = dst + src */

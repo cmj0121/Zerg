@@ -9,7 +9,8 @@
 #endif /* end-of OS detected */
 
 /* general help function */
-#define StrCP(dst, src)		snprintf(dst, sizeof(dst), "%s", src)
+#include <stdio.h>
+#define StrCP(dst, src)		snprintf((char *)dst, sizeof(dst), "%s", src)
 #define ARRAY_SIZE(ctx)		(sizeof(ctx)/sizeof(ctx[0]))
 #define FREE(ctx)			{ if (NULL != ctx) free(ctx); (ctx) = NULL; }
 
@@ -51,18 +52,20 @@ extern int __verbose__;
 
 enum ZergLogLevel {
 	LOG_CRIT	= -1,	/* critical issue, need stop program */
-	LOG_BUG		= 0,	/* system bugs */
+	LOG_ERROR,			/* system error */
 	LOG_WARNING,		/* warning message */
 	LOG_INFO,			/* information */
 	LOG_DEBUG,			/* debug message */
+	LOG_DEBUG2,
+	LOG_DEBUG3,
 
-	ZASM_LOG_DISASM		= 1,
-	ZASM_LOG_WARNING	= 4,
+	ZASM_LOG_WARNING,
 	ZASM_LOG_INFO,
 	ZASM_LOG_DEBUG,
 
 	LOG_DEBUG_LEXER,
 	LOG_REGISTER_ALLOC,
+	ZASM_LOG_DISASM		= 1,
 };
 
 #include <stdio.h>

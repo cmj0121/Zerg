@@ -46,7 +46,8 @@ AST* AST::insert(AST *node) {
 		return this->child(0)->insert(node);
 	}
 
-	_D(LOG_INFO, "AST insert %s on `%s`", node->data().c_str(), cur->data().c_str());
+	_D(LOG_DEBUG, "AST insert `%s` (0x%X) on `%s`", node->data().c_str(), node->type(),
+													cur->data().c_str());
 	switch(node->type()) {
 		case AST_ADD:    case AST_SUB:     case AST_LIKE:
 			if (!IS_ATOM(cur)) {
@@ -142,7 +143,7 @@ AST* AST::insert(AST *node) {
 			node->insert(cur);
 			break;
 		default:
-			_D(LOG_DEBUG, "tree insert into `%s`", this->data().c_str());
+			_D(LOG_DEBUG2, "tree insert into `%s`", this->data().c_str());
 			Tree<AST>::insert(node);
 			break;
 	}
@@ -252,6 +253,8 @@ std::string AST::data(void) {
 	} else if (AST_STRING == this->_type_) {
 		/* return the raw string */
 		return this->_raw_.substr(1, this->_raw_.size()-2);
+	} else if (AST_ROOT == this->_type_) {
+		return "[ROOT]";
 	} else {
 		return this->_raw_;
 	}
