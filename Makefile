@@ -13,7 +13,7 @@ all: $(BIN) examples CI
 $(BIN): $(SUBDIR)
 	ln -sf src/$@.inst $@
 
-examples: $(BIN)
+examples: $(BIN) install
 
 $(SUBDIR):
 	ln -sf ../Makefile.in $@/Makefile.in
