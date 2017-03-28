@@ -1,5 +1,6 @@
 /* Copyright (C) 2014-2016 cmj. All right reserved. */
 
+#include <iostream>
 #include <iomanip>
 #include "zerg.h"
 

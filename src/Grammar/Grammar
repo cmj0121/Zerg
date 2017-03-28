@@ -7,7 +7,7 @@
 # SPEC - provide minimal usage arithmetic with variable assignment
 
 stmt   : [ assign | print ] NEWLINE
-assign : [ WORD '=' ] test
+assign : [ WORD '<-' ] test | test '->' WORD
 print  : 'print' test
 test   : or_test
 
@@ -20,7 +20,7 @@ bit_or   : bit_xor ( '|' bit_xor )*
 bit_xor  : bit_and ( '^' bit_and )*
 bit_and  : eq_test ( '&' eq_test )*
 
-eq_test  : cmp_test ( ( 'eq' | 'not' 'eq' ) cmp_test )*
+eq_test  : cmp_test ( ( '==' | 'eq' | 'not' 'eq' ) cmp_test )*
 cmp_test : shift    ( ( 'ls' | 'le' | 'ge' | 'gr') shift )*
 
 shift : arith ( ( '<<' | '>>' ) arith )*

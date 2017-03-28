@@ -24,6 +24,7 @@ static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 		DEF(">",	AST_GRATE_OR_EQUAL,	5),
 		DEF(">=",	AST_GRATE,			5),
 		DEF("eq",	AST_EQUAL,			6),
+		DEF("==",	AST_EQUAL,			6),
 
 		DEF("&",	AST_BIT_AND,		7),
 		DEF("^",	AST_BIT_XOR,		8),
@@ -42,7 +43,7 @@ static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 		DEF("}",	AST_DICT_CLOSE,			1),
 
 		/* reserved words */
-		DEF("=",		AST_ASSIGN,			0),
+		DEF("<-",		AST_ASSIGN,			0),
 		DEF("nop",		AST_NOP,			0),
 		DEF("while",	AST_WHILE,			0),
 		DEF("break",	AST_BREAK,			0),
