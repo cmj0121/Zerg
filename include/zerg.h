@@ -41,6 +41,10 @@ class Zerg : public IR {
 		std::vector<std::pair<std::string, std::string>> _symb_;
 		std::vector<std::string> _alloc_regs_ = { USED_REGISTERS };
 		std::map<std::string, std::string> _alloc_regs_map_;
+
+		/* instance property map */
+		std::map<std::string, std::vector<std::string>> _obj_property_;
+		std::map<std::string, std::string> _obj_instance_;
 };
 
 #endif /* __ZERG_H__ */
