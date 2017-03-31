@@ -5,26 +5,32 @@ allownonascii="true"
 # Redirect output to stderr.
 exec 1>&2
 
+while read oldrev newrev refname
+do
+	branch=$(git rev-parse --symbolic --abbrev-ref $refname)
 
-echo "\x1b[1;36m Run CI ... \x1b[m"
-git stash
+	if [ "master" = "${branch}" ]; then
+		echo "\x1b[1;36m Run CI ... \x1b[m"
+		git stash
 
-# Build the source code
-make clean              >/dev/null 2>&1
-make -j                 >/dev/null 2>&1
-if [ $? != 0 ]; then
-    echo "\x1b[1;31m Build Code fail ... \x1b[m"
-    exit 1
-fi
+		# Build the source code
+		make clean              >/dev/null 2>&1
+		make -j                 >/dev/null 2>&1
+		if [ $? != 0 ]; then
+			echo "\x1b[1;31m Build Code fail ... \x1b[m"
+			exit 1
+		fi
 
-# Build the example soure code
-make -C examples/ clean >/dev/null 2>&1
-make -C examples        >/dev/null 2>&1
-if [ $? != 0 ]; then
-    echo "\x1b[1;31m Run the example code fail ... \x1b[m"
-    exit 1
-fi
+		# Build the example soure code
+		make -C examples/ clean >/dev/null 2>&1
+		make -C examples        >/dev/null 2>&1
+		if [ $? != 0 ]; then
+			echo "\x1b[1;31m Run the example code fail ... \x1b[m"
+			exit 1
+		fi
 
-echo "\x1b[1;36m Run CI Success ! \x1b[m"
-git stash pop
+		echo "\x1b[1;36m Run CI Success ! \x1b[m"
+		git stash pop
+	fi
+done
 exit 0
