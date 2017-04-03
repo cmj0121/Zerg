@@ -15,26 +15,11 @@
 #define ZASM_MEM_QWORD		"qword"
 
 
-#ifdef __x86_64__
-#  define MAX_INSTRUCTION_LEN	16
-#  include "zasm/x86_64_inst.h"
-#endif /* __x86_64__ */
-
 #define VALID_SYMBOL(_symb_)	\
 	(_symb_ == ZASM_ENTRY_POINT || \
 	 ("" != _symb_ && '.' != _symb_[0] && '_' != _symb_[0]))
 
 
-class Utils {
-	public:
-		virtual ~Utils();
-
-		bool  isInt(std::string src);
-		off_t toInt(std::string src);
-
-		std::string unescape(std::string src);
-		std::string toHex(unsigned char *payload, size_t size);
-};
 class ZasmToken {
 	public:
 		ZasmToken() : _src_("") {};
@@ -68,76 +53,24 @@ class ZasmToken {
 };
 static ZasmToken EMPTY_TOKEN("");
 
-#include <fstream>
-class Instruction {
-	public:
-		Instruction(ZasmToken *cmd, ZasmToken *op1 = NULL, ZasmToken *op2=NULL);
-		Instruction(std::string cmd, std::string op1="", std::string op2="");
-		virtual ~Instruction() {};
+#include "zasm/instruction.h"
+#include "zasm/binary.h"
 
-		bool readdressable(void);
-		bool isLabel(void);
-		off_t setIMM(off_t imm, int size, bool reset=false);
-		off_t setIMM(std::string imm, int size, bool reset=false);
-		off_t length(void);
-
-		std::string label(void);
-		std::string refer(void);
-		std::string show(void);
-
-		virtual void assemble(void);
-
-		Instruction& operator << (std::fstream &dst);
-	private:
-		off_t _length_;
-		unsigned char _payload_[MAX_INSTRUCTION_LEN];
-		std::string _label_;
-
-		ZasmToken& cmd(void);
-		ZasmToken& dst(void);
-		ZasmToken& src(void);
-
-		off_t offset(void);
-		std::vector<ZasmToken *>_inst_;
-
-	#ifdef __x86_64__
-		void legacyPrefix(X86_64_INST &inst);
-		void opcode(X86_64_INST &inst);
-		void modRW(X86_64_INST &inst);
-		void displacement(X86_64_INST &inst);
-		void immediate(X86_64_INST &inst);
-	#endif /* __x86_64__ */
-};
-
-#include <vector>
-class Binary : public Utils {
-	public:
-		Binary(std::string src, bool pie=false);
-		virtual ~Binary();
-
-		/* binary-specified function */
-		off_t dump(off_t entry = 0x1000, bool symb=false);
-
-		void reallocreg(void);
-		off_t length(void);
-		off_t nrInst(void);
-		void insert(Instruction* inst, int pos);
-		Instruction *getInst(int pos);
-		std::string get(int pos);
-		Binary& operator+= (Instruction *inst);
-	private:
-		bool _pie_;
-		std::string  _src_;
-		std::fstream _bin_;
-		std::vector<Instruction *> _inst_;
-		std::vector<std::string> _symb_;
-};
+typedef struct _tag_zasm_args_ {
+	bool		pie;
+	bool		symbol;
+	std::string	dst;
+} ZasmArgs;
 
 class Zasm : public Binary {
 	public:
-		Zasm(std::string src, bool pie=false) : Binary(src, pie) {};
-		void compile(std::fstream &src, bool symb=false);
+		Zasm(ZasmArgs args) : Binary(args.dst, args.pie), _linono_(1), _args_(args) {};
+
+		void compile(std::string srcfile);
 		ZasmToken* token(std::fstream &src);
+	private:
+		int _linono_;
+		ZasmArgs _args_;
 };
 
 #endif /* __ZASM_H__ */
