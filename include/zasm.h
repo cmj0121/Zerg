@@ -14,12 +14,6 @@
 #define ZASM_MEM_DWORD		"dword"
 #define ZASM_MEM_QWORD		"qword"
 
-
-#define VALID_SYMBOL(_symb_)	\
-	(_symb_ == ZASM_ENTRY_POINT || \
-	 ("" != _symb_ && '.' != _symb_[0] && '_' != _symb_[0]))
-
-
 class ZasmToken {
 	public:
 		ZasmToken() : _src_("") {};
@@ -66,8 +60,7 @@ class Zasm : public Binary {
 	public:
 		Zasm(ZasmArgs args) : Binary(args.dst, args.pie), _linono_(1), _args_(args) {};
 
-		void compile(std::string srcfile);
-		ZasmToken* token(std::fstream &src);
+		void assemble(std::string srcfile, off_t entry=0x100000);
 	private:
 		int _linono_;
 		ZasmArgs _args_;

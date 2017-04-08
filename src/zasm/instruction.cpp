@@ -20,14 +20,6 @@ static X86_64_INST InstructionSets[] = {
 };
 
 
-Instruction::Instruction(ZasmToken *cmd, ZasmToken *op1, ZasmToken *op2) {
-	this->_inst_.push_back(cmd);
-	if (NULL != op1) this->_inst_.push_back(op1);
-	if (NULL != op2) this->_inst_.push_back(op2);
-
-	this->_length_    = 0;
-	this->assemble();
-}
 Instruction::Instruction(std::string cmd, std::string op1, std::string op2) {
 	this->_inst_.push_back(new ZasmToken(cmd));
 	if ("" != op1) this->_inst_.push_back(new ZasmToken(op1));
@@ -89,9 +81,9 @@ Instruction& Instruction::operator << (std::fstream &dst) {
 	std::stringstream ss;
 	if (this->cmd() == TOKEN_ASM && this->src()) {
 		ss << std::setw(7) << TOKEN_ASM << " " << this->dst().raw();
-		_D(ZASM_LOG_DISASM, "%-32s - %s", ss.str().c_str(), this->src().unescape().c_str());
+		_D(LOG_DISASM, "%-32s - %s", ss.str().c_str(), this->src().unescape().c_str());
 	} else if (this->cmd() == TOKEN_ASM) {
-		_D(ZASM_LOG_DISASM, "%-7s %s", this->cmd().raw().c_str(), this->dst().raw().c_str());
+		_D(LOG_DISASM, "%-7s %s", this->cmd().raw().c_str(), this->dst().raw().c_str());
 	} else {
 		std::stringstream src;
 		for (int i=0; i < this->length(); ++i) {
@@ -101,7 +93,7 @@ Instruction& Instruction::operator << (std::fstream &dst) {
 
 		src << std::setw(7) << this->cmd().raw()  <<  " "  <<  this->dst().raw()
 				<<  " " << this->src().raw();
-		_D(ZASM_LOG_DISASM, "%-32s - %s", src.str().c_str(), ss.str().c_str());
+		_D(LOG_DISASM, "%-32s - %s", src.str().c_str(), ss.str().c_str());
 	}
 	return (*this);
 }
@@ -130,7 +122,7 @@ off_t Instruction::setIMM(std::string imm, int size, bool reset) {
 off_t Instruction::setIMM(off_t imm, int size, bool reset) {
 	off_t off = imm;
 
-	_D(ZASM_LOG_DEBUG, "add immediate " OFF_T ", %d", imm, size);
+	_D(LOG_DEBUG, "add immediate " OFF_T ", %d", imm, size);
 	if (reset) {
 		this->_length_ -= size;
 	}
@@ -153,7 +145,7 @@ void Instruction::assemble(void) {
 	unsigned int idx = 0;
 	X86_64_INST inst;
 
-	_D(ZASM_LOG_WARNING, "Assemble `%s` `%s` `%s`",
+	_D(LOG_INFO, "Assemble `%s` `%s` `%s`",
 											this->cmd().raw().c_str(),
 											this->dst().raw().c_str(),
 											this->src().raw().c_str());
@@ -170,13 +162,13 @@ void Instruction::assemble(void) {
 			if (this->cmd() != inst.cmd) {
 				continue;
 			} else if (! this->dst().match(inst.op1) || ! this->src().match(inst.op2)) {
-				_D(ZASM_LOG_INFO, "%s 0x%02X not match %d %d",
+				_D(LOG_INFO, "%s 0x%02X not match %d %d",
 								inst.cmd, inst.opcode,
 								this->dst().match(inst.op1),
 								this->src().match(inst.op2));
 				continue;
 			}
-			_D(ZASM_LOG_INFO, "%s 0x%02X match %d %d",
+			_D(LOG_INFO, "%s 0x%02X match %d %d",
 							inst.cmd, inst.opcode,
 							this->dst().match(inst.op1),
 							this->src().match(inst.op2));

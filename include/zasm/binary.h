@@ -2,6 +2,9 @@
 #ifndef __ZASM_BINARY_H__
 #  define __ZASM_BINARY_H__
 
+#define VALID_SYMBOL(_symb_)	\
+	(_symb_ == ZASM_ENTRY_POINT || ("" != _symb_ && '.' != _symb_[0] && '_' != _symb_[0]))
+
 class Utils {
 	public:
 		virtual ~Utils();
@@ -15,23 +18,17 @@ class Utils {
 #include <vector>
 class Binary : public Utils {
 	public:
-		Binary(std::string src, bool pie=false);
+		Binary(std::string dst, bool pie=false) : _pie_(pie), _dst_(dst) {};
 		virtual ~Binary();
 
-		/* binary-specified function */
-		off_t dump(off_t entry = 0x1000, bool symb=false);
-
+		void dump(off_t entry = 0x1000, bool symb=false);	/* Binary-Specified */
 		void reallocreg(void);
 		off_t length(void);
-		off_t nrInst(void);
-		void insert(Instruction* inst, int pos);
-		Instruction *getInst(int pos);
-		std::string get(int pos);
+
 		Binary& operator+= (Instruction *inst);
 	private:
 		bool _pie_;
-		std::string  _src_;
-		std::fstream _bin_;
+		std::string _dst_;
 		std::vector<Instruction *> _inst_;
 		std::vector<std::string> _symb_;
 };

@@ -1047,7 +1047,7 @@ void Zerg::_load_namespace_(CFG *node, std::map<std::string, VType> &namescope) 
 						 *    ├── (
 						 *    └── )
 						 */
-						_D(LOG_DEBUG2, "set %s as unknown", cur->data().c_str());
+						_D(LOG_DEBUG, "set %s as unknown", cur->data().c_str());
 						namescope[cur->data()] = VTYPE_OBJECT;
 						break;
 					case 3:

@@ -74,22 +74,13 @@ int main(int argc, char *argv[]) {
 
 	if (0 == argc) {
 		help();
-	}
-
-	do {
-		std::string token;
-		std::vector<std::string> line;
-
-		if (0 >= argc) {
-			_D(LOG_CRIT, "Bad Parameter");
-			exit(-1);
-		}
-
+		return -1;
+	} else {
 		Zasm *bin = new Zasm(args);
-		bin->compile(argv[0]);
+		bin->assemble(argv[0]);
 
 		delete bin;
-	} while (0);
+	}
 
 	return 0;
 }

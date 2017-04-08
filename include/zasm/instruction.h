@@ -12,7 +12,6 @@
 #include <fstream>
 class Instruction {
 	public:
-		Instruction(ZasmToken *cmd, ZasmToken *op1 = NULL, ZasmToken *op2=NULL);
 		Instruction(std::string cmd, std::string op1="", std::string op2="");
 		virtual ~Instruction() {};
 

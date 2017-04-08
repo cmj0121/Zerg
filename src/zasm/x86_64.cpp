@@ -96,7 +96,7 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 
 			if (REX_B || REX_X || REX_R || REX_W) {
 				_payload_[_length_++] = 0x40 | (REX_W << 3) | (REX_R << 2) | (REX_X << 1) | REX_B;
-				_D(ZASM_LOG_WARNING, "Legacy Prefix - %02X", _payload_[_length_-1]);
+				_D(LOG_INFO, "Legacy Prefix - %02X", _payload_[_length_-1]);
 			}
 		}
 	}
@@ -104,7 +104,7 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 void Instruction::opcode(X86_64_INST &inst) {
 	/* NOTE  - Opcode        (1~2) */
 	if (INST_TWO_BYTE & inst.flags) {
-		_D(ZASM_LOG_WARNING, "Two Byte      - 0F");
+		_D(LOG_INFO, "Two Byte      - 0F");
 		_payload_[_length_++] = 0x0F;
 	}
 	_payload_[_length_++] = inst.opcode;
@@ -112,7 +112,7 @@ void Instruction::opcode(X86_64_INST &inst) {
 	if (inst.flags & INST_SECONDARY && this->dst()) {
 		_payload_[_length_-1] |= this->dst().asInt();
 	}
-	_D(ZASM_LOG_WARNING, "Opcode        - %02X", inst.opcode);
+	_D(LOG_INFO, "Opcode        - %02X", inst.opcode);
 
 	/* NOTE - Secondary Opcode  or Opcode Extension */
 	if (inst.flags & INST_OPCODE_EXT) {
@@ -138,7 +138,7 @@ void Instruction::opcode(X86_64_INST &inst) {
 		} else {
 			_payload_[_length_-1] |= (inst.flags & 0xF) << 3;	// Extension
 		}
-		_D(ZASM_LOG_WARNING, "Opcode Ext    - %02X", _payload_[_length_-1]);
+		_D(LOG_INFO, "Opcode Ext    - %02X", _payload_[_length_-1]);
 	}
 }
 void Instruction::modRW(X86_64_INST &inst) {
@@ -178,7 +178,7 @@ void Instruction::modRW(X86_64_INST &inst) {
 		}
 
 		_payload_[_length_++] = (mod & 0x3) << 6 | (reg & 0x7) << 3 | (rm & 0x7);
-		_D(ZASM_LOG_WARNING, "Mod R/W       - %02X", _payload_[_length_-1]);
+		_D(LOG_INFO, "Mod R/W       - %02X", _payload_[_length_-1]);
 	} else if (this->dst().isMEM2() || this->src().isMEM2()) {
 		ZasmToken *token = this->dst().isMEM2() ? this->dst().indexReg() : this->src().indexReg();
 
@@ -190,14 +190,14 @@ void Instruction::modRW(X86_64_INST &inst) {
 		reg = this->dst().isREG() ? this->dst().asInt() :
 						(this->src().isREG() ? this->src().asInt(): 0x0 );
 		_payload_[_length_++] = 0x04 | (reg & 0x07) << 3 | (mod << 6);
-		_D(ZASM_LOG_WARNING, "Mod R/W       - %02X", _payload_[_length_-1]);
+		_D(LOG_INFO, "Mod R/W       - %02X", _payload_[_length_-1]);
 
 		mod = 0x0;
 		rm  = this->dst().isMEM2() ? this->dst().asInt() : this->src().asInt();
 		reg = token->asInt();
 
 		_payload_[_length_++] = (mod & 0x3) << 6 | (reg & 0x7) << 3 | (rm & 0x7);
-		_D(ZASM_LOG_WARNING, "SIB           - %02X", _payload_[_length_-1]);
+		_D(LOG_INFO, "SIB           - %02X", _payload_[_length_-1]);
 		delete token;
 	} else if ((this->dst().isMEM() || this->src().isMEM()) || (inst.flags & INST_REG_OPERANDS)) {
 		reg = this->dst().isREG() ? this->dst().asInt() :
@@ -218,7 +218,7 @@ void Instruction::modRW(X86_64_INST &inst) {
 
 
 		if (! this->dst().isMEM() && this->src().isREF()) {
-			_D(ZASM_LOG_INFO, "EIP RIP or R13 ");
+			_D(LOG_INFO, "EIP RIP or R13 ");
 			rm = 0x05;	/* EIP / RIP / R13 */
 		} else if (this->dst().isMEM() || this->src().isMEM()) {
 			rm = this->dst().isMEM() ? this->dst().asInt() : this->src().asInt();
@@ -231,11 +231,11 @@ void Instruction::modRW(X86_64_INST &inst) {
 		}
 
 		_payload_[_length_++] = (mod & 0x3) << 6 | (reg & 0x7) << 3 | (rm & 0x7);
-		_D(ZASM_LOG_WARNING, "Mod R/W       - %02X", _payload_[_length_-1]);
+		_D(LOG_INFO, "Mod R/W       - %02X", _payload_[_length_-1]);
 
 		if (mod == 0x01 && NULL != this->src().indexReg()) {
 			_payload_[_length_++] = 0x0;
-			_D(ZASM_LOG_WARNING, "Mod R/W       - %02X", _payload_[_length_-1]);
+			_D(LOG_INFO, "Mod R/W       - %02X", _payload_[_length_-1]);
 		}
 	}
 }
@@ -258,7 +258,7 @@ void Instruction::displacement(X86_64_INST &inst) {
 	ret = token.offset();
 	ret = (0 > ret && INST_NONE == inst.op2) ? ~ret : ret;
 	ret = this->setIMM(token.offset(), 0 == (~0x7F & ret) ? 1 : 4);
-	if (ret) _D(ZASM_LOG_WARNING, "Displacement  - " OFF_T, ret);
+	if (ret) _D(LOG_INFO, "Displacement  - " OFF_T, ret);
 }
 void Instruction::immediate(X86_64_INST &inst) {
 	off_t ret = 0;
@@ -266,7 +266,7 @@ void Instruction::immediate(X86_64_INST &inst) {
 
 	if (this->src().isREF()) {
 		ret = this->setIMM(-1, size);
-		_D(ZASM_LOG_WARNING, "Immediate     - reference");
+		_D(LOG_INFO, "Immediate     - reference");
 	} else if (this->dst().isIMM() || this->src().isIMM()) {
 		ZasmToken token = this->dst().isIMM() ? this->dst() : this->src();
 
@@ -279,7 +279,7 @@ void Instruction::immediate(X86_64_INST &inst) {
 			if (this->dst().isIMM() && 1 == size) size = 4;
 		}
 		ret  = this->setIMM(token.asInt(), size);
-		_D(ZASM_LOG_WARNING, "Immediate     - " OFF_T, ret);
+		_D(LOG_INFO, "Immediate     - " OFF_T, ret);
 	}
 }
 #endif /* __x86_64__ */

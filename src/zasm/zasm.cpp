@@ -3,117 +3,99 @@
 #include <unistd.h>
 #include "zasm.h"
 
-void Zasm::compile(std::string srcfile) {
-	off_t entry = 0x100000;
-	std::vector<ZasmToken *> line;
-	ZasmToken *token = NULL;
+void Zasm::assemble(std::string srcfile, off_t entry) {
 	std::fstream src(srcfile, std::fstream::in);
+	std::string line;
+	std::vector<std::string> inst;
 
-	while (*(token = this->token(src)) != "") {
-		if (*token == TOKEN_ENTRY) {
-			entry = this->token(src)->asInt();
-			line.clear();
-		} else if (*token == ZASM_INCLUDE) {
-			std::string file = this->token(src)->unescape();
+	while (std::getline(src, line)) {
+		_D(LOG_DEBUG, "assemble `%s`", line.c_str());
 
-			_D(ZASM_LOG_INFO, "load external file `%s`", file.c_str());
-			if (0 != access(file.c_str(), F_OK)) {
-				_D(LOG_CRIT, "external file `%s` does NOT exist", file.c_str());
-			}
+		/* lexer analysis */
+		for (size_t i = 0; i <= line.size(); ++i) {
+			std::string tmp = "";
 
-			this->compile(file);
-		} else if (*token == "\n") {
-			for (size_t i = 0; i < line.size(); ++i) {
-				if (*line[i] == ZASM_MEM_BYTE  || *line[i] == ZASM_MEM_WORD ||
-					*line[i] == ZASM_MEM_DWORD || *line[i] == ZASM_MEM_QWORD) {
+			switch(line[i]) {
+				case '\0': case '\n': case '#':	/* End-Of-Instruction */
+					this->_linono_ ++;
+					goto ASSEMBLE;
+				case ' ': case '\t':			/* White Space */
+					/* IGNORE */
+					continue;
+				case '"': case '\'':			/* String */
+					tmp = line[i++];
+					while ('\0' != line[i]) {
+						tmp += line[i];
 
-					delete line[i];
-					line[i] = new ZasmToken(line[i]->raw() + " " + line[i+1]->raw());
+						if (tmp[0] == line[i]) break;
+						++i;
+					}
 
-					line.erase(line.begin()+i+1);
+					if (tmp[0] != line[i]) {
+						/* invalid syntax for string */
+						_D(LOG_CRIT, "syntax error - %s (L#%d)", line.c_str(), _linono_);
+					}
 					break;
-				}
-			}
+				case '[':						/* Memory */
+					tmp = line[i++];
+					while ('\0' != line[i]) {
+						tmp += line[i];
 
-			switch (line.size()) {
-				case 0:
-					/* NOP */
-					break;
-				case 1:
-					(*this) += new Instruction(line[0]);
-					break;
-				case 2:
-					(*this) += new Instruction(line[0], line[1]);
-					break;
-				case 3:
-					(*this) += new Instruction(line[0], line[1], line[2]);
+						if (']' == line[i]) break;
+						++i;
+					}
+
+					if (']' != line[i]) {
+						/* invalid syntax for memory */
+						_D(LOG_CRIT, "syntax error - %s (L#%d)", line.c_str(), _linono_);
+					}
 					break;
 				default:
-					_D(LOG_CRIT, "Not Implemented %zu", line.size());
-					exit(-1);
+					do {
+						/* simple token */
+						tmp += line[i++];
+					} while (! ('\0' == line[i] || ' ' == line[i] || '\t' == line[i]));
 					break;
 			}
-			line.clear();
-		} else {
-			line.push_back(token);
+
+			if ("" != tmp) {
+				std::string prev = 0 == inst.size() ? "" : inst[inst.size()-1];
+
+				/* show the zasm token */
+				_D(LOG_DEBUG_LEXER, "zasm token `%s`", tmp.c_str());
+
+				if (ZASM_MEM_BYTE  == prev || ZASM_MEM_WORD  == prev||
+					ZASM_MEM_DWORD == prev || ZASM_MEM_QWORD == prev) {
+					inst[inst.size()-1] += " " + tmp;
+				} else {
+					inst.push_back(tmp);
+				}
+			}
 		}
+
+		ASSEMBLE:
+		/* dump the machine code */
+		switch(inst.size()) {
+			case 0:
+				/* NOP*/
+				break;
+			case 1:
+				(*this) += new Instruction(inst[0]);
+				break;
+			case 2:
+				(*this) += new Instruction(inst[0], inst[1]);
+				break;
+			case 3:
+				(*this) += new Instruction(inst[0], inst[1], inst[2]);
+				break;
+			default:
+				_D(LOG_CRIT, "Not Support instruction - `%s`", line.c_str());
+				break;
+		}
+		inst.clear();
 	}
 
 	/* Output the binary */
-	this->dump(entry, this->_args_.symbol);
+	Binary::dump(entry, this->_args_.symbol);
 }
-ZasmToken* Zasm::token(std::fstream &src) {
-	char ch;
-	std::string token = "";
 
-	while (EOF != (ch = src.get())) {
-		switch (ch) {
-			case '#':				/* Ignore any comments */
-				while (EOF != (ch = src.get())) {
-					if ('\n' == ch) {
-						src.putback(ch);
-						break;
-					}
-				}
-				continue;
-			case '\n':				/* Always reply newline */
-				this->_linono_ ++;
-				token = '\n';
-				break;
-			case '\t': case ' ':	/* Ignore any white-space */
-				continue;
-			case '"': case '\'':	/* Special case - string */
-				token = ch;
-				while(EOF != (ch = src.get()) && ch != token[0]) {
-					token += ch;
-				}
-				token += ch;
-				break;
-			case '[':				/* Special case - memory */
-				token = ch;
-				while(EOF != (ch = src.get()) && '\n' != ch) {
-					token += ch;
-					if (']' == ch) {
-						break;
-					}
-				}
-				if (']' != token[token.size()-1]) {
-					_D(LOG_CRIT, "Syntax Error - '%s'", token.c_str());
-					exit(-1);
-				}
-				break;
-			default:
-				token = ch;
-				while(EOF != (ch = src.get())) {
-					if (' ' == ch || '\t' == ch || '\n' == ch) {
-						src.putback(ch);
-						break;
-					}
-					token += ch;
-				}
-				break;
-		}
-		break;
-	}
-	return new ZasmToken(token);
-}
