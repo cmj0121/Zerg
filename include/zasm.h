@@ -14,39 +14,6 @@
 #define ZASM_MEM_DWORD		"dword"
 #define ZASM_MEM_QWORD		"qword"
 
-class ZasmToken {
-	public:
-		ZasmToken() : _src_("") {};
-		ZasmToken(std::string src);
-
-		bool isREG(void);
-		bool isPosREG(void);
-		bool isMEM(void);
-		bool isMEM2(void);	/* Memory with two registers */
-		bool isIMM(void);
-		bool isEXT(void);
-		bool isREF(void);
-		bool isSSE(void);	/* Streaming SIMD Extensions */
-
-		ZasmToken* asReg(void);
-		ZasmToken* indexReg(void);
-		off_t asInt(void);
-		off_t offset(void);
-
-		int size(void);
-
-		std::string raw(void);
-		std::string unescape(void);
-
-		bool match(unsigned int flag);
-		bool operator== (std::string src);
-		bool operator!= (std::string src);
-		operator int() const;
-	private:
-		std::string _src_;
-};
-static ZasmToken EMPTY_TOKEN("");
-
 #include "zasm/instruction.h"
 #include "zasm/binary.h"
 

@@ -69,7 +69,7 @@ The header file [include/zasm.h](https://github.com/cmj0121/Zerg/blob/master/inc
 + Zasm 是一個前端的介面處理器
 + Binary 用來產生一個合法格式的可執行檔
 + Instruction 根據每一行的指令產生機械碼
-+ ZasmToken 處理指令符並且提供相對的狀態讓 Instruction 使用
++ InstToken 處理指令符並且提供相對的狀態讓 Instruction 使用
 
 在 class 'Zasm' 中，他擁有兩個內部函數：一個用來把組合語言分為若干個合法的指令符，
 另一個則是將每一行的指令符送給下一個 class (Instruction) 並且將機械碼純在一個陣列中。
@@ -101,7 +101,7 @@ give several class:
 + Zasm is the front-end interface.
 + Binary is used to generate the valid format binary
 + Instruction assembly machine code line-by-line
-+ ZasmToken process the assembly token and reply the status when need
++ InstToken process the assembly token and reply the status when need
 
 In class 'Zasm', it has two member function, one is token which separate the assembly into
 valid token, another is compile which put the tokens into next class (Instruction) and

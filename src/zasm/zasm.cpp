@@ -73,8 +73,7 @@ void Zasm::assemble(std::string srcfile, off_t entry) {
 			}
 		}
 
-		ASSEMBLE:
-		/* dump the machine code */
+		ASSEMBLE: /* dump the machine code */
 		switch(inst.size()) {
 			case 0:
 				/* NOP*/
@@ -92,6 +91,8 @@ void Zasm::assemble(std::string srcfile, off_t entry) {
 				_D(LOG_CRIT, "Not Support instruction - `%s`", line.c_str());
 				break;
 		}
+
+		/* tear-down */
 		inst.clear();
 	}
 

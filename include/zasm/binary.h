@@ -2,21 +2,8 @@
 #ifndef __ZASM_BINARY_H__
 #  define __ZASM_BINARY_H__
 
-#define VALID_SYMBOL(_symb_)	\
-	(_symb_ == ZASM_ENTRY_POINT || ("" != _symb_ && '.' != _symb_[0] && '_' != _symb_[0]))
-
-class Utils {
-	public:
-		virtual ~Utils();
-
-		bool  isInt(std::string src);
-		off_t toInt(std::string src);
-
-		std::string unescape(std::string src);
-		std::string toHex(unsigned char *payload, size_t size);
-};
 #include <vector>
-class Binary : public Utils {
+class Binary {
 	public:
 		Binary(std::string dst, bool pie=false) : _pie_(pie), _dst_(dst) {};
 		virtual ~Binary();
@@ -30,6 +17,5 @@ class Binary : public Utils {
 		bool _pie_;
 		std::string _dst_;
 		std::vector<Instruction *> _inst_;
-		std::vector<std::string> _symb_;
 };
 #endif /* __ZASM_BINARY_H__ */

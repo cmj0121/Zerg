@@ -11,6 +11,7 @@
 void Binary::dump(off_t entry, bool showSymb) {
 	off_t header_offset = 0;
 	std::fstream fp;
+	std::vector<std::string> symbs;
 	std::vector<std::pair<std::string, struct nlist_64>> symblist;
 
 	Binary::reallocreg();
@@ -24,9 +25,9 @@ void Binary::dump(off_t entry, bool showSymb) {
 
 		seg_pagezero(fp);
 		seg_text(fp, Binary::length(), entry, header_offset);
-		seg_linkedit(fp, showSymb ? this->_symb_ : std::vector<std::string>{});
+		seg_linkedit(fp, showSymb ? symbs : std::vector<std::string>{});
 		dyld_info(fp);
-		seg_symtab(fp, showSymb ? this->_symb_ : std::vector<std::string>{});
+		seg_symtab(fp, showSymb ? symbs : std::vector<std::string>{});
 		seg_dysymtab(fp);
 		dyld_link(fp);
 		seg_unixthread(fp, entry, header_offset);
@@ -34,11 +35,11 @@ void Binary::dump(off_t entry, bool showSymb) {
 		header_offset 	= fp.tellg();
 		binoff			= entry + header_offset;
 
-		if (0 ==i) {
-			for (int idx = 0; idx < _inst_.size(); ++idx) {
+		if (0 == i) {
+			for (unsigned int idx = 0; idx < _inst_.size(); ++idx) {
 				std::string symb = _inst_[idx]->label();
 
-				if (_inst_[idx]->isLabel() && VALID_SYMBOL(symb)) {
+				if (_inst_[idx]->isShowLabel()) {
 					struct nlist_64 symlist;
 
 					symlist.n_un.n_strx = symboff;
@@ -47,18 +48,18 @@ void Binary::dump(off_t entry, bool showSymb) {
 					symlist.n_desc		= REFERENCE_FLAG_UNDEFINED_NON_LAZY;
 					symlist.n_value		= binoff;
 
-					symblist.push_back(std::make_pair(symb,  symlist));
-					if (this->_symb_.end() != std::find(this->_symb_.begin(),
-															this->_symb_.end(), symb)) {
+					if (symbs.end() != std::find(symbs.begin(), symbs.end(), symb)) {
+						/* NOTE - duplicated symbol detected */
 						_D(LOG_CRIT, "Duplicate symbol `%s`", symb.c_str());
 					}
-					this->_symb_.push_back(symb);
 
+					symblist.push_back(std::make_pair(symb,  symlist));
+					symbs.push_back(symb);
 					symboff += symb.size() + 1;
+
+					binoff += _inst_[idx]->length();
 				}
 
-				if (showSymb)
-					binoff += _inst_[idx]->length();
 			}
 		}
 	}
