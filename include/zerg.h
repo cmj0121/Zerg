@@ -37,6 +37,7 @@ class Zerg : public IR {
 		int _labelcnt_, _lineno_, _regs_;
 		std::string _src_;
 		std::map<std::string, CFG *>_root_;
+		ZergArgs *_args_;
 
 		std::vector<std::pair<std::string, std::string>> _symb_;
 		std::vector<std::string> _alloc_regs_ = { USED_REGISTERS };
