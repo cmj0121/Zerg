@@ -88,27 +88,23 @@ into several simpler one, like
 
 
 ### Low-Level IR ###
-在這個 IR 設計中，提供的運算子盡可能貼近到底層的操作而不做過多的包裝。因此只使用下述 40 種運算子，
-這些運算子本身提供最低限度的邏輯來呈現一個程式，包含值之間傳遞、基本的數值運算、位元運算、
-條件判斷、函數呼叫、整數與浮點數的轉換、標籤與系統中斷。
+在這個 IR 設計中，提供的運算子盡可能貼近到底層的操作而不做過多的包裝。因此只使用下述 33
+種運算子，這些運算子本身提供最低限度的邏輯來呈現一個程式，包含值之間傳遞、基本的數值運算、
+位元運算、條件判斷、函數呼叫、整數與浮點數的轉換、標籤與系統中斷。
 
 The operators used in low-level IR is more like the assemble language but without any
-platform-dependent instructions. So the following 40 operators is the used in this stage. These
-operators provide the lower logical to describe a simple logical, like variable copy, basic
-arithmetic and bitwise operation, condition check, function call, transfer between integer and float,
-label and system interrupt.
+platform-dependent instructions. So the following 33 operators is the used in this stage.
+These operators provide the lower logical to describe a simple logical, like variable copy,
+basic arithmetic and bitwise operation, condition check, function call, transfer between
+integer and float, label and system interrupt.
 
 	:::
-	LOAD	STORE	XCHG
-	ADD		SUB		MUL		DIV		REM		INC		DEC
-	SHL		SHR		AND		OR		XOR		NOT		NEG		ABS
-	EQ		LS		LE		GT		GE
-	JMP		JMP_TRUE	JMP_FALSE
-	CALL	RET		PARAM
-	ITOF	FTOI
+	XCHG	LOAD	STORE
+	ADD		SUB		MUL		DIV		REM		INC		DEC		SHL		SHR
+	AND		OR		XOR		NOT		NEG		EQ		LS		LE		GT		GE
+	JMP		JMPIF
+	CALL	RET		PARAM	PROLOGUE		EPILOGUE
 	LABEL	NOP		INTERRUPT
-	PROLOGUE		EPILOGUE
-	LOCAL	GLOBAL	DELETE
 	ASM
 
 在這其中，會使用到幾個特殊的保留字：.local.var 表示儲存的資料為區域變數 (Local Variable)，
