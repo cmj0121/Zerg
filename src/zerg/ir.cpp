@@ -139,7 +139,7 @@ void IR::emit(STRING op, STRING _dst, STRING _src, STRING _idx, STRING _size) {
 				std::string tmpreg = this->tmpreg();
 
 				/* HACK - only allow created variable */
-				ALERT(_stack_.size() == pos && ("" != idx && src != __IR_LOCAL_VAR__));
+				ALERT(_stack_.size() == pos && ("" != idx && src != __IR_FUNC_STACK__));
 				if (_stack_.size() == pos) {
 					/* save into _stack_ */
 					_stack_.push_back(dst);
@@ -147,7 +147,7 @@ void IR::emit(STRING op, STRING _dst, STRING _src, STRING _idx, STRING _size) {
 
 				snprintf(buff, sizeof(buff), "[rbp-0X%X]", (pos+1) * 0x08);
 
-				if (src == __IR_LOCAL_VAR__ && "" != idx) {
+				if (src == __IR_FUNC_STACK__ && "" != idx) {
 					/* save the parameter into local variable */
 					(*this) += new Instruction("mov", tmpreg, idx);
 					(*this) += new Instruction("mov", buff, tmpreg);
@@ -177,7 +177,12 @@ void IR::emit(STRING op, STRING _dst, STRING _src, STRING _idx, STRING _size) {
 			break;
 		case IROP_LOAD:				/* (LOAD,  DST, SRC, IDX, SIZE) */
 			/* Load data from memory with index if need */
-			if (src == _src) {						 /* save local variable */
+			if (__IR_FUNC_STACK__ == src) {			/* function parameter */
+				ALERT(idx == "" || _size != ZASM_MEM_QWORD);
+
+				snprintf(buff, sizeof(buff), "%s [rbp+%s]", ZASM_MEM_QWORD, idx.c_str());
+				(*this) += new Instruction("mov", dst.data(), buff);
+			} else if (src == _src) {				/* save local variable */
 				pos = std::find(_stack_.begin(), _stack_.end(), src) - _stack_.begin();
 
 				if (_stack_.size() == pos) {

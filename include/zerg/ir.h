@@ -11,7 +11,7 @@
 #define __IR_REG_FMT__		".reg.%02d"
 #define __IR_LABEL_FMT__	".zerg.label.%d"
 #define __IR_SYSCALL_REG__	".reg.sys"
-#define __IR_LOCAL_VAR__	".local.var"
+#define __IR_FUNC_STACK__	".function.stack"
 #define __IR_DUMMY__		".dummy"
 
 /* Control-Flow */
@@ -65,6 +65,7 @@ typedef enum _tag_ir_ {
 	IROP_JMPIF,
 
 	/* subroutine */
+	IROP_LABEL,
 	IROP_CALL,
 	IROP_RET,
 	IROP_PARAM,
@@ -74,7 +75,6 @@ typedef enum _tag_ir_ {
 	/* extra */
 	IROP_INTERRUPT,
 	IROP_NOP,
-	IROP_LABEL,
 	IROP_ASM,
 } IROP;
 

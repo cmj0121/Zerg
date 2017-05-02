@@ -443,9 +443,11 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 				char idx[BUFSIZ] = {0};
 
 				y = x->child(i);
-				snprintf(idx, sizeof(idx), "[rbp+0x%zX]", (x->length()+1-i) * 0x08);
-				this->emit("STORE", y->data(), __IR_LOCAL_VAR__, idx);
-				namescope[y->data()] = VTYPE_PARAM;
+				y->setReg(++this->_regs_);
+				snprintf(idx, sizeof(idx), "0x%lX", (x->length()+1-i) * 0x08);
+				this->emit("LOAD", y->data(), __IR_FUNC_STACK__, idx, ZASM_MEM_QWORD);
+				this->emit("STORE", y->raw(), y->data());
+				namescope[y->raw()] = VTYPE_PARAM;
 			}
 
 			return ;
