@@ -20,6 +20,7 @@ $(SUBDIR):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
 clean: $(SUBDIR)
+	$(MAKE) -C examples $(MAKECMDGOALS)
 	rm -f $(BIN)
 
 install: $(SUBDIR)

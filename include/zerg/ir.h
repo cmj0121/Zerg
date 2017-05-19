@@ -11,7 +11,7 @@
 #define __IR_REG_FMT__		".reg.%02d"
 #define __IR_LABEL_FMT__	".zerg.label.%d"
 #define __IR_SYSCALL_REG__	".reg.sys"
-#define __IR_LOCAL_VAR__	".local.var"
+#define __IR_FUNC_STACK__	".function.stack"
 #define __IR_DUMMY__		".dummy"
 
 /* Control-Flow */
@@ -28,44 +28,77 @@
 
 #include <vector>
 #include <string>
-class IRToken {
-	public:
-		IRToken(std::string src);
 
-		ssize_t length(void) const;
+typedef enum _tag_ir_ {
+	IROP_UNKNOWN,	/* unknown IR op */
 
-		std::string op(void)   const;
-		std::string dst(void)  const;
-		std::string src(void)  const;
-		std::string idx(void)  const;
-		std::string size(void) const;
+	/* data-related */
+	IROP_XCHG,
+	IROP_STORE,
+	IROP_LOAD,
 
-		friend std::ostream& operator <<(std::ostream &stream, const IRToken &src);
-	private:
-		std::vector<std::string> _src_;
-};
+	/* arithmetic */
+	IROP_ADD,
+	IROP_SUB,
+	IROP_MUL,
+	IROP_DIV,
+	IROP_REM,
+	IROP_INC,
+	IROP_DEC,
+	IROP_SHL,
+	IROP_SHR,
+
+	/* logical */
+	IROP_AND,
+	IROP_OR,
+	IROP_XOR,
+	IROP_NOT,
+	IROP_NEG,
+	IROP_EQ,
+	IROP_LS,
+	IROP_LE,
+	IROP_GE,
+	IROP_GT,
+
+	/* control flow */
+	IROP_JMP,
+	IROP_JMPIF,
+
+	/* subroutine */
+	IROP_LABEL,
+	IROP_CALL,
+	IROP_RET,
+	IROP_PARAM,
+	IROP_PROLOGUE,
+	IROP_EPILOGUE,
+
+	/* extra */
+	IROP_INTERRUPT,
+	IROP_NOP,
+	IROP_ASM,
+} IROP;
 
 class IR : public Binary {
 	public:
 		IR(std::string dst, ZergArgs *args);
 		~IR(void);
 
-		void emit(IRToken *token);
-		void emit(std::string op, std::string dst, std::string src, std::string idx, std::string size);
+		/* compile the IR from source code */
 		void compile(std::string src);
+		/* emit from IR to machine code */
+		void emit(STRING op, STRING dst, STRING src, STRING idx, STRING size);
+		IROP opcode(std::string src);
 
 		virtual std::string regalloc(std::string src, std::string size="") = 0;
 		virtual void regsave(std::string src) = 0;
 		virtual void resetreg(void) = 0;
 		virtual std::string tmpreg(void) = 0;
 	protected:
-		bool _only_ir_;
-		std::string randstr(unsigned int size=24, std::string prefix="__", std::string suffix="__");
+		std::string randstr(unsigned int size=24, std::string prefix=".");
 		std::vector<std::string> _repeate_label_, _stack_;
 	private:
-		int _param_nr_;
-		bool _symb_;
-		off_t _entry_;
+		int _param_nr_, _lineno_;
+		ZergArgs *_args_;
 };
 
 #endif /* __ZERG_IR_H__ */

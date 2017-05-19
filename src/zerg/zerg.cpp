@@ -10,6 +10,7 @@ Zerg::Zerg(std::string dst, ZergArgs *args) : IR(dst, args) {
 	this->_labelcnt_	= 0;
 	this->_lineno_		= 1;
 	this->_regs_		= 0;
+	this->_args_		= args;
 }
 Zerg::~Zerg() {
 	/* delete the AST node */
@@ -22,8 +23,6 @@ void Zerg::compile(std::string src, ZergArgs *args) {
 	if (args->_compile_ir_) {
 		IR::compile(src);
 	} else {
-		this->_only_ir_ = args->_only_ir_;
-
 		/* load the built-in library if possible */
 		if (0 == access(BUILTIN_LIBRARY, F_OK) && false == args->_no_stdlib_) {
 			_D(LOG_INFO, "Load the built-in library `%s`", BUILTIN_LIBRARY);
@@ -192,7 +191,7 @@ void Zerg::_compileCFG_(CFG *node, std::map<std::string, VType> &namescope) {
 		} else {
 			label = node->nextCFG(false)->label();
 		}
-		this->emit("JMP_FALSE", label, node->data());
+		this->emit("JMPIF", label, node->data());
 	} else if (node->isBranch() && NULL != (tmp = node->nextCFG(true))) {
 		/* end of branch node, jump to next stage */
 		this->emit("JMP", tmp->label());
@@ -298,7 +297,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 			x = node->child(0);
 			y = node->child(1);
 			this->emitIR(x, namescope);
-			this->emit("JMP_FALSE", tmp, x->data());
+			this->emit("JMPIF", tmp, x->data());
 			this->emitIR(y, namescope);
 			this->emit("STORE", x->data(), y->data(), x->getIndex(), x->getIndexSize());
 			this->emit("LABEL", tmp);
@@ -444,9 +443,11 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 				char idx[BUFSIZ] = {0};
 
 				y = x->child(i);
-				snprintf(idx, sizeof(idx), "[rbp+0x%zX]", (x->length()+1-i) * 0x08);
-				this->emit("STORE", y->data(), __IR_LOCAL_VAR__, idx);
-				namescope[y->data()] = VTYPE_PARAM;
+				y->setReg(++this->_regs_);
+				snprintf(idx, sizeof(idx), "0x%lX", (x->length()+1-i) * 0x08);
+				this->emit("LOAD", y->data(), __IR_FUNC_STACK__, idx, ZASM_MEM_QWORD);
+				this->emit("STORE", y->raw(), y->data());
+				namescope[y->raw()] = VTYPE_PARAM;
 			}
 
 			return ;
@@ -781,7 +782,7 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 		case AST_PRINT:
 			/* FIXME - hand-code for build-in function: str() */
 
-			tmp = this->randstr(10, "__", "");
+			tmp = this->randstr(10, "__");
 			ALERT(0 == node->length());
 			x= node->child(0);
 
@@ -925,8 +926,8 @@ void Zerg::emitIR(AST *node, std::map<std::string, VType> &namescope) {
 	}
 }
 /* wrapper for the IR emitter */
-void Zerg::emit(std::string op, std::string dst, std::string src, std::string idx, std::string size) {
-	if (this->_only_ir_) {
+void Zerg::emit(STRING op, STRING dst, STRING src, STRING idx, STRING size) {
+	if (this->_args_->_only_ir_) {
 		if ('#' == op[0]) {
 			if ("#!" != op.substr(0, 2)) {
 				std::cout << "\n";
