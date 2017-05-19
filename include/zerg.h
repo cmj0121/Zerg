@@ -7,8 +7,9 @@
 #include "zerg/ir.h"
 #include "zerg/cfg.h"
 
-#define ZERG_VERSION		"1.0"
-#define BUILTIN_LIBRARY		"/usr/local/lib/zerg/__builtin__.zg"
+#define ZERG					"zerg"
+#define ZERG_VERSION			"1.0"
+#define BUILTIN_LIBRARY			"__builtin__.zg"
 
 #include <string>
 #include <map>

@@ -43,7 +43,7 @@ static const std::map<std::string, std::pair<ASTType, int>> _map_ = {
 		DEF("}",	AST_DICT_CLOSE,			1),
 
 		/* reserved words */
-		DEF("<-",		AST_ASSIGN,			0),
+		DEF("=",		AST_ASSIGN,			0),
 		DEF("nop",		AST_NOP,			0),
 		DEF("while",	AST_WHILE,			0),
 		DEF("break",	AST_BREAK,			0),

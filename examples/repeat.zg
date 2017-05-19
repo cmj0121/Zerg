@@ -1,7 +1,7 @@
 #! /usr/bin/env zerg
 
-x <- 0
+x = 0
 while not x eq 10:
-	x <- x + 2
+	x = x + 2
 	print 1
 print 0

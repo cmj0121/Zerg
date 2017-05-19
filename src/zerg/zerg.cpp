@@ -24,9 +24,19 @@ void Zerg::compile(std::string src, ZergArgs *args) {
 		IR::compile(src);
 	} else {
 		/* load the built-in library if possible */
-		if (0 == access(BUILTIN_LIBRARY, F_OK) && false == args->_no_stdlib_) {
-			_D(LOG_INFO, "Load the built-in library `%s`", BUILTIN_LIBRARY);
-			this->lexer(BUILTIN_LIBRARY);
+		const char *libpaths[] = {
+			BUILTIN_LIBRARY,
+			"LIBS/" BUILTIN_LIBRARY,
+			"/usr/lib/" ZERG "/" BUILTIN_LIBRARY,
+			"/usr/local/lib/" ZERG "/" BUILTIN_LIBRARY,
+		};
+
+		for (int i = 0; i < ARRAY_SIZE(libpaths); ++i) {
+			if (0 == access(libpaths[i], F_OK) && false == args->_no_stdlib_) {
+				_D(LOG_INFO, "Load the built-in library `%s`", libpaths[i]);
+				this->lexer(libpaths[i]);
+				break;
+			}
 		}
 		this->lexer(src);
 

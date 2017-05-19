@@ -6,21 +6,19 @@ VIMRC=$(wildcard *.vim)
 BIN=zasm zerg
 
 
-.PHONY: all clean install $(SUBDIR) examples
+.PHONY: all clean install $(SUBDIR)
 
-all: $(BIN) examples CI
+all: $(BIN) CI
 
 $(BIN): $(SUBDIR)
 	ln -sf src/$@.inst $@
 
-examples: $(BIN) install
 
 $(SUBDIR):
 	ln -sf ../Makefile.in $@/Makefile.in
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
 clean: $(SUBDIR)
-	$(MAKE) -C examples $(MAKECMDGOALS)
 	rm -f $(BIN)
 
 install: $(SUBDIR)

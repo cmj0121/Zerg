@@ -51,7 +51,7 @@ syn keyword ZERGStatement     nop as return yield
 syn keyword ZERGStatement     func cls nextgroup=ZERGFunction skipwhite
 syn keyword ZERGStatement     syscall del
 syn keyword ZERGLogical       eq not in and or not xor
-syn match   ZERGAssign        "\(<-\|->\)"
+syn match   ZERGAssign        "\(=\|->\)"
 syn keyword ZERGCondition     if else
 syn keyword ZERGRepeat        while break continue
 syn match   ZERGFunction      "\%(\(func\|cls\)\s\+\)\@<=\w\+" contained
