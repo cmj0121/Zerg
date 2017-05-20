@@ -58,6 +58,7 @@ enum ZergLogLevel {
 	LOG_DEBUG,			/* debug message 						*/
 	LOG_DEBUG_LEXER,	/* debug lexer 							*/
 	LOG_REGISTER_ALLOC,	/* debug register allocation algo. 		*/
+
 	LOG_DISASM = 1,		/* show assembly 						*/
 };
 
