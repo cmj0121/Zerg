@@ -103,7 +103,7 @@ off_t Instruction::offset(void) {
 off_t Instruction::setIMM(off_t imm, int size, bool reset) {
 	off_t off = imm;
 
-	_D(LOG_DEBUG, "add immediate " OFF_T ", %d", imm, size);
+	_D(LOG_ZASM_DEBUG, "add immediate " OFF_T ", %d", imm, size);
 	if (reset) {
 		this->_length_ -= size;
 	}
@@ -132,13 +132,13 @@ void Instruction::assemble(void) {
 		if (this->cmd != inst.cmd) {
 			continue;
 		} else if (! this->dst.match(inst.op1) || ! this->src.match(inst.op2)) {
-			_D(LOG_INFO, "%s 0x%02X not match %d %d",
+			_D(LOG_ZASM_INFO, "%s 0x%02X not match %d %d",
 							inst.cmd, inst.opcode,
 							this->dst.match(inst.op1),
 							this->src.match(inst.op2));
 			continue;
 		}
-		_D(LOG_INFO, "%s 0x%02X match %d %d",
+		_D(LOG_ZASM_INFO, "%s 0x%02X match %d %d",
 						inst.cmd, inst.opcode,
 						this->dst.match(inst.op1),
 						this->src.match(inst.op2));

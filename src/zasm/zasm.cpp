@@ -8,9 +8,9 @@ void Zasm::assemble(std::string srcfile) {
 	std::string line;
 	std::vector<std::string> inst;
 
-	_D(LOG_INFO, "assemble zasm source `%s`", srcfile.c_str());
+	_D(LOG_ZASM_INFO, "assemble zasm source `%s`", srcfile.c_str());
 	while (std::getline(src, line)) {
-		_D(LOG_DEBUG, "assemble `%s`", line.c_str());
+		_D(LOG_ZASM_DEBUG, "assemble `%s`", line.c_str());
 
 		/* lexer analysis */
 		for (size_t i = 0; i <= line.size(); ++i) {
@@ -80,7 +80,7 @@ void Zasm::assemble(std::string srcfile) {
 		for (size_t i = 1; i < inst.size(); ++i) {
 			if (InstToken(inst[i]).isREF() && 0 != this->_map_.count(inst[i].substr(1))) {
 				if ("" != this->_map_[inst[i].substr(1)]) {
-					_D(LOG_INFO, "replace `%s` -> `%s`", inst[i].c_str(),
+					_D(LOG_ZASM_INFO, "replace `%s` -> `%s`", inst[i].c_str(),
 												this->_map_[inst[i].substr(1)].c_str());
 					inst[i] = this->_map_[inst[i].substr(1)];
 				}
