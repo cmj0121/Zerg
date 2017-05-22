@@ -1,12 +1,12 @@
-ZASM_SRC=$(wildcard *.zs)
-ZERG_SRC=$(wildcard *.zg)
-
 OS=$(shell uname)
 ifeq ($(OS), Darwin)
+ZASM_SRC=$(wildcard maxosx/*.zs)
 ZASM_CASES=$(subst .zs,.case,$(ZASM_SRC))
+ZERG_SRC=$(wildcard *.zg)
 ZERG_CASES=$(subst .zg,.case,$(ZERG_SRC))
 else
-ZASM_CASES=
+ZASM_SRC=$(wildcard linux_x86_64/*.zs)
+ZASM_CASES=$(subst .zs,.case,$(ZASM_SRC))
 ZERG_CASES=
 endif
 
@@ -17,7 +17,7 @@ all: zerg zasm
 zasm: $(ZASM_CASES)
 zerg: $(ZERG_CASES)
 
-helloWorld.case: helloWorld.zs
+%helloWorld.case: %helloWorld.zs
 	@../zasm -o $@ $^
 	test "`./$@ 2>&1 >/dev/null`" == 'Welcome to ZASM - A prototype for a simple assembler'
 	test "`./$@ 2>/dev/null`"     == 'Hello World'
