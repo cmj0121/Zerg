@@ -2,7 +2,7 @@ ZIP		- 3
 TITLE	- Design of the Zerg assembler
 AUTHOR	- cmj<cmj@cmj.tw>
 STATUS	- Activate
-UPDATE	- 2017/05/19
+UPDATE	- 2017/05/22
 
 # 簡介 #
 Zasm (Zerg assembler) 是 Zerg 用來產生機械碼的一個直譯器。
@@ -33,9 +33,8 @@ Zasm 目前支援兩種數字型態的表示：十進位整數與十六進位整
 在 Zasm 中擁有多個表留字並都有相對應的使用用途：
 
 	1. .zasm.entry 是 Zasm 程式的進入點，也是第一個執行到的子程序。
-	2. ENTRY 是用來設定 Zasm 產生的程式碼的記憶體進入點。
-	3. 變數後面結尾帶有冒號 ':' 則代表是一個定位標籤，可以被視為是一個子程序的開頭。
-	4. `define` 則是定義一個變數所擁有的內容。
-	5. `include` 可以引用外部函式庫，包含程式碼與 zasm 編譯好的物件檔。
+	2. 變數後面結尾帶有冒號 ':' 則代表是一個定位標籤，可以被視為是一個子程序的開頭。
+	3. `define` 則是定義一個變數所擁有的內容。
+	4. `include` 可以引用外部函式庫，包含程式碼與 zasm 編譯好的物件檔。
 
 # vim: set ft=markdown:

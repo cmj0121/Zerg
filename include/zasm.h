@@ -5,9 +5,8 @@
 #include "utils.h"
 
 #define ZASM_VERSION		"1.1"
-#define ZASM_ENTRY_POINT	".zasm.entry." ZASM_VERSION
+#define ZASM_ENTRY_POINT	".zasm.entry"
 
-#define ZASM_ENTRY_ADDR		"ENTRY"
 #define ZASM_DEFINE			"define"
 #define ZASM_INCLUDE		"include"
 
@@ -30,16 +29,12 @@ typedef struct _tag_zasm_args_ {
 
 class Zasm : public Binary {
 	public:
-		Zasm(ZasmArgs args) : Binary(args.dst, args.pie), _linono_(1), _args_(args) {};
+		Zasm(ZasmArgs args) : Binary(args.dst, args.pie), _args_(args) {};
 		virtual ~Zasm(void) {
 			/* Output the binary */
 			Binary::dump(this->_args_.entry, this->_args_.symbol);
 		}
-
-		void assemble(std::string srcfile);
 	private:
-		int _linono_;
-		std::map<std::string, std::string> _map_;
 		ZasmArgs _args_;
 };
 
