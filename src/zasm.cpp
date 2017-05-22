@@ -36,6 +36,7 @@ int main(int argc, char *argv[]) {
 	ZasmArgs args = {
 		.pie	= false,
 		.symbol	= false,
+		.entry	= 0x100000,
 		.dst	= "a.out",
 	};
 
@@ -78,7 +79,6 @@ int main(int argc, char *argv[]) {
 	} else {
 		Zasm *bin = new Zasm(args);
 		bin->assemble(argv[0]);
-
 		delete bin;
 	}
 

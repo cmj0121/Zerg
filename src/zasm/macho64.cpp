@@ -56,10 +56,10 @@ void Binary::dump(off_t entry, bool showSymb) {
 					symblist.push_back(std::make_pair(symb,  symlist));
 					symbs.push_back(symb);
 					symboff += symb.size() + 1;
-
-					binoff += _inst_[idx]->length();
 				}
 
+				/* offset of the symbol address */
+				binoff += _inst_[idx]->length();
 			}
 		}
 	}
