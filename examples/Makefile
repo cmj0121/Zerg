@@ -3,14 +3,19 @@ ZERG_SRC=$(wildcard *.zg)
 
 OS=$(shell uname)
 ifeq ($(OS), Darwin)
-CASES=$(subst .zs,.case,$(ZASM_SRC)) $(subst .zg,.case,$(ZERG_SRC))
+ZASM_CASES=$(subst .zs,.case,$(ZASM_SRC))
+ZERG_CASES=$(subst .zg,.case,$(ZERG_SRC))
 else
-CASES=
+ZASM_CASES=
+ZERG_CASES=
 endif
 
-.PHONY: all
+.PHONY: all zerg zasm
 
-all: $(CASES)
+all: zerg zasm
+
+zasm: $(ZASM_CASES)
+zerg: $(ZERG_CASES)
 
 helloWorld.case: helloWorld.zs
 	@../zasm -o $@ $^
@@ -67,4 +72,4 @@ buffer.case: buffer.zg
 .PHONY: clean
 
 clean:
-	rm -f $(CASES) *.zgr
+	rm -f $(ZASM_CASES) $(ZERG_CASES)
