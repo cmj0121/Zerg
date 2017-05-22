@@ -174,5 +174,5 @@ void ZergToken::classify(std::string src) {
 			break;
 	}
 
-	_D(LOG_DEBUG3, "classify token [0x%02X] %s", this->_type_, src.c_str());
+	_D(LOG_DEBUG, "classify token [0x%02X] %s", this->_type_, src.c_str());
 }

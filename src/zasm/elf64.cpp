@@ -8,17 +8,15 @@
 #include <sys/stat.h>
 #include "zasm.h"
 
-off_t Binary::dump(off_t entry, bool symb) {
+void Binary::dump(off_t entry, bool symb) {
 	Elf64_Ehdr header = {0};
 	Elf64_Phdr segment = {0};
+	std::fstream fp;
 
-	/* Reallocate all address if need */
-	this->reallocreg();
-	_bin_.open(_src_, std::fstream::out | std::fstream::binary | std::fstream::trunc);
-
+	Binary::reallocreg();
+	fp.open(_dst_, std::fstream::out | std::fstream::binary | std::fstream::trunc);
 
 	{
-
 		segment.p_type		= PT_LOAD;
 		segment.p_flags		= PF_R | PF_X;
 		segment.p_offset	= 0x0;
@@ -56,23 +54,22 @@ off_t Binary::dump(off_t entry, bool symb) {
 	}
 
 
-	_bin_.write((char *)&header, sizeof(header));
-	_bin_.write((char *)&segment, sizeof(Elf64_Phdr));
+	fp.write((char *)&header, sizeof(header));
+	fp.write((char *)&segment, sizeof(Elf64_Phdr));
 
 	/* Write machine code */
 	for (unsigned int idx = 0; idx < _inst_.size(); ++idx) {
-		(*_inst_[idx]) << _bin_;
+		(*_inst_[idx]) << fp;
 	}
 
-	segment.p_filesz	= _bin_.tellg();
+	segment.p_filesz	= fp.tellg();
 	segment.p_memsz		= segment.p_filesz;
 
-	_bin_.seekp(sizeof(header));
-	_bin_.write((char *)&segment, sizeof(Elf64_Phdr));
+	fp.seekp(sizeof(header));
+	fp.write((char *)&segment, sizeof(Elf64_Phdr));
 
-	_bin_.close();
-	chmod(_src_.c_str(), 0755);
-	return (off_t)0;
+	fp.close();
+	chmod(_dst_.c_str(), 0755);
 }
 
 #endif /* __linux__ */

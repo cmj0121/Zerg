@@ -144,7 +144,7 @@ AST* AST::insert(AST *node) {
 			node->insert(cur);
 			break;
 		default:
-			_D(LOG_DEBUG2, "tree insert into `%s`", this->data().c_str());
+			_D(LOG_DEBUG, "tree insert into `%s`", this->data().c_str());
 			Tree<AST>::insert(node);
 			break;
 	}

@@ -9,41 +9,38 @@
 #   error "You need define REGISTERS first"
 #endif /* REGISTERS */
 
-ZasmToken::ZasmToken(std::string src) : _src_(src) {
-}
-
-bool ZasmToken::isREG(void) {
+bool InstToken::isREG(void) {
 	const std::vector<std::string> regs = { REGISTERS };
 	unsigned int idx = std::find(regs.begin(), regs.end(), this->_src_) - regs.begin();
 
 	return idx != regs.size() || this->isSSE();
 }
-bool ZasmToken::isPosREG(void) {
+bool InstToken::isPosREG(void) {
 	return this->isREG() && (4 == this->asInt() % 8 || 5 == this->asInt() % 8);
 }
-bool ZasmToken::isMEM(void) {
+bool InstToken::isMEM(void) {
 	bool blRet = false;
 
 	if (true == (blRet = this->isREF())) {
-		_D(ZASM_LOG_INFO, "treat reference as memory space");
+		_D(LOG_ZASM_INFO, "treat reference as memory space");
 		goto END;
 	} else if ("" != this->_src_ && '[' == this->_src_[0]) {
-		_D(ZASM_LOG_DEBUG, "simple memory space without size specified");
+		_D(LOG_ZASM_DEBUG, "simple memory space without size specified");
 		blRet = true;
 		goto END;
 	} else if ( (0 == this->_src_.find(ZASM_MEM_BYTE)  && '[' == this->_src_[5]) ||
 				(0 == this->_src_.find(ZASM_MEM_WORD)  && '[' == this->_src_[5]) ||
 				(0 == this->_src_.find(ZASM_MEM_DWORD) && '[' == this->_src_[6]) ||
 				(0 == this->_src_.find(ZASM_MEM_QWORD) && '[' == this->_src_[6])) {
-		_D(ZASM_LOG_DEBUG, "simple memory space with size specified");
+		_D(LOG_ZASM_DEBUG, "simple memory space with size specified");
 		blRet = true;
 		goto END;
 	}
 END:
 	return blRet;
 }
-bool ZasmToken::isMEM2(void) {
-	ZasmToken *token = NULL;
+bool InstToken::isMEM2(void) {
+	InstToken *token = NULL;
 
 	if (!this->isMEM() || NULL == (token = this->indexReg())) {
 		return false;
@@ -51,7 +48,7 @@ bool ZasmToken::isMEM2(void) {
 	delete token;
 	return true;
 }
-bool ZasmToken::isIMM(void) {
+bool InstToken::isIMM(void) {
 	bool blRet = false;
 
 	if (*this == "") {
@@ -79,7 +76,7 @@ bool ZasmToken::isIMM(void) {
 END:
 	return blRet;
 }
-bool ZasmToken::isEXT(void) {
+bool InstToken::isEXT(void) {
 	if (this->isREF()) {
 		return false;
 	} else if (this->isREG()) {
@@ -89,22 +86,22 @@ bool ZasmToken::isEXT(void) {
 		idx = std::find(regs.begin(), regs.end(), this->_src_) - regs.begin();
 		return idx != regs.size();
 	} else if (this->isMEM()) {
-		ZasmToken *tmp = this->asReg();
+		InstToken *tmp = this->asReg();
 		return tmp->isEXT();
 	}
 	return false;
 }
-bool ZasmToken::isREF(void) {
+bool InstToken::isREF(void) {
 	/* Check is reference or not */
 	return '&' == this->_src_[0];
 }
-bool ZasmToken::isSSE(void) {
+bool InstToken::isSSE(void) {
 	/* Streaming SIMD Extensions Register */
 
 	return 0 == this->_src_.find("xmm");
 }
 
-off_t ZasmToken::asInt(void) {
+off_t InstToken::asInt(void) {
 	if ('&' == this->_src_[0]) {
 		return (off_t)-1;
 	} else if (this->isSSE()) {
@@ -133,7 +130,7 @@ off_t ZasmToken::asInt(void) {
 		exit(-1);
 	}
 }
-ZasmToken* ZasmToken::asReg(void) {
+InstToken* InstToken::asReg(void) {
 	if (!(this->isREG() || this->isMEM())) {
 		_D(LOG_CRIT, "Only support register or member");
 		exit(-1);
@@ -153,12 +150,12 @@ ZasmToken* ZasmToken::asReg(void) {
 			if (' ' == _src_[end] || ']' == _src_[end]) break;
 			if ('+' == _src_[end] || '-' == _src_[end]) break;
 		}
-		return new ZasmToken(_src_.substr(start, end-start));
+		return new InstToken(_src_.substr(start, end-start));
 	}
 }
-ZasmToken* ZasmToken::indexReg(void) {
+InstToken* InstToken::indexReg(void) {
 	std::string substr;
-	ZasmToken *token = NULL, *tmpToken = NULL;
+	InstToken *token = NULL, *tmpToken = NULL;
 
 	for (unsigned int s = 0; s < _src_.size(); ++s) {
 		if ('[' != _src_[s]) continue;
@@ -178,7 +175,7 @@ ZasmToken* ZasmToken::indexReg(void) {
 		for (idx = 0, pos = 0; idx < substr.size(); ++idx) {
 			switch (substr[idx]) {
 				case '+': case '-': case ' ':
-					tmpToken = new ZasmToken(substr.substr(pos, idx-pos));
+					tmpToken = new InstToken(substr.substr(pos, idx-pos));
 					pos = idx+1;
 					if (tmpToken->isREG()) {
 						token = tmpToken;
@@ -192,7 +189,7 @@ ZasmToken* ZasmToken::indexReg(void) {
 					break;
 			}
 		}
-		tmpToken = new ZasmToken(substr.substr(pos, idx-pos));
+		tmpToken = new InstToken(substr.substr(pos, idx-pos));
 		if (tmpToken->isREG()) {
 			token = tmpToken;
 			cnt ++;
@@ -211,7 +208,7 @@ ZasmToken* ZasmToken::indexReg(void) {
 	}
 	return token;
 }
-off_t ZasmToken::offset(void) {
+off_t InstToken::offset(void) {
 	off_t offset = 0;
 
 	if (!this->isMEM() || this->isREF()) {
@@ -233,18 +230,18 @@ off_t ZasmToken::offset(void) {
 			if (' ' == this->_src_[e] || '+' == this->_src_[e] || '-' == this->_src_[e]) break;
 		}
 
-		ZasmToken token = ZasmToken(this->_src_.substr(s, e-s));
+		InstToken token = InstToken(this->_src_.substr(s, e-s));
 
 		if (token.isIMM()) {
 			offset += token.asInt() * sign;
 		}
 	}
 
-	_D(ZASM_LOG_DEBUG, "offset %s -> " OFF_T, this->_src_.c_str(), offset);
+	_D(LOG_ZASM_DEBUG, "offset %s -> " OFF_T, this->_src_.c_str(), offset);
 	return offset;
 }
 
-int ZasmToken::size(void) {
+int InstToken::size(void) {
 	int size = 0;
 	if (this->isREG()) {
 		const std::vector<std::string> regs8  = { REG_GENERAL_8,  REG_EXTENSION_8 };
@@ -289,14 +286,14 @@ int ZasmToken::size(void) {
 		}
 	}
 
-	_D(ZASM_LOG_DEBUG, "`%s` size %d", this->_src_.c_str(), size);
+	_D(LOG_ZASM_DEBUG, "`%s` size %d", this->_src_.c_str(), size);
 	return size;
 }
-std::string ZasmToken::raw(void) {
+std::string InstToken::raw(void) {
 	/* Just return the original string */
 	return this->_src_;
 }
-std::string ZasmToken::unescape(void) {
+std::string InstToken::unescape(void) {
 	std::string dst = "";
 	char tmp = 0x0;
 
@@ -360,13 +357,13 @@ std::string ZasmToken::unescape(void) {
 		dst += this->_src_[i];
 	}
 
-	_D(ZASM_LOG_DEBUG, "escape `%s` -> `%s`", this->_src_.c_str(), dst.c_str());
+	_D(LOG_ZASM_DEBUG, "escape `%s` -> `%s`", this->_src_.c_str(), dst.c_str());
 	return dst;
 };
-bool ZasmToken::match(unsigned int flag) {
+bool InstToken::match(unsigned int flag) {
 	bool blRet = false;
 
-	_D(ZASM_LOG_DEBUG, "check %s vs %X", this->_src_.c_str(), flag);
+	_D(LOG_ZASM_DEBUG, "check %s vs %X", this->_src_.c_str(), flag);
 	if (INST_NONE == flag && *this == "") {
 		blRet = true;
 		goto END;
@@ -441,14 +438,14 @@ CHECK_SIZE:
 END:
 	return blRet;
 }
-bool ZasmToken::operator== (std::string src) {
+bool InstToken::operator== (std::string src) {
 	/* Compared with string */
 	return src == this->_src_;
 }
-bool ZasmToken::operator!= (std::string src) {
+bool InstToken::operator!= (std::string src) {
 	/* Compared with string */
 	return ! (*this == src);
 }
-ZasmToken::operator int() const {
+InstToken::operator int() const {
 	return this->_src_ != "";
 }

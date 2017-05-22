@@ -12,7 +12,7 @@ ZergToken& Zerg::parser(ZergToken &cur, ZergToken prev) {
 	static bool shouldIndent = false;
 
 	if (AST_NEWLINE == cur.type() && AST_NEWLINE == prev.type()) {
-		_D(LOG_DEBUG3, "pass empty line");
+		_D(LOG_DEBUG, "pass empty line");
 		goto END;
 	}
 

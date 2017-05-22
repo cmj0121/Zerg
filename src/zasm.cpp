@@ -9,125 +9,8 @@
 
 #include "zasm.h"
 
-int  __line__    = 0;
 int  __verbose__ = 0;
-bool __pie__     = false;
-bool __symbol__  = false;
 
-void Zasm::compile(std::fstream &src, bool symb) {
-	off_t entry = 0x100000;
-	std::vector<ZasmToken *> line;
-	ZasmToken *token = NULL;
-
-	while (*(token = this->token(src)) != "") {
-		if (*token == TOKEN_ENTRY) {
-			entry = this->token(src)->asInt();
-			line.clear();
-		} else if (*token == ZASM_INCLUDE) {
-			std::string file = this->token(src)->unescape();
-
-			_D(ZASM_LOG_INFO, "load external file `%s`", file.c_str());
-			if (0 != access(file.c_str(), F_OK)) {
-				_D(LOG_CRIT, "external file `%s` does NOT exist", file.c_str());
-			}
-
-			std::fstream fp(file, std::fstream::in);
-			this->compile(fp, symb);
-		} else if (*token == "\n") {
-			for (size_t i = 0; i < line.size(); ++i) {
-				if (*line[i] == ZASM_MEM_BYTE  || *line[i] == ZASM_MEM_WORD ||
-					*line[i] == ZASM_MEM_DWORD || *line[i] == ZASM_MEM_QWORD) {
-
-					delete line[i];
-					line[i] = new ZasmToken(line[i]->raw() + " " + line[i+1]->raw());
-
-					line.erase(line.begin()+i+1);
-					break;
-				}
-			}
-
-			switch (line.size()) {
-				case 0:
-					/* NOP */
-					break;
-				case 1:
-					(*this) += new Instruction(line[0]);
-					break;
-				case 2:
-					(*this) += new Instruction(line[0], line[1]);
-					break;
-				case 3:
-					(*this) += new Instruction(line[0], line[1], line[2]);
-					break;
-				default:
-					_D(LOG_CRIT, "Not Implemented %zu", line.size());
-					exit(-1);
-					break;
-			}
-			line.clear();
-		} else {
-			line.push_back(token);
-		}
-	}
-
-	/* Output the binary */
-	this->dump(entry, symb);
-}
-ZasmToken* Zasm::token(std::fstream &src) {
-	char ch;
-	std::string token = "";
-
-	while (EOF != (ch = src.get())) {
-		switch (ch) {
-			case '#':				/* Ignore any comments */
-				while (EOF != (ch = src.get())) {
-					if ('\n' == ch) {
-						src.putback(ch);
-						break;
-					}
-				}
-				continue;
-			case '\n':				/* Always reply newline */
-				__line__ ++;
-				token = '\n';
-				break;
-			case '\t': case ' ':	/* Ignore any white-space */
-				continue;
-			case '"': case '\'':	/* Special case - string */
-				token = ch;
-				while(EOF != (ch = src.get()) && ch != token[0]) {
-					token += ch;
-				}
-				token += ch;
-				break;
-			case '[':				/* Special case - memory */
-				token = ch;
-				while(EOF != (ch = src.get()) && '\n' != ch) {
-					token += ch;
-					if (']' == ch) {
-						break;
-					}
-				}
-				if (']' != token[token.size()-1]) {
-					_D(LOG_CRIT, "Syntax Error - '%s'", token.c_str());
-					exit(-1);
-				}
-				break;
-			default:
-				token = ch;
-				while(EOF != (ch = src.get())) {
-					if (' ' == ch || '\t' == ch || '\n' == ch) {
-						src.putback(ch);
-						break;
-					}
-					token += ch;
-				}
-				break;
-		}
-		break;
-	}
-	return new ZasmToken(token);
-}
 void help(void) {
 	fprintf(stderr, "ZASM (v%s)- Zerg assembler\n", ZASM_VERSION);
 	fprintf(stderr, "\n");
@@ -150,18 +33,22 @@ int main(int argc, char *argv[]) {
 		{"verbose",	optional_argument,	0, 'v'},
 		{NULL, 0, 0, 0}
 	};
-	std::string dst = "a.out";
-	std::fstream src;
+	ZasmArgs args = {
+		.pie	= false,
+		.symbol	= false,
+		.entry	= 0x100000,
+		.dst	= "a.out",
+	};
 
 	while (-1 != (ch = getopt_long(argc, argv, opts, options, &optIdx))) {
 		switch(ch) {
 			case 'o':
-				dst = optarg;
+				args.dst = optarg;
 				break;
 			case 'p':
 				switch(optIdx) {
 					case 1:		/* --pie */
-						__pie__ = true;
+						args.pie = true;
 						break;
 					default:
 						_D(LOG_CRIT, "Not Implemented");
@@ -171,7 +58,7 @@ int main(int argc, char *argv[]) {
 			case 'S':
 				switch(optIdx) {
 					case 2:		/* --symbol */
-						__symbol__ = true;
+						args.symbol = true;
 						break;
 					default:
 						_D(LOG_CRIT, "Not Implemented");
@@ -188,25 +75,12 @@ int main(int argc, char *argv[]) {
 
 	if (0 == argc) {
 		help();
-	}
-
-	do {
-		std::fstream src;
-		std::string token;
-		std::vector<std::string> line;
-
-		if (0 >= argc) {
-			_D(LOG_CRIT, "Bad Parameter");
-			exit(-1);
-		}
-
-		src.open(argv[0], std::fstream::in);
-
-		Zasm *bin = new Zasm(dst, __pie__);
-		bin->compile(src, __symbol__);
-
+		return -1;
+	} else {
+		Zasm *bin = new Zasm(args);
+		bin->assemble(argv[0]);
 		delete bin;
-	} while (0);
+	}
 
 	return 0;
 }

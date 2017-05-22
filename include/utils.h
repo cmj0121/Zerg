@@ -54,21 +54,18 @@ inline static std::vector<std::string> split(std::string src, std::string tok) {
 extern int __verbose__;
 
 enum ZergLogLevel {
-	LOG_CRIT	= -1,	/* critical issue, need stop program */
-	LOG_ERROR,			/* system error */
-	LOG_WARNING,		/* warning message */
-	LOG_INFO,			/* information */
-	LOG_DEBUG,			/* debug message */
-	LOG_DEBUG2,
-	LOG_DEBUG3,
+	LOG_CRIT = -1,		/* critical issue, need stop program 	*/
+	LOG_ERROR,			/* system error 						*/
+	LOG_WARNING,		/* warning message 						*/
+	LOG_INFO,			/* information 							*/
+	LOG_DEBUG,			/* debug message 						*/
+	LOG_DEBUG_LEXER,	/* debug lexer 							*/
+	LOG_REGISTER_ALLOC,	/* debug register allocation algo. 		*/
 
-	ZASM_LOG_WARNING,
-	ZASM_LOG_INFO,
-	ZASM_LOG_DEBUG,
+	LOG_ZASM_INFO,		/* assembler information */
+	LOG_ZASM_DEBUG,		/* assembler debug message */
 
-	LOG_DEBUG_LEXER,
-	LOG_REGISTER_ALLOC,
-	ZASM_LOG_DISASM		= 1,
+	LOG_DISASM = 1,		/* show assembly 						*/
 };
 
 #include <stdio.h>
@@ -84,17 +81,10 @@ enum ZergLogLevel {
 					__FILE__, __LINE__, lv, ##__VA_ARGS__);		\
 		}														\
 	} while (0)
-#define _S(tokens)									\
-	do {											\
-		std::string line;							\
-		for (auto &it : tokens) line += it + " ";	\
-		_D(LOG_CRIT, "Syntax Error `%s` on %s", 	\
-				token.c_str(), line.c_str());		\
-	} while (0)
 #define _DEBUG()	_D(0, "\x1b[1;34m ~ debug ~\x1b[m")
-#define ALERT(expr)								\
-	if (expr) {									\
-		_D(LOG_CRIT, "BUG - `%s`", #expr);	\
+#define ALERT(expr)												\
+	if (expr) {													\
+		_D(LOG_CRIT, "BUG - `%s`", #expr);						\
 	}
 
 #endif /* _ZERG_UTILS_H_ */

@@ -1,8 +1,6 @@
 /* Copyright (C) 2014-2017 cmj. All right reserved. */
 #include "zasm.h"
 
-Binary::Binary(std::string src, bool pie) : _pie_(pie), _src_(src), _inst_() {
-};
 Binary::~Binary() {
 	for (unsigned int i=0; i<_inst_.size(); ++i) {
 		delete _inst_[i];
@@ -43,15 +41,10 @@ void Binary::reallocreg(void) {
 
 		_D(LOG_CRIT, "Not found the symbol [%s]", _inst_[idx]->refer().c_str());
 		exit(-1);
-END:
+
+		END:
 		_inst_[idx]->setIMM(offset, 4, true);
 	}
-}
-void Binary::insert(Instruction* inst, int pos) {
-	this->_inst_.insert(this->_inst_.begin() + pos, inst);
-}
-std::string Binary::get(int pos) {
-	return this->_inst_[pos]->show();
 }
 Binary& Binary::operator+= (Instruction *inst) {
 	this->_inst_.push_back(inst);
@@ -66,13 +59,6 @@ off_t Binary::length(void) {
 
 	return len;
 };
-off_t Binary::nrInst(void) {
-	return this->_inst_.size();
-}
-Instruction *Binary::getInst(int pos) {
-	return this->_inst_[pos];
-}
-
 
 /* vim set: tabstop=4 */
 
