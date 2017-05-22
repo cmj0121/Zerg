@@ -3,12 +3,13 @@ include Makefile.in
 ZASM_SRC=$(wildcard zasm/*.cpp)
 ZASM_OBJ=$(subst .cpp,.o,$(ZASM_SRC))
 
+ZGIR_SRC=$(wildcard ir/*.cpp)
+ZGIR_OBJ=$(subst .cpp,.o,$(ZGIR_SRC))
+
 ZERG_SRC=$(wildcard zerg/*.cpp)
 ZERG_OBJ=$(subst .cpp,.o,$(ZERG_SRC))
 
-GRAMMAR=Grammar/Grammar
-
-BIN=zasm.inst zerg.inst
+BIN=zasm.inst zgir.inst zerg.inst
 
 CXXFLAGS:=$(CXXFLAGS) -I../include
 
@@ -18,12 +19,12 @@ all: $(BIN)
 
 zasm/macho64.o: zasm/macho64_inc.hpp
 
-zasm.inst: zasm.cpp $(ZASM_OBJ)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
-	$(STRIP) $@
+zasm.inst: $(ZASM_OBJ)
+zgir.inst: $(ZGIR_OBJ) $(ZASM_OBJ)
+zerg.inst: $(ZERG_OBJ) $(ZGIR_OBJ) $(ZASM_OBJ)
 
-zerg.inst: zerg.cpp $(ZASM_OBJ) $(ZERG_OBJ)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ zerg.cpp $(ZASM_OBJ) $(ZERG_OBJ)
+%.inst: %.cpp
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 	$(STRIP) $@
 
 clean:

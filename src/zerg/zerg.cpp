@@ -954,7 +954,7 @@ void Zerg::emit(STRING op, STRING dst, STRING src, STRING idx, STRING size) {
 		std::cout << std::endl;
 	} else if ('#' != op[0]) {
 		/* call the IR emitter */
-		IR::emit(op, dst, src, idx, size);
+		IR::emit(op, dst, src, size);
 	}
 }
 

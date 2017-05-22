@@ -6,8 +6,9 @@
 
 #include "zasm.h"
 
+#define __IR_VERSION__		"1.1"
+
 #define __IR_REFERENCE__	"&"
-#define __IR_VERSION__		"0.1 (" __DATE__ " " __TIME__ ")"
 #define __IR_REG_FMT__		".reg.%02d"
 #define __IR_LABEL_FMT__	".zerg.label.%d"
 #define __IR_SYSCALL_REG__	".reg.sys"
@@ -30,75 +31,78 @@
 #include <string>
 
 typedef enum _tag_ir_ {
-	IROP_UNKNOWN,	/* unknown IR op */
+	IR_UNKNOWN,	/* unknown IR op */
 
 	/* data-related */
-	IROP_XCHG,
-	IROP_STORE,
-	IROP_LOAD,
+	IR_MEMORY_STORE,
+	IR_MEMORY_LOAD,
+	IR_MEMORY_XCHG,
+	IR_MEMORY_PUSH,
+	IR_MEMORY_POP,
 
 	/* arithmetic */
-	IROP_ADD,
-	IROP_SUB,
-	IROP_MUL,
-	IROP_DIV,
-	IROP_REM,
-	IROP_INC,
-	IROP_DEC,
-	IROP_SHL,
-	IROP_SHR,
+	IR_ARITHMETIC_ADD,
+	IR_ARITHMETIC_SUB,
+	IR_ARITHMETIC_MUL,
+	IR_ARITHMETIC_DIV,
+	IR_ARITHMETIC_MOD,
+	IR_ARITHMETIC_SHL,
+	IR_ARITHMETIC_SHR,
+	IR_ARITHMETIC_INC,
+	IR_ARITHMETIC_DEC,
 
 	/* logical */
-	IROP_AND,
-	IROP_OR,
-	IROP_XOR,
-	IROP_NOT,
-	IROP_NEG,
-	IROP_EQ,
-	IROP_LS,
-	IROP_LE,
-	IROP_GE,
-	IROP_GT,
+	IR_LOGICAL_AND,
+	IR_LOGICAL_OR,
+	IR_LOGICAL_XOR,
+	IR_LOGICAL_NOT,
+	IR_LOGICAL_NEG,
+	IR_LOGICAL_EQ,
+	IR_LOGICAL_LS,
+	IR_LOGICAL_GT,
 
 	/* control flow */
-	IROP_JMP,
-	IROP_JMPIF,
-
-	/* subroutine */
-	IROP_LABEL,
-	IROP_CALL,
-	IROP_RET,
-	IROP_PARAM,
-	IROP_PROLOGUE,
-	IROP_EPILOGUE,
+	IR_CONDITION_JMP,
+	IR_CONDITION_JMPIF,
+	IR_CONDITION_CALL,
+	IR_CONDITION_RET,
 
 	/* extra */
-	IROP_INTERRUPT,
-	IROP_NOP,
-	IROP_ASM,
+	IR_NOP,
+	IR_PROLOGUE,
+	IR_EPILOGUE,
+	IR_INTERRUPT,
+	IR_LABEL,
+	IR_DEFINE,
+	IR_INLINE_ASM,
 } IROP;
 
 class IR : public Binary {
 	public:
-		IR(std::string dst, ZergArgs *args);
-		~IR(void);
+		IR(std::string dst, ZergArgs *args) : Binary(dst, args->_pie_), _args_(args) {};
+		virtual ~IR(void) {
+			if (!_args_->_only_ir_) {
+				Binary::dump(_args_->_entry_, _args_->_symbol_);
+			}
+		}
 
 		/* compile the IR from source code */
 		void compile(std::string src);
+
 		/* emit from IR to machine code */
-		void emit(STRING op, STRING dst, STRING src, STRING idx, STRING size);
+		void emit(std::string op, std::string dst, std::string src, std::string size);
 		IROP opcode(std::string src);
 
-		virtual std::string regalloc(std::string src, std::string size="") = 0;
-		virtual void regsave(std::string src) = 0;
-		virtual void resetreg(void) = 0;
-		virtual std::string tmpreg(void) = 0;
+		std::string regalloc(std::string src, std::string size);
 	protected:
 		std::string randstr(unsigned int size=24, std::string prefix=".");
-		std::vector<std::string> _repeate_label_, _stack_;
+		std::vector<std::string> _repeate_label_;
 	private:
 		int _param_nr_, _lineno_;
 		ZergArgs *_args_;
+
+		std::vector<std::string> _alloc_regs_ = { USED_REGISTERS };
+		std::map<std::string, std::string> _alloc_regs_map_;
 };
 
 #endif /* __ZERG_IR_H__ */
