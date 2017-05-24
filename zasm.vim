@@ -22,7 +22,7 @@ let zerg_asm_highlight=1
 "
 syn match   ZASMComment       "#.*$" contains=ZASMToDo,@Spell
 syn keyword ZASMToDo          contained XXX TODO FIXME NOTE HACK
-syn keyword ZASMReserved      define ENTRY
+syn keyword ZASMReserved      define
 syn keyword ZASMInclude       include
 syn match   ZASMNumber        "\<\d\+\>"
 syn match   ZASMNumber        "\<0[oO]\=\o\+[Ll]\=\>"

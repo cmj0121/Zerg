@@ -77,14 +77,10 @@ typedef enum _tag_ir_ {
 	IR_INLINE_ASM,
 } IROP;
 
-class IR : public Binary {
+class IR : public Zasm {
 	public:
-		IR(std::string dst, ZergArgs *args) : Binary(dst, args->_pie_), _args_(args) {};
-		virtual ~IR(void) {
-			if (!_args_->_only_ir_) {
-				Binary::dump(_args_->_entry_, _args_->_symbol_);
-			}
-		}
+		IR(std::string dst, Args &args);
+		virtual ~IR(void);
 
 		/* compile the IR from source code */
 		void compile(std::string src);
@@ -99,7 +95,7 @@ class IR : public Binary {
 		std::vector<std::string> _repeate_label_;
 	private:
 		int _param_nr_, _lineno_;
-		ZergArgs *_args_;
+		Args _args_;
 
 		std::vector<std::string> _alloc_regs_ = { USED_REGISTERS };
 		std::map<std::string, std::string> _alloc_regs_map_;

@@ -32,9 +32,8 @@ void help(void) {
 }
 int main(int argc, char *argv[]) {
 	int optIdx = -1;
-	char ch, opts[] = "Go:nprRvh";
+	char ch, opts[] = "o:nprRvh";
 	struct option options[] = {
-		{"grammar",		no_argument,		0, 'G'},
 		{"help",		no_argument,		0, 'h'},
 		{"output",		required_argument,	0, 'o'},
 		{"pie",			no_argument,		0, 'p'},
@@ -45,22 +44,18 @@ int main(int argc, char *argv[]) {
 		{NULL, 0, 0, 0}
 	};
 	std::string dst = "a.out";
-	ZergArgs args = {
-		._entry_		= 0x1000,
-		._only_ir_		= false,
-		._gen_grammar	= false,
-		._pie_			= false,
-		._symbol_		= false,
-		._compile_ir_	= false,
-		._no_stdlib_	= false
+	Args args = {
+		.entry			= 0x1000,
+		.only_ir		= false,
+		.pie			= false,
+		.symbol			= false,
+		.compile_ir		= false,
+		.no_stdlib		= false,
 	};
 
 
 	while (-1 != (ch = getopt_long(argc, argv, opts, options, &optIdx))) {
 		switch(ch) {
-			case 'G':
-				args._gen_grammar = true;
-				break;
 			case 'h':
 				help();
 				return -1;
@@ -69,8 +64,8 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'n':
 				switch(optIdx) {
-					case 7:		/* --no-stdlib */
-						args._no_stdlib_ = true;
+					case 6:		/* --no-stdlib */
+						args.no_stdlib = true;
 						break;
 					default:
 						_D(LOG_CRIT, "Not Implemented");
@@ -79,8 +74,8 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'p':
 				switch(optIdx) {
-					case 3:		/* --pie */
-						args._pie_ = true;
+					case 2:		/* --pie */
+						args.pie = true;
 						break;
 					default:
 						_D(LOG_CRIT, "Not Implemented");
@@ -88,15 +83,15 @@ int main(int argc, char *argv[]) {
 				}
 				break;
 			case 'r':
-				args._only_ir_ = true;
+				args.only_ir = true;
 				break;
 			case 'R':
-				args._compile_ir_ = true;
+				args.compile_ir = true;
 				break;
 			case 'S':
 				switch(optIdx) {
-					case 5:		/* --symbol */
-						args._symbol_ = true;
+					case 4:		/* --symbol */
+						args.symbol = true;
 						break;
 					default:
 						_D(LOG_CRIT, "Not Implemented");
@@ -119,8 +114,8 @@ int main(int argc, char *argv[]) {
 	} else if (_gen_grammar) {
 		_D(LOG_CRIT, "Not Implemented");
 	} else {
-		Zerg zerg(dst, &args);
-		zerg.compile(argv[0], &args);
+		Zerg zerg(dst, args);
+		zerg.compile(argv[0]);
 	}
 
 	return 0;

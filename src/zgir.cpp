@@ -30,14 +30,13 @@ int main(int argc, char *argv[]) {
 		{NULL, 0, 0, 0}
 	};
 	std::string dst = "a.out";
-	ZergArgs args = {
-		._entry_		= 0x1000,
-		._only_ir_		= false,
-		._gen_grammar	= false,
-		._pie_			= false,
-		._symbol_		= false,
-		._compile_ir_	= false,
-		._no_stdlib_	= false
+	Args args = {
+		.entry			= 0x1000,
+		.only_ir		= false,
+		.pie			= false,
+		.symbol			= false,
+		.compile_ir		= false,
+		.no_stdlib		= false,
 	};
 
 
@@ -52,7 +51,7 @@ int main(int argc, char *argv[]) {
 			case 'p':
 				switch(optIdx) {
 					case 2:		/* --pie */
-						args._pie_ = true;
+						args.pie = true;
 						break;
 					default:
 						_D(LOG_CRIT, "Not Implemented");
@@ -62,7 +61,7 @@ int main(int argc, char *argv[]) {
 			case 'S':
 				switch(optIdx) {
 					case 3:		/* --symbol */
-						args._symbol_ = true;
+						args.symbol = true;
 						break;
 					default:
 						_D(LOG_CRIT, "Not Implemented");
@@ -83,7 +82,7 @@ int main(int argc, char *argv[]) {
 	if (0 == argc) {
 		help();
 	} else {
-		IR *ir = new IR(dst, &args);
+		IR *ir = new IR(dst, args);
 
 		ir->compile(argv[0]);
 		delete ir;

@@ -3,6 +3,17 @@
 #include <stdlib.h>
 #include "zerg.h"
 
+IR::IR(std::string dst, Args &args) : Zasm(dst, args) {
+	this->_param_nr_	= 0;
+	this->_lineno_		= 0;
+	this->_args_		= args;
+}
+IR::~IR(void) {
+	if (!this->_args_.only_ir) {
+		Zasm::dump(this->_args_.entry, this->_args_.symbol);
+	}
+}
+
 void IR::compile(std::string src) {
 	std::string line;
 	std::fstream fs(src);
