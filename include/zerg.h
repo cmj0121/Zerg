@@ -14,10 +14,10 @@
 #include <map>
 class Zerg : public IR {
 	public:
-		Zerg(std::string dst, ZergArgs *args);
+		Zerg(std::string dst, Args &args);
 		virtual ~Zerg();
 
-		void compile(std::string src, ZergArgs *args);
+		void compile(std::string src);
 		void emit(std::string op, std::string dst="", std::string src="", std::string idx="", std::string size="");
 
 		std::string regalloc(std::string src, std::string size="");
@@ -34,6 +34,7 @@ class Zerg : public IR {
 		void _compileCFG_(CFG *node, std::map<std::string, VType> &namescope);
 		void emitIR(AST *node, std::map<std::string, VType> &namescope);
 	private:
+		Args _args_;
 		int _labelcnt_, _lineno_, _regs_;
 		std::string _src_;
 		std::map<std::string, CFG *>_root_;

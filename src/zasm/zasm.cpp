@@ -1,14 +1,14 @@
 /* Copyright (C) 2014-2017 cmj. All right reserved. */
+
 #include "zasm.h"
 
-Binary::~Binary() {
+Zasm::~Zasm(void) {
 	for (unsigned int i=0; i<_inst_.size(); ++i) {
 		delete _inst_[i];
 		_inst_[i] = NULL;
 	}
 }
-
-void Binary::reallocreg(void) {
+void Zasm::reallocreg(void) {
 	for (unsigned int idx = 0; idx < _inst_.size(); ++idx) {
 		off_t offset = 0;
 
@@ -45,11 +45,11 @@ void Binary::reallocreg(void) {
 		_inst_[idx]->setIMM(offset, 4, true);
 	}
 }
-Binary& Binary::operator+= (Instruction *inst) {
+Zasm& Zasm::operator+= (Instruction *inst) {
 	this->_inst_.push_back(inst);
 	return *this;
 }
-off_t Binary::length(void) {
+off_t Zasm::length(void) {
 	off_t len = 0;
 
 	for (unsigned int i = 0; i < _inst_.size(); ++i) {
@@ -58,17 +58,16 @@ off_t Binary::length(void) {
 
 	return len;
 };
-
-void Binary::assemble(std::string srcfile) {
+void Zasm::assembleF(std::string srcfile) {
 	std::fstream src(srcfile, std::fstream::in);
 	std::string line;
 
 	_D(LOG_ZASM_INFO, "assemble zasm source `%s`", srcfile.c_str());
 	while (std::getline(src, line)) {
-		Binary::assembleL(line);
+		Zasm::assembleL(line);
 	}
 }
-void Binary::assembleL(std::string line) {
+void Zasm::assembleL(std::string line) {
 	std::vector<std::string> inst;
 	_D(LOG_ZASM_DEBUG, "assemble `%s`", line.c_str());
 
@@ -154,7 +153,7 @@ void Binary::assembleL(std::string line) {
 			/* syntax error */
 			_D(LOG_CRIT, "syntax error `include [source file]` #%zu", inst.size());
 		}
-		Binary::assemble(inst[1]);
+		Zasm::assembleF(inst[1]);
 	} else if (ZASM_DEFINE == inst[0]) {
 		if (3 != inst.size()) {
 			/* syntax error */
@@ -193,7 +192,3 @@ void Binary::assembleL(std::string line) {
 	/* tear-down */
 	inst.clear();
 }
-
-
-/* vim set: tabstop=4 */
-

@@ -18,24 +18,27 @@
 
 #include <map>
 #include "zasm/instruction.h"
-#include "zasm/binary.h"
 
-typedef struct _tag_zasm_args_ {
-	bool		pie;
-	bool		symbol;
-	off_t		entry;
-	std::string	dst;
-} ZasmArgs;
-
-class Zasm : public Binary {
+class Zasm {
 	public:
-		Zasm(ZasmArgs args) : Binary(args.dst, args.pie), _args_(args) {};
-		virtual ~Zasm(void) {
-			/* Output the binary */
-			Binary::dump(this->_args_.entry, this->_args_.symbol);
-		}
+		Zasm(std::string dst, Args &args) : _args_(args), _linono_(0), _dst_(dst) {};
+		virtual ~Zasm(void);
+
+		void dump(off_t entry = 0x1000, bool symb=false);	/* Binary-Specified */
+
+		void assembleF(std::string srcfile);
+		void assembleL(std::string line);
+
+		Zasm& operator+= (Instruction *inst);
 	private:
-		ZasmArgs _args_;
+		Args _args_;
+		int _linono_;
+		std::string _dst_;
+		std::vector<Instruction *> _inst_;
+		std::map<std::string, std::string> _map_;
+
+		void reallocreg(void);
+		off_t length(void);
 };
 
 #endif /* __ZASM_H__ */

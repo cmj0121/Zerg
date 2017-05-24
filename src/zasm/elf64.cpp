@@ -8,12 +8,12 @@
 #include <sys/stat.h>
 #include "zasm.h"
 
-void Binary::dump(off_t entry, bool symb) {
+void Zasm::dump(off_t entry, bool symb) {
 	Elf64_Ehdr header = {0};
 	Elf64_Phdr segment = {0};
 	std::fstream fp;
 
-	Binary::reallocreg();
+	Zasm::reallocreg();
 	fp.open(_dst_, std::fstream::out | std::fstream::binary | std::fstream::trunc);
 
 	{

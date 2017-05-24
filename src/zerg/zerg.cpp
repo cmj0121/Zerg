@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include "zerg.h"
 
-Zerg::Zerg(std::string dst, ZergArgs *args) : IR(dst, args) {
+Zerg::Zerg(std::string dst, Args &args) : IR(dst, args), _args_(args) {
 	this->_labelcnt_	= 0;
 	this->_lineno_		= 1;
 	this->_regs_		= 0;
@@ -18,14 +18,12 @@ Zerg::~Zerg() {
 	}
 }
 
-void Zerg::compile(std::string src, ZergArgs *args) {
-	if (args->_compile_ir_) {
+void Zerg::compile(std::string src) {
+	if (this->_args_.compile_ir) {
 		IR::compile(src);
 	} else {
-		this->_only_ir_ = args->_only_ir_;
-
 		/* load the built-in library if possible */
-		if (0 == access(BUILTIN_LIBRARY, F_OK) && false == args->_no_stdlib_) {
+		if (0 == access(BUILTIN_LIBRARY, F_OK) && false == this->_args_.no_stdlib) {
 			_D(LOG_INFO, "Load the built-in library `%s`", BUILTIN_LIBRARY);
 			this->lexer(BUILTIN_LIBRARY);
 		}

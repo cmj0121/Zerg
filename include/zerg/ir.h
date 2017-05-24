@@ -45,10 +45,10 @@ class IRToken {
 		std::vector<std::string> _src_;
 };
 
-class IR : public Binary {
+class IR : public Zasm {
 	public:
-		IR(std::string dst, ZergArgs *args);
-		~IR(void);
+		IR(std::string dst, Args &args) : Zasm(dst, args), _param_nr_(0) {};
+		virtual ~IR(void) {};
 
 		void emit(IRToken *token);
 		void emit(std::string op, std::string dst, std::string src, std::string idx, std::string size);
@@ -64,8 +64,6 @@ class IR : public Binary {
 		std::vector<std::string> _repeate_label_, _stack_;
 	private:
 		int _param_nr_;
-		bool _symb_;
-		off_t _entry_;
 };
 
 #endif /* __ZERG_IR_H__ */
