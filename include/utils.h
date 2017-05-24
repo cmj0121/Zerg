@@ -61,8 +61,21 @@ enum ZergLogLevel {
 	LOG_DEBUG,			/* debug message 						*/
 	LOG_DEBUG_LEXER,	/* debug lexer 							*/
 	LOG_REGISTER_ALLOC,	/* debug register allocation algo. 		*/
+
+	LOG_ZASM_INFO,		/* assembler information */
+	LOG_ZASM_DEBUG,		/* assembler debug message */
+
 	LOG_DISASM = 1,		/* show assembly 						*/
 };
+
+typedef struct _tag_args_ {
+	bool	pie;
+	bool	symbol;
+	off_t	entry;
+	bool	only_ir;
+	bool	compile_ir;
+	bool	no_stdlib;
+} Args;
 
 #include <stdio.h>
 

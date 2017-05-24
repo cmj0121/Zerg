@@ -66,14 +66,13 @@ Zasm 本身擁有兩個部分：一個是從組合語言產生的機械馬的直
 The header file [include/zasm.h](https://github.com/cmj0121/Zerg/blob/master/include/zasm.h)
 提供了若干個 class：
 
-+ Zasm 是一個前端的介面處理器
-+ Binary 用來產生一個合法格式的可執行檔
++ Zasm 是一個前端的介面處理器及用來產生一個合法格式的可執行檔
 + Instruction 根據每一行的指令產生機械碼
 + InstToken 處理指令符並且提供相對的狀態讓 Instruction 使用
 
 在 class 'Zasm' 中，他擁有兩個內部函數：一個用來把組合語言分為若干個合法的指令符，
 另一個則是將每一行的指令符送給下一個 class (Instruction) 並且將機械碼純在一個陣列中。
-class 'Binary' 則是依平台來產生合法的可執行檔。他簡單但瑣碎的根據平台來產生合法格式的檔案。
+他簡單但瑣碎的根據平台來產生合法格式的檔案。
 
 而關於 class 'Instruction' 則勢將組合語言直譯為機械碼的一個部分，內部有一個抽象函數 'assemble'：
 從平台相關的指令集中依序尋找出符合的指令，並產生機械碼。已 x86-64 平台為例，一個指令集最多有
@@ -98,14 +97,12 @@ Besides generated the header, machine code generation is the important and imple
 The header file [include/zasm.h](https://github.com/cmj0121/Zerg/blob/master/include/zasm.h)
 give several class:
 
-+ Zasm is the front-end interface.
-+ Binary is used to generate the valid format binary
++ Zasm is the front-end interface and used to generate the valid format binary
 + Instruction assembly machine code line-by-line
 + InstToken process the assembly token and reply the status when need
 
 In class 'Zasm', it has two member function, one is token which separate the assembly into
 valid token, another is compile which put the tokens into next class (Instruction) and
-store into a array.The class 'Binary' is used to generate valid format binary on each platform.
 It is trivial and just dump the particular format for each platform.
 
 Then the part of the class 'Instruction' is used to assemble from the instruction into machine code,

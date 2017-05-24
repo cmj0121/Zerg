@@ -26,6 +26,7 @@ void help(void) {
 int main(int argc, char *argv[]) {
 	int optIdx = -1;
 	char ch, opts[] = "vo:";
+	std::string dst = "a.out";
 	struct option options[] = {
 		{"output",  optional_argument,	0, 'o'},
 		{"pie",		no_argument,		0, 'p'},
@@ -33,16 +34,16 @@ int main(int argc, char *argv[]) {
 		{"verbose",	optional_argument,	0, 'v'},
 		{NULL, 0, 0, 0}
 	};
-	ZasmArgs args = {
+	Args args = {
 		.pie	= false,
 		.symbol	= false,
-		.dst	= "a.out",
+		.entry	= 0x100000,
 	};
 
 	while (-1 != (ch = getopt_long(argc, argv, opts, options, &optIdx))) {
 		switch(ch) {
 			case 'o':
-				args.dst = optarg;
+				dst = optarg;
 				break;
 			case 'p':
 				switch(optIdx) {
@@ -76,9 +77,9 @@ int main(int argc, char *argv[]) {
 		help();
 		return -1;
 	} else {
-		Zasm *bin = new Zasm(args);
-		bin->assemble(argv[0]);
-
+		Zasm *bin = new Zasm(dst, args);
+		bin->assembleF(argv[0]);
+		bin->dump(args.entry, args.symbol);
 		delete bin;
 	}
 

@@ -22,17 +22,17 @@ bool InstToken::isMEM(void) {
 	bool blRet = false;
 
 	if (true == (blRet = this->isREF())) {
-		_D(LOG_INFO, "treat reference as memory space");
+		_D(LOG_ZASM_INFO, "treat reference as memory space");
 		goto END;
 	} else if ("" != this->_src_ && '[' == this->_src_[0]) {
-		_D(LOG_DEBUG, "simple memory space without size specified");
+		_D(LOG_ZASM_DEBUG, "simple memory space without size specified");
 		blRet = true;
 		goto END;
 	} else if ( (0 == this->_src_.find(ZASM_MEM_BYTE)  && '[' == this->_src_[5]) ||
 				(0 == this->_src_.find(ZASM_MEM_WORD)  && '[' == this->_src_[5]) ||
 				(0 == this->_src_.find(ZASM_MEM_DWORD) && '[' == this->_src_[6]) ||
 				(0 == this->_src_.find(ZASM_MEM_QWORD) && '[' == this->_src_[6])) {
-		_D(LOG_DEBUG, "simple memory space with size specified");
+		_D(LOG_ZASM_DEBUG, "simple memory space with size specified");
 		blRet = true;
 		goto END;
 	}
@@ -237,7 +237,7 @@ off_t InstToken::offset(void) {
 		}
 	}
 
-	_D(LOG_DEBUG, "offset %s -> " OFF_T, this->_src_.c_str(), offset);
+	_D(LOG_ZASM_DEBUG, "offset %s -> " OFF_T, this->_src_.c_str(), offset);
 	return offset;
 }
 
@@ -286,7 +286,7 @@ int InstToken::size(void) {
 		}
 	}
 
-	_D(LOG_DEBUG, "`%s` size %d", this->_src_.c_str(), size);
+	_D(LOG_ZASM_DEBUG, "`%s` size %d", this->_src_.c_str(), size);
 	return size;
 }
 std::string InstToken::raw(void) {
@@ -357,13 +357,13 @@ std::string InstToken::unescape(void) {
 		dst += this->_src_[i];
 	}
 
-	_D(LOG_DEBUG, "escape `%s` -> `%s`", this->_src_.c_str(), dst.c_str());
+	_D(LOG_ZASM_DEBUG, "escape `%s` -> `%s`", this->_src_.c_str(), dst.c_str());
 	return dst;
 };
 bool InstToken::match(unsigned int flag) {
 	bool blRet = false;
 
-	_D(LOG_DEBUG, "check %s vs %X", this->_src_.c_str(), flag);
+	_D(LOG_ZASM_DEBUG, "check %s vs %X", this->_src_.c_str(), flag);
 	if (INST_NONE == flag && *this == "") {
 		blRet = true;
 		goto END;

@@ -23,6 +23,7 @@
 #define REGISTERS			REG_EXTENSION, REG_GENERAL
 #define USED_REGISTERS		"rcx", "rbx", "r8", "r9", "r10", "r11", 
 
+#define SYSCALL_PARAM		"rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"
 #define SYSCALL_REG			"rax"
 
 typedef struct _x86_64_inst_tag_ {

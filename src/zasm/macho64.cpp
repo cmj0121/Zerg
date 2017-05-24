@@ -8,23 +8,23 @@
 #include "macho64_inc.hpp"
 
 
-void Binary::dump(off_t entry, bool showSymb) {
+void Zasm::dump(off_t entry, bool showSymb) {
 	off_t header_offset = 0;
 	std::fstream fp;
 	std::vector<std::string> symbs;
 	std::vector<std::pair<std::string, struct nlist_64>> symblist;
 
-	Binary::reallocreg();
-	fp.open(_dst_, std::fstream::out | std::fstream::binary | std::fstream::trunc);
+	Zasm::reallocreg();
+	fp.open(this->_dst_, std::fstream::out | std::fstream::binary | std::fstream::trunc);
 
 	/* Create necessary header, dummy first */
 	for (int i = 0; i < 2; ++i) {
 		off_t symboff = 1, binoff = 0;
 
-		header(fp, 8, header_offset, this->_pie_);
+		header(fp, 8, header_offset, this->_args_.pie);
 
 		seg_pagezero(fp);
-		seg_text(fp, Binary::length(), entry, header_offset);
+		seg_text(fp, Zasm::length(), entry, header_offset);
 		seg_linkedit(fp, showSymb ? symbs : std::vector<std::string>{});
 		dyld_info(fp);
 		seg_symtab(fp, showSymb ? symbs : std::vector<std::string>{});
@@ -56,10 +56,10 @@ void Binary::dump(off_t entry, bool showSymb) {
 					symblist.push_back(std::make_pair(symb,  symlist));
 					symbs.push_back(symb);
 					symboff += symb.size() + 1;
-
-					binoff += _inst_[idx]->length();
 				}
 
+				/* offset of the symbol address */
+				binoff += _inst_[idx]->length();
 			}
 		}
 	}
@@ -87,7 +87,7 @@ void Binary::dump(off_t entry, bool showSymb) {
 	}
 
 	fp.close();
-	chmod(_dst_.c_str(), 0755);
+	chmod(this->_dst_.c_str(), 0755);
 }
 
 #endif /* __APPLE__ */
