@@ -10,6 +10,9 @@
 #define ZERG_VERSION		"1.0"
 #define BUILTIN_LIBRARY		"/usr/local/lib/zerg/__builtin__.zg"
 
+#define LEXER_INDENT		"\t"
+#define LEXER_DEDENT		"\b"
+
 #include <string>
 #include <map>
 class Zerg : public IR {
@@ -17,35 +20,15 @@ class Zerg : public IR {
 		Zerg(std::string dst, Args &args);
 		virtual ~Zerg();
 
+		/* compile the source code and pass to IR */
 		void compile(std::string src);
-		void emit(std::string op, std::string dst="", std::string src="", std::string idx="", std::string size="");
 
-		std::string regalloc(std::string src, std::string size="");
-		void regsave(std::string src);
-		void resetreg(void);
-		std::string tmpreg(void);
-	protected:
-		void lexer(std::string src);						/* lexer analysis */
-		ZergToken& parser(ZergToken &cur, ZergToken prev);	/* syntax and semantic analysis */
-		void load_namespace(std::map<std::string, VType> &namescope);
-		void _load_namespace_(CFG *node, std::map<std::string, VType> &namescope);
-
-		void compileCFG(CFG *node, std::map<std::string, VType> &namescope);
-		void _compileCFG_(CFG *node, std::map<std::string, VType> &namescope);
-		void emitIR(AST *node, std::map<std::string, VType> &namescope);
+		virtual void lexer(std::string srcfile);
+		virtual std::string parser(std::string token, std::string prev) { return token; }; 
 	private:
 		Args _args_;
-		int _labelcnt_, _lineno_, _regs_;
-		std::string _src_;
-		std::map<std::string, CFG *>_root_;
-
-		std::vector<std::pair<std::string, std::string>> _symb_;
-		std::vector<std::string> _alloc_regs_ = { USED_REGISTERS };
-		std::map<std::string, std::string> _alloc_regs_map_;
-
-		/* instance property map */
-		std::map<std::string, std::vector<std::string>> _obj_property_;
-		std::map<std::string, std::string> _obj_instance_;
+		int _lineno_;
+		std::string _srcfile_;
 };
 
 #endif /* __ZERG_H__ */

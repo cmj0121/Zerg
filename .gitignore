@@ -4,3 +4,4 @@ cscope.out
 *.inst
 *.o
 *.a
+*.testcase

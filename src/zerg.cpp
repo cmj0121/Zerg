@@ -6,13 +6,7 @@
 #include "zerg.h"
 
 int  __verbose__  = 0;
-int  _entry_      = 0x1000;
-bool _only_ir_    = false;
 bool _gen_grammar = false;
-bool _pie_        = false;
-bool _symbol_     = false;
-bool _compile_ir_ = false;
-bool _no_stdlib_  = false;
 
 void help(void) {
 	fprintf(stderr, "ZERG (v%s)- A useless compiler\n", ZERG_VERSION);

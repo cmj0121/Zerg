@@ -1,29 +1,27 @@
-/* Copyright (C) 2014-2016 cmj. All right reserved. */
+/* Copyright (C) 2014-2017 cmj <cmj@cmj.tw>. All right reserved. */
 
 #include <iomanip>
 #include "zerg.h"
 
 /* Private Properties */
-void Zerg::lexer(std::string src) {
-	std::string line;
-	std::fstream fs(src);
-	ZergToken token, prev("\n");
+void Zerg::lexer(std::string srcfile) {
+	std::string line, token, prev="\n";
+	std::fstream fs(srcfile);
 
 	static int _indent_cnt_ = 0;
 
-
 	if (!fs.is_open()) {
 		/* cannot open the source code */
-		_D(LOG_CRIT, "source file `%s` does NOT exist", src.c_str());
+		_D(LOG_CRIT, "source file `%s` does NOT exist", srcfile.c_str());
 	}
 
-	this->_lineno_ = 1;
-	this->_src_    = src;
+	this->_lineno_  = 1;
+	this->_srcfile_ = srcfile;
 	while (std::getline(fs, line)) {
 		if ('\t' != line[0] && '\0' != line[0]) {
 			while (0 != _indent_cnt_) {
 				_indent_cnt_ --;
-				token = "\r";
+				token = LEXER_DEDENT;
 				prev = this->parser(token, prev);
 			}
 		}
@@ -38,7 +36,9 @@ void Zerg::lexer(std::string src) {
 				case '#' :				/* COMMENT */
 					cur = line.size();
 					token = "\n";
-					prev  = this->parser(token, prev);
+					if (prev != token) {
+						prev  = this->parser(token, prev);
+					}
 					this->_lineno_ ++;
 					break;
 				case ' ': case '\t':	/* SPACE */
@@ -53,13 +53,13 @@ void Zerg::lexer(std::string src) {
 						if ('\0' != cur) {
 							while (_indent_cnt_ < cnt) {
 								_indent_cnt_ ++;
-								token = "\t";
+								token = LEXER_INDENT;
 								prev  = this->parser(token, prev);
 							}
 
 							while (_indent_cnt_ > cnt) {
 								_indent_cnt_--;
-								token = "\r";
+								token = LEXER_DEDENT;
 								prev  = this->parser(token, prev);
 							}
 						}
@@ -183,10 +183,12 @@ void Zerg::lexer(std::string src) {
 
 	/* DEDENT to the first-level */
 	while (0 < _indent_cnt_) {
-		token = "\r";
+		token = LEXER_DEDENT;
 		prev  = this->parser(token, prev);
 		_indent_cnt_ --;
 	}
 	token = "\n";
-	prev = this->parser(token, prev);
+	if (prev != token) {
+		prev = this->parser(token, prev);
+	}
 }

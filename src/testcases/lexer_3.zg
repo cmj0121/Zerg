@@ -1,0 +1,2 @@
+if Foo(x):
+	print 'true case'

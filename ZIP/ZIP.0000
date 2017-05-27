@@ -23,3 +23,8 @@ Activate  0001      cmj      Zerg 版號描述 / Zerg version description
 Activate  0002      cmj      物件 / Object in Zerg
 Activate  0003      cmj      Design of the Zerg assembler
 Activate  0004      cmj      Design of the Zerg IR
+Activate  0005      cmj      Design of the Zerg Compiler
+
+-------------------------------------------------------------------------------
+
+# vim: set ft=markdown:

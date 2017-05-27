@@ -11,12 +11,12 @@ BIN=zasm zgir zerg
 all: $(BIN) examples CI
 
 $(BIN): $(SUBDIR)
-	ln -sf src/$@.inst $@
+	$(DEBUG) ln -sf src/$@.inst $@
 
 examples: $(BIN) install
 
 $(SUBDIR):
-	ln -sf ../Makefile.in $@/Makefile.in
+	$(DEBUG) ln -sf ../Makefile.in $@/Makefile.in
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
 clean: $(SUBDIR)
