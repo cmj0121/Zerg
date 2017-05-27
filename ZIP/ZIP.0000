@@ -14,6 +14,15 @@ ZIP 並沒有一個制式的寫法，唯開頭五行需要描述 ZIP 編號、Ti
 期。而接下來會有若干章節，每個章節開頭標題前後使用兩個 #、章節之間間隔至少兩個空白。
 
 
+# ZIP 狀態 ##
+ZIP 主要有若干種狀態：提交草案 (Proposal)、活躍的修改 (Activate)、穩定釋出 (Official)
+與棄用提案 (Deprecated) 四種，這分別代表提案的狀態與使用程度。在草案階段不會給予一個 ZIP
+編號，並且在草案區讓專案共同開發者一起討論與研究是否接受草案，當草案被接受時則會賦予一個
+ZIP 編號並將狀態改為活躍修改 (Activate)。等定案確認之後會將狀態改為穩定釋出 (Official)
+並不能做功能上的改變。棄用則是當有新 ZIP 提案與舊的 ZIP 有所違背時，則會將舊的 ZIP 狀態改為
+棄用 (Deprecated)。
+
+
 ## ZIP 索引 ##
 
 STATUS    NUMBER    OWNER    TITLE
@@ -22,3 +31,6 @@ Activate  0000      cmj      Zerg 改善計畫 / Zerg Improvement Proposal
 Activate  0001      cmj      Zerg 版號描述 / Zerg version description
 Activate  0002      cmj      物件 / Object in Zerg
 
+-------------------------------------------------------------------------------
+
+# vim: set ft=markdown:
