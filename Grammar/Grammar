@@ -1,0 +1,40 @@
+# Grammar for the Zerg Language
+
+## All kinds of the valid statement
+stmt          : ( simple_stmt | compound_stmt ) NEWLINE
+simple_stmt   : 'nop' | 'continue' | 'break' | [ args '=' ] expr | 'print' expression
+compound_stmt : if_stmt | while_stmt | for_stmt | func_stmt | cls_stmt
+
+if_stmt       : 'if'    test ':'  suite ( 'elif' ':' suite )* [ 'else' ':' suite ]
+while_stmt    : 'while' test ':'  suite
+for_stmt      : 'for'   args 'in' expression        ':' suite
+func_stmt     : 'func'  VAR  '('  [ parameter ] ')' ':' suite
+cls_stmt      : 'cls'   VAR  '('  [ args ]      ')' ':' suite
+suite         : INDENT stmt+ DEDENT
+
+
+args        : VAR  | args ',' VAR
+kwargs      : VAR '=' test | kwargs ',' VAR '=' test
+parameter   : ( args | VAR '=' expression ) [ args ]
+argument    : ( expression | kwargs ) [ ',' kwargs ]
+
+expression  : test        | expression ',' test
+## test expression, return true or false
+test        : xor_test    | or_test    'or'  xor_test
+xor_test    : and_test    | xor_test   'xor' and_test
+and_test    : equal_test  | and_test   'and' equal_test
+equal_test  : comp_test   | equal_test ('eq' | 'not' 'eq' ) comp_test
+comp_test   : bitwise_or  | comp_test  ( '<' | '>' ) bitwise_or
+
+## expression
+bitwise_or  : bitwise_xor | bitwise_or  '|' bitwise_xor
+bitwise_xor : bitwise_and | bitwise_xor '^' bitwise_and
+bitwise_and : shift_expr  | bitwise_and '&' shift_expr
+shift_expr  : arith_expr  | shift_expr  ( '<<' | '>>' ) arith_expr
+arith_expr  : factor_expr | arith_expr  ( '+' | '-' ) factor_expr
+factor_expr : pow_expr    | factor_expr ( '*' | '/' | '%' | '~' ) pow_expr
+pow_expr    : term        | term '**' pow_expr
+
+## Should be the minimal element
+term        : atom | ( '+' | '-' | '~' | 'not' ) term
+atom        : VAR  | NUMBER | '(' test ')' | atom '(' [ argument ]')'
