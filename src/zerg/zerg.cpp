@@ -20,8 +20,8 @@ void Zerg::compile(std::string src) {
 		/* load the built-in library if possible */
 		if (0 == access(BUILTIN_LIBRARY, F_OK) && false == this->_args_.no_stdlib) {
 			_D(LOG_INFO, "Load the built-in library `%s`", BUILTIN_LIBRARY);
-			this->lexer(BUILTIN_LIBRARY);
+			this->parser(BUILTIN_LIBRARY);
 		}
-		this->lexer(src);
+		this->parser(src);
 	}
 }

@@ -14,6 +14,13 @@
 #define ARRAY_SIZE(ctx)		(sizeof(ctx)/sizeof(ctx[0]))
 #define FREE(ctx)			{ if (NULL != ctx) free(ctx); (ctx) = NULL; }
 
+#define LOWERCASE(c)		(c | 0x20)
+#define ISDIGIT(c)			(c >= '0' && c <= '9')
+#define ISLETTER(c)			(LOWERCASE(c) >= 'a' && LOWERCASE(c) <= 'z')
+#define ISHEX(c)			(ISDIGIT(c) || (LOWERCASE(c) >= 'a' && LOWERCASE(c) <= 'f'))
+#define ISWHITESPACE(c)		(c == ' ' || c == '\t' || c == '\0')
+#define ISWORD(c)			(ISDIGIT(c) || ISLETTER(c) || '_' == c)
+
 #include <string>
 typedef std::string STRING;
 
@@ -60,6 +67,7 @@ enum ZergLogLevel {
 	LOG_INFO,			/* information 							*/
 	LOG_DEBUG,			/* debug message 						*/
 	LOG_DEBUG_LEXER,	/* debug lexer 							*/
+	LOG_DEBUG_PARSER,	/* debug parser 						*/
 	LOG_REGISTER_ALLOC,	/* debug register allocation algo. 		*/
 
 	LOG_ZASM_INFO,		/* assembler information */

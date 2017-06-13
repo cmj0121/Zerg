@@ -4,191 +4,243 @@
 #include "zerg.h"
 
 /* Private Properties */
-void Zerg::lexer(std::string srcfile) {
-	std::string line, token, prev="\n";
-	std::fstream fs(srcfile);
+ZergToken Zerg::lexer(std::fstream &fp) {
+	int pos = 0, base=10;
+	std::string token;
+	ZType type = ZTYPE_UNKNOWN;
 
-	static int _indent_cnt_ = 0;
+	static bool blNewline = false;
+	static int _indent_cnt_ = 0, _indent_cur_ = 0;;
+	static std::string _linebuf_, _indent_word_;
 
-	if (!fs.is_open()) {
-		/* cannot open the source code */
-		_D(LOG_CRIT, "source file `%s` does NOT exist", srcfile.c_str());
-	}
 
-	this->_lineno_  = 1;
-	this->_srcfile_ = srcfile;
-	while (std::getline(fs, line)) {
-		if ('\t' != line[0] && '\0' != line[0]) {
-			while (0 != _indent_cnt_) {
-				_indent_cnt_ --;
-				token = LEXER_DEDENT;
-				prev = this->parser(token, prev);
+	/* lexer */
+	do {
+		/* flush the line from fp and store on _linebuf_ */
+		while (0 == _linebuf_.size()) {
+			this->_lineno_ ++;
+
+			if (std::getline(fp, _linebuf_)) {
+				_D(LOG_DEBUG_PARSER, "parse the line - #%-4d %s", _lineno_, _linebuf_.c_str());
+				token = "[NEWLINE]";
+				type  = ZTYPE_NEWLINE;
+			} else {
+				_indent_cur_ = 0;
+				goto INDENT_PROCESSOR;
 			}
+
+			goto END_LEXER;
 		}
 
-		for (size_t cur = 0; cur <= line.size(); ++cur) {
-			size_t pos;
-			int base = 10;
-
-			_D(LOG_DEBUG_LEXER, "%s on %zu", line.c_str(), cur);
-			switch(line[cur]) {
-				case '\0':				/* NEWLINE */
-				case '#' :				/* COMMENT */
-					cur = line.size();
-					token = "\n";
-					if (prev != token) {
-						prev  = this->parser(token, prev);
-					}
-					this->_lineno_ ++;
-					break;
-				case ' ': case '\t':	/* SPACE */
-					if (cur == 0) {
-						int cnt = 0;
-
-						while('\t' == line[cur]) {
-							cnt ++;
-							cur ++;
-						}
-
-						if ('\0' != cur) {
-							while (_indent_cnt_ < cnt) {
-								_indent_cnt_ ++;
-								token = LEXER_INDENT;
-								prev  = this->parser(token, prev);
-							}
-
-							while (_indent_cnt_ > cnt) {
-								_indent_cnt_--;
-								token = LEXER_DEDENT;
-								prev  = this->parser(token, prev);
-							}
-						}
-
-						cur --;
-					}
-					break;
-				case '1': case '2': case '3': case '4':
-				case '5': case '6': case '7': case '8':
-				case '9': case '0':
-					for (pos = cur; pos <= line.size(); ++pos) {
-						if (10 == base && line[pos] >= '0' && line[pos] <= '9') {
-							/* NUMBER */
-							continue;
-						} else if (2 == base && line[pos] >= '0' && line[pos] <= '1') {
-							/* NUMBER */
-							continue;
-						} else if (8 == base && line[pos] >= '0' && line[pos] <= '7') {
-							/* NUMBER */
-							continue;
-						} else if (16 == base && ((line[pos] >= '0' && line[pos] <= '9') ||
-										((line[pos] | 0x20) >= 'a' && (line[pos] | 0x20) <= 'f'))) {
-							/* NUMBER */
-							continue;
-						} else if (pos == cur+1) {
-							if (line[pos] == 'x' || line[pos] == 'X') {
-								base = 16;
-								continue;
-							} else if (line[pos] == 'b' || line[pos] == 'B') {
-								base = 2;
-								continue;
-							} else if (line[pos] == 'o' || line[pos] == 'O') {
-								base = 8;
-								continue;
-							}
-						}
-						break;
-					}
-					token = line.substr(cur, pos-cur);
-					prev = this->parser(token, prev);
-					cur = pos - 1;
-					break;
-				case '+': case '-':	case '>': case '<':	/* OPERATOR */
-				case '*': case '/': case '%': case '~':
-					for (pos = cur; pos <= line.size(); ++pos) {
-						if ('+' == line[pos] || '-' == line[pos] || '=' == line[pos]) {
-							continue;
-						} else if ('<' == line[pos] || '>' == line[pos]) {
-							continue;
-						} else if ('*' == line[pos] || '/' == line[pos]) {
-							continue;
-						} else if ('%' == line[pos] || '~' == line[pos]) {
-							continue;
-						}
-						break;
-					}
-					token = line.substr(cur, pos-cur);
-					prev = this->parser(token, prev);
-					cur = pos - 1;
-					break;
-				case '.': case ',': case ':':			/* OPERATOR */
-				case '(': case ')': case '[': case ']':
-				case '{': case '}': case '=':
-					token = line.substr(cur, 1);
-					prev = this->parser(token, prev);
-					break;
-				case '\'': case '"':					/* STRING */
-					token = line.substr(cur, 1);
-					pos   = ++cur;
-
-					do {
-						for (; pos < line.size(); ++pos) {
-							if (line[pos] == token[0]) break;
-						}
-
-						if (line[pos] != token[0] && pos != line.size()) {
-							_D(LOG_CRIT, "Invalid syntax for string %s", line.c_str());
-							break;
-						}
-
-						token += line.substr(cur, pos-cur+1);
-
-						if ('\0' == line[pos] && line[pos] != token[0]) {
-							if (!std::getline(fs, line)) {
-								_D(LOG_CRIT, "Invalid syntax for string %s", token.c_str());
-								break;
-							}
-
-							cur = 0;
-							pos = 0;
-							continue;
-						}
-
-						break;
-					} while (1);
-
-					prev = this->parser(token, prev);
-					cur = pos;
-					break;
-				default:
-					for (pos = cur+1; pos <= line.size(); ++pos) {
-						if ((line[pos] | 0x20) >= 'a' && (line[pos] | 0x20) <= 'z') {
-							/* Alphabet */
-							continue;
-						} else if (line[pos] >= '0' && line[pos] <= '9') {
-							/* NUMBER */
-							continue;
-						} else if (line[pos] == '_') {
-							/* UNDERLINE */
-							continue;
-						}
-						break;
-					}
-					token = line.substr(cur, pos-cur);
-					prev = this->parser(token, prev);
-					cur = pos - 1;
-					break;
-			}
+		/* simple process the index case */
+		if (blNewline && !ISWHITESPACE(_linebuf_[0])) {
+			_D(LOG_DEBUG_LEXER, "new line without any indent");
+			_indent_cur_ = 0;
 		}
-	}
 
-	/* DEDENT to the first-level */
-	while (0 < _indent_cnt_) {
-		token = LEXER_DEDENT;
-		prev  = this->parser(token, prev);
+		_D(LOG_DEBUG_LEXER, "lexer on line - %s", _linebuf_.c_str());
+		switch(_linebuf_[0]) {
+			case '#': case '\0':						/* End-of-Line*/
+				token = "";
+				_linebuf_ = "";
+				continue;
+			case ' ': case '\t':						/* white-space */
+				for (pos = 0; pos < _linebuf_.size(); ++pos) {
+					/* need NOT process the indent/dedent case */
+					if (!(_linebuf_[pos] == ' ' || _linebuf_[pos] == '\t')) break;
+				}
+				token = _linebuf_.substr(0, pos);
+
+				if ('\0' == _linebuf_[pos]) {	/* all white-space */
+					_D(LOG_DEBUG_LEXER, "all white-space");
+
+					_linebuf_ = "";
+					continue;
+				} else if (blNewline) {			/* process the current indent status */
+					if(0 == _indent_word_.size()) {
+						_indent_word_ = _linebuf_.substr(0, pos);
+						_linebuf_     = _linebuf_.substr(pos);
+
+						_indent_cur_ ++;
+						goto INDENT_PROCESSOR;
+					}
+
+					_indent_cur_ = 0;
+					while (_indent_word_ == token.substr(0, _indent_word_.size())) {
+						_indent_cur_ ++;
+						token = token.substr(_indent_word_.size());
+					}
+
+					if (0 != token.size()) _D(LOG_CRIT, "indent error");
+					_linebuf_ = _linebuf_.substr(pos);
+					goto INDENT_PROCESSOR;
+				}
+
+				_linebuf_ = _linebuf_.substr(pos);
+				continue;
+			case '1': case '2': case '3': case '4':		/* number */
+			case '5': case '6': case '7': case '8':
+			case '9': case '0':
+				for (pos = 1; pos <= _linebuf_.size(); ++pos) {
+					if (10 == base && _linebuf_[pos] >= '0' && _linebuf_[pos] <= '9') {
+						/* NUMBER */
+						continue;
+					} else if (2 == base && _linebuf_[pos] >= '0' && _linebuf_[pos] <= '1') {
+						/* NUMBER */
+						continue;
+					} else if (8 == base && _linebuf_[pos] >= '0' && _linebuf_[pos] <= '7') {
+						/* NUMBER */
+						continue;
+					} else if (16 == base && ISHEX(_linebuf_[pos])) {
+						/* NUMBER */
+						continue;
+					} else if (pos == 1) {
+						if (_linebuf_[pos] == 'x' || _linebuf_[pos] == 'X') {
+							base = 16;
+							continue;
+						} else if (_linebuf_[pos] == 'b' || _linebuf_[pos] == 'B') {
+							base = 2;
+							continue;
+						} else if (_linebuf_[pos] == 'o' || _linebuf_[pos] == 'O') {
+							base = 8;
+							continue;
+						} else if (_linebuf_[pos] == '.') {
+							/* FLOAT */
+							continue;
+						}
+					}
+					break;
+				}
+				token     = _linebuf_.substr(0, pos);
+				type      = ZTYPE_NUMBER;
+				_linebuf_ = _linebuf_.substr(pos);
+				goto END_LEXER;
+				break;
+			case '+': case '-':	case '>': case '<':		/* OPERATOR */
+			case '*': case '/': case '%': case '~':
+				pos = 1;
+				while (_linebuf_[pos] == _linebuf_[0]) pos++;
+
+				/* HACK */
+				if ('-' == _linebuf_[0] && '>' == _linebuf_[1]) pos ++;
+
+				token     = _linebuf_.substr(0, pos);
+				_linebuf_ = _linebuf_.substr(pos);
+
+				     if (token == "+")  { type = ZTYPE_ADD;     }
+				else if (token == "-")  { type = ZTYPE_SUB;     }
+				else if (token == "*")  { type = ZTYPE_MUL;     }
+				else if (token == "/")  { type = ZTYPE_DIV;     }
+				else if (token == "%")  { type = ZTYPE_MOD;     }
+				else if (token == "~")  { type = ZTYPE_LIKE;    }
+				else if (token == "<")  { type = ZTYPE_CMP_LS;  }
+				else if (token == ">")  { type = ZTYPE_CMP_GT;  }
+				else if (token == "++") { type = ZTYPE_INC;     }
+				else if (token == "--") { type = ZTYPE_DEC;     }
+				else if (token == "**") { type = ZTYPE_POW;     }
+				else if (token == "<<") { type = ZTYPE_LSHT;    }
+				else if (token == ">>") { type = ZTYPE_RSHT;    }
+				else if (token == "=")  { type = ZTYPE_LASSIGN; }
+				else if (token == "->") { type = ZTYPE_RASSIGN; }
+				else { _D(LOG_CRIT, "Unknown token %s", token.c_str());	}
+				goto END_LEXER;
+				break;
+			case '.':									/* OPERATOR with single */
+				type      = ZTYPE_DOT;
+				token     = _linebuf_.substr(0, 1);
+				_linebuf_ = _linebuf_.substr(1);
+				goto END_LEXER;
+				break;
+			case ',':
+				type      = ZTYPE_COMMA;
+				token     = _linebuf_.substr(0, 1);
+				_linebuf_ = _linebuf_.substr(1);
+				goto END_LEXER;
+				break;
+			case ':':
+				type      = ZTYPE_COLON;
+				token     = _linebuf_.substr(0, 1);
+				_linebuf_ = _linebuf_.substr(1);
+				goto END_LEXER;
+				break;
+			case '(': case ')':							/* OPERATOR with pair */
+				type = '(' == _linebuf_[0] ? ZTYPE_PAIR_GROUP_OPEN : ZTYPE_PAIR_GROUP_CLOSE;
+				token = _linebuf_.substr(0, 1);
+				_linebuf_ = _linebuf_.substr(1);
+				goto END_LEXER;
+				break;
+			case '[': case ']':
+				type = '[' == _linebuf_[0] ? ZTYPE_PAIR_BRAKES_OPEN: ZTYPE_PAIR_BRAKES_CLOSE;
+				token = _linebuf_.substr(0, 1);
+				_linebuf_ = _linebuf_.substr(1);
+				goto END_LEXER;
+				break;
+			case '{': case '}':
+				type = '{' == _linebuf_[0] ? ZTYPE_PAIR_DICT_OPEN : ZTYPE_PAIR_DICT_CLOSE;
+				token = _linebuf_.substr(0, 1);
+				_linebuf_ = _linebuf_.substr(1);
+				goto END_LEXER;
+				break;
+			case '\"': case '\'':						/* string */
+				pos = 1;
+				while (_linebuf_[pos] != _linebuf_[0]) {
+					if (_linebuf_[pos] == '\0') {
+						std::string line;
+
+						if (!std::getline(fp, line)) {
+							_D(LOG_CRIT, "syntax error on #%-4d %s ", _lineno_,
+																		_linebuf_.c_str());
+						}
+						_linebuf_ = _linebuf_ + line;
+						_lineno_ ++;
+					}
+					pos ++;
+				}
+				type      = ZTYPE_STRING;
+				token     = _linebuf_.substr(0, pos+1);
+				_linebuf_ = _linebuf_.substr(pos+1);
+				goto END_LEXER;
+				break;
+			default:
+				while (ISWORD(_linebuf_[pos])) { pos ++; }
+				type      = ZTYPE_IDENTIFIER;
+				token     = _linebuf_.substr(0, pos);
+				_linebuf_ = pos >= _linebuf_.size() ? "" : _linebuf_.substr(pos);
+
+				     if (token == "include")		{ type = ZTYPE_CMD_INCLUDE;   }
+				else if (token == "print")			{ type = ZTYPE_CMD_PRINT;     }
+				else if (token == "func")			{ type = ZTYPE_CMD_FUNCTION;  }
+				else if (token == "cls")			{ type = ZTYPE_CMD_CLASS;     }
+				else if (token == "while")			{ type = ZTYPE_CMD_WHILE;     }
+				else if (token == "for")			{ type = ZTYPE_CMD_FOR;       }
+				else if (token == "in")				{ type = ZTYPE_CMD_IN;        }
+				else if (token == "if")				{ type = ZTYPE_CMD_IF;        }
+				else if (token == "elif")			{ type = ZTYPE_CMD_ELIF;      }
+				else if (token == "else")			{ type = ZTYPE_CMD_ELSE;      }
+				else if (token == "nop")			{ type = ZTYPE_CMD_NOP;       }
+				else if (token == "continue")		{ type = ZTYPE_CMD_CONTINUE;  }
+				else if (token == "break")			{ type = ZTYPE_CMD_BREAK;     }
+				else if (token == "asm")			{ type = ZTYPE_CMD_ASM;       }
+
+				goto END_LEXER;
+				break;
+		}
+	} while (1);
+
+INDENT_PROCESSOR:
+	_D(LOG_DEBUG_LEXER, "current indent status %d / %d", _indent_cur_, _indent_cnt_);
+	if (_indent_cur_ < _indent_cnt_) {
 		_indent_cnt_ --;
+		type  = ZTYPE_DEDENT;
+		token = "[DEDENT]";
+		goto END_LEXER;
+	} else if (_indent_cur_ > _indent_cnt_) {
+		_indent_cnt_ ++;
+		type  = ZTYPE_INDENT;
+		token = "[INDENT]";
+		goto END_LEXER;
 	}
-	token = "\n";
-	if (prev != token) {
-		prev = this->parser(token, prev);
-	}
+END_LEXER:
+	blNewline = type == ZTYPE_NEWLINE;
+	return std::make_pair(token, type);
 }

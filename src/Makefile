@@ -32,7 +32,7 @@ zerg.inst: $(ZERG_OBJ) $(ZGIR_OBJ) $(ZASM_OBJ)
 	$(DEBUG) $(STRIP) $@
 
 clean:
-	rm -f $(BIN) $(ZASM_OBJ) $(ZERG_OBJ)
+	rm -f $(BIN) $(ZASM_OBJ) $(ZERG_OBJ) $(ZGIR_OBJ)
 
 install: $(BIN)
 	install -m755 zasm.inst /usr/local/bin/zasm
