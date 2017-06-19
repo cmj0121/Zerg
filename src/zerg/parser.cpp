@@ -22,7 +22,7 @@
  */
 AST* Zerg::parser(std::string srcfile) {
 	std::string line;
-	ZergToken prev = {"", ZTYPE_NEWLINE}, token;
+	ZergToken token, next;
 	AST *node = new AST("[ROOT]", ZTYPE_UNKNOWN), *cur = NULL;
 
 	this->_fp_.open(srcfile);
@@ -34,23 +34,26 @@ AST* Zerg::parser(std::string srcfile) {
 	this->_lineno_  = 0;
 	this->_srcfile_ = srcfile;
 
-	while ((token = this->lexer()).second != ZTYPE_UNKNOWN) {
-		if (prev.second == ZTYPE_NEWLINE && token.second == ZTYPE_NEWLINE) {
-			/* Skip continuously NEWLINE */
-			continue;
-		}
+	for (token = this->lexer(); ZTYPE_UNKNOWN != token.second; ) {
+		_D(LOG_DEBUG_LEXER, "-> #0x%-4X %s", token.second, token.first.c_str());
 
-		_D(LOG_DEBUG_LEXER, " -> token - #0x%-4X %s", token.second, token.first.c_str());
-		ALERT(NULL == (cur = this->parse_stmt(token)));
-		node->insert(cur);
+		next = this->lexer();
+		if (token.second != ZTYPE_NEWLINE) {
+			ALERT(NULL == (cur = this->parse_stmt(token, next)));
+			node->insert(cur);
+		}
+		token = next;
 	}
 
-#if defined(DEBUG_AST) || defined(DEBUG)
-	if (node) std::cerr << *node << std::endl;
-#endif /* DEBUG_AST */
+	#if defined(DEBUG_AST) || defined(DEBUG)
+		if (node) {
+			std::cerr << "==== Full AST ====" << std::endl;
+			std::cerr << *node << std::endl;
+		}
+	#endif /* DEBUG_AST */
 	return node;
 }
-AST* Zerg::parse_stmt(ZergToken &token) {
+AST* Zerg::parse_stmt(ZergToken token, ZergToken &next) {
 	AST *node = NULL;
 
 	_D(LOG_DEBUG_PARSER, "parse stmt on %s", token.first.c_str());
@@ -68,21 +71,20 @@ AST* Zerg::parse_stmt(ZergToken &token) {
 		/* class statement */
 		default:
 		/* simple statement */
-			node = parse_simple_stmt(token);
+			node = parse_simple_stmt(token, next);
 			break;
 	}
 
-#if defined(DEBUG_AST) || defined(DEBUG)
-	if (node) {
-		std::cerr << "==== statement ====" << std::endl;
-		std::cerr << *node << std::endl;
-	}
-#endif /* DEBUG_AST */
+	#if defined(DEBUG_AST) || defined(DEBUG)
+		if (node) {
+			std::cerr << "==== statement ====" << std::endl;
+			std::cerr << *node << std::endl;
+		}
+	#endif /* DEBUG_AST */
 	return node;
 }
-AST* Zerg::parse_simple_stmt(ZergToken &token) {
+AST* Zerg::parse_simple_stmt(ZergToken token, ZergToken &next) {
 	AST *node = NULL;
-	ZergToken next, tmp;
 
 	_D(LOG_DEBUG_PARSER, "simple statement on %s #%d", token.first.c_str(), token.second);
 
@@ -91,7 +93,6 @@ AST* Zerg::parse_simple_stmt(ZergToken &token) {
 		case ZTYPE_CMD_CONTINUE:	/* continue statement */
 		case ZTYPE_CMD_BREAK:		/* break statement */
 			node = new AST(token);
-			next = this->lexer();
 			if (ZTYPE_NEWLINE != next.second) _SYNTAX(token);
 				break;
 		case ZTYPE_CMD_PRINT:
@@ -99,50 +100,49 @@ AST* Zerg::parse_simple_stmt(ZergToken &token) {
 			_SYNTAX(token);
 			break;
 		default:
-			node = this->expression(token);
+			node = this->expression(token, next);
 			break;
 	}
 
 	return node;
 }
 
-AST* Zerg::expression(ZergToken &token) {
+/* expression */
+AST* Zerg::expression(ZergToken token, ZergToken &next) {
 	AST *node = NULL, *sub = NULL;
-	ZergToken prev;
 
 	do {
+		_D(LOG_DEBUG_PARSER, "expression %s #%d", token.first.c_str(), token.second);
 		switch(token.second) {
 			case ZTYPE_LASSIGN: case ZTYPE_RASSIGN:
 				_SYNTAX(token);
 				break;
 			case ZTYPE_COMMA:
-				if (NULL == node) {
-					node = new AST(token);
-				} else if (ZTYPE_COMMA != node->type()) {
+				if (NULL == node && NULL == sub) {
+					/* comma following with nothing */
 					_SYNTAX(token);
+				} else if (NULL == node) {
+					node = new AST(token);
+					node->insert(sub);
 				}
-				node->insert(this->merge_arithmetic_all(stack));
 				break;
 			default:
-				this->test_expr(token, prev);
+				sub = this->test_expr(token, next);
+				if (NULL != node) node->insert(sub);
 				break;
 		}
 
-		prev  = token;
-		token = this->lexer();
+		token = next;
+		next  = this->lexer();
 	} while (ZTYPE_NEWLINE != token.second);
 
-	sub = this->merge_arithmetic_all(stack);
-	if (NULL == node) {
-		node = sub;
-	} else {
-		node->insert(sub);
-	}
+	if (NULL == node) node = sub;
 
 	return node;
 }
-void Zerg::test_expr(ZergToken &token, ZergToken prev) {
-	static AST *op = NULL;
+AST* Zerg::test_expr(ZergToken token, ZergToken &next) {
+	bool blEndParse = false;
+	AST *node = NULL, *op = NULL;
 
 	std::map<ZType, int> OPPriority = {
 		{ZTYPE_POW,			1},
@@ -160,83 +160,99 @@ void Zerg::test_expr(ZergToken &token, ZergToken prev) {
 	};
 
 
-	_D(LOG_DEBUG_PARSER, "expression on %s", token.first.c_str());
 	/* save the expression as suffix in stack */
+	do {
+		_D(LOG_DEBUG_PARSER, "expression on %s #%d", token.first.c_str(), token.second);
 
-	switch(token.second) {
-		case ZTYPE_LOG_OR:
-		case ZTYPE_LOG_XOR:
-		case ZTYPE_LOG_AND:
-		case ZTYPE_CMP_EQ:
-		case ZTYPE_CMP_LS: case ZTYPE_CMP_GT:
-		case ZTYPE_BIT_OR:
-		case ZTYPE_BIT_XOR:
-		case ZTYPE_BIT_AND:
-		case ZTYPE_RSHT: case ZTYPE_LSHT:
-		case ZTYPE_ADD: case ZTYPE_SUB:
-		case ZTYPE_MUL: case ZTYPE_DIV: case ZTYPE_MOD: case ZTYPE_LIKE:
-			if (0 == stack.size() || NULL != op) {
-				/* NOTE - sign with first statement */
-				stack.push_back(this->term_expr(token, prev));
+		switch(token.second) {
+			case ZTYPE_LOG_OR:
+			case ZTYPE_LOG_XOR:
+			case ZTYPE_LOG_AND:
+			case ZTYPE_CMP_EQ:
+			case ZTYPE_CMP_LS: case ZTYPE_CMP_GT:
+			case ZTYPE_BIT_OR:
+			case ZTYPE_BIT_XOR:
+			case ZTYPE_BIT_AND:
+			case ZTYPE_RSHT: case ZTYPE_LSHT:
+			case ZTYPE_ADD: case ZTYPE_SUB:
+			case ZTYPE_MUL: case ZTYPE_DIV: case ZTYPE_MOD: case ZTYPE_LIKE:
+				if (0 == stack.size() || NULL != op) {
+					/* NOTE - sign with first statement */
+					stack.push_back(this->term_expr(token, next));
 
-				if (op) {
+					if (op) {
+						stack.push_back(op);
+						op = NULL;
+					}
+					break;
+				}
+
+				if (NULL != op) _SYNTAX(token);
+				op = new AST(token);
+
+				while (3 <= stack.size()) {
+					AST *cur = stack[stack.size()-1];
+
+					if (OPPriority[token.second] >= OPPriority[cur->type()]) {
+						this->merge_arithmetic(stack);
+						continue;
+					}
+
+					std::iter_swap(stack.end()-2, stack.end()-1);
+					break;
+				}
+				break;
+			case ZTYPE_POW:
+				if (NULL != op) _SYNTAX(token);
+				op = new AST(token);
+
+				if (3 <= stack.size()) std::iter_swap(stack.end()-2, stack.end()-1);
+				break;
+			default:
+				stack.push_back(this->term_expr(token, next));
+
+				if (NULL != op) {
 					stack.push_back(op);
 					op = NULL;
 				}
 				break;
-			}
+		}
 
-			if (NULL != op) _SYNTAX(token);
-			op = new AST(token);
-
-			while (3 <= stack.size()) {
-				AST *cur = stack[stack.size()-1];
-
-				if (OPPriority[token.second] >= OPPriority[cur->type()]) {
-					this->merge_arithmetic(stack);
-					continue;
-				}
-
-				std::iter_swap(stack.end()-2, stack.end()-1);
+		switch(next.second) {
+			case ZTYPE_NEWLINE:
+			case ZTYPE_COMMA:
+				blEndParse = true;
 				break;
-			}
-			break;
-		case ZTYPE_POW:
-			if (NULL != op) _SYNTAX(token);
-			op = new AST(token);
+			default:
+				token = next;
+				next  = this->lexer();
+				break;
+		}
+	} while (false == blEndParse && ZTYPE_UNKNOWN != token.second);
 
-			if (3 <= stack.size()) std::iter_swap(stack.end()-2, stack.end()-1);
-			break;
-		default:
-			stack.push_back(this->term_expr(token, prev));
+	node = this->merge_arithmetic_all(stack);
 
-			if (NULL != op) {
-				stack.push_back(op);
-				op = NULL;
-			}
-			break;
-	}
+	return node;
 }
-AST* Zerg::term_expr(ZergToken &token, ZergToken prev) {
+AST* Zerg::term_expr(ZergToken token, ZergToken &next) {
 	AST *node = NULL;
-	ZergToken next;
 
-	_D(LOG_DEBUG_PARSER, "term on %s", token.first.c_str());
+	_D(LOG_DEBUG_PARSER, "term on %s #%d", token.first.c_str(), token.second);
 	switch(token.second) {
 		case ZTYPE_ADD: case ZTYPE_SUB: case ZTYPE_LIKE: case ZTYPE_LOG_NOT:	/* term */
-			node = new AST(token);
-			next = this->lexer();
-			node->insert(this->term_expr(next, token));
+			node  = new AST(token);
+			token = next;
+			next  = this->lexer();
+			node->insert(this->term_expr(token, next));
 			break;
 		default:
-			node = this->atom_expr(token, prev);
-			break;
+			node = this->atom_expr(token, next);
 			break;
 	}
 
 	return node;
 }
-AST* Zerg::atom_expr(ZergToken &token, ZergToken prev) {
+AST* Zerg::atom_expr(ZergToken token, ZergToken &next) {
 	AST *node = NULL;
 
 	_D(LOG_DEBUG_PARSER, "atom on %s", token.first.c_str());
@@ -251,6 +267,8 @@ AST* Zerg::atom_expr(ZergToken &token, ZergToken prev) {
 
 	return node;
 }
+
+/* arithmetic merge utils function */
 AST* Zerg::merge_arithmetic(std::vector<AST *> &stack) {
 	AST *node = NULL, *left = NULL, *right = NULL;
 

@@ -94,7 +94,6 @@ class AST : public Tree<AST> {
 		ZergToken _node_;
 };
 
-static ZergToken _EMPTY_ = {"[INIT]", ZTYPE_UNKNOWN};
 class Zerg : public IR {
 	public:
 		Zerg(std::string dst, Args &args);
@@ -106,14 +105,14 @@ class Zerg : public IR {
 		virtual AST* parser(std::string srcfile);	/* parse AST */
 
 		/* statement */
-		virtual AST* parse_stmt(ZergToken &token);
-		virtual AST* parse_simple_stmt(ZergToken &token);
+		virtual AST* parse_stmt(ZergToken token, ZergToken &next);
+		virtual AST* parse_simple_stmt(ZergToken token, ZergToken &next);
 
 		/* expression */
-		virtual AST* expression(ZergToken &token);
-		virtual void test_expr(ZergToken &token, ZergToken prev=_EMPTY_);
-		virtual AST* term_expr(ZergToken &token, ZergToken prev=_EMPTY_);
-		virtual AST* atom_expr(ZergToken &token, ZergToken prev=_EMPTY_);
+		virtual AST* expression(ZergToken token, ZergToken &next);
+		virtual AST* test_expr(ZergToken token, ZergToken &next);
+		virtual AST* term_expr(ZergToken token, ZergToken &next);
+		virtual AST* atom_expr(ZergToken token, ZergToken &next);
 		virtual ZergToken lexer(void);
 
 		/** merge the latest three node in arithmetic scope */
