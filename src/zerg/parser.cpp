@@ -107,12 +107,42 @@ AST* Zerg::parse_simple_stmt(ZergToken &token) {
 }
 
 AST* Zerg::expression(ZergToken &token) {
-	return this->test_expr(token);
-}
-AST* Zerg::test_expr(ZergToken &token) {
-	AST *node = NULL, *op = NULL, *cur = NULL;
+	AST *node = NULL, *sub = NULL;
 	ZergToken prev;
-	std::vector<AST *> stack = {};
+
+	do {
+		switch(token.second) {
+			case ZTYPE_LASSIGN: case ZTYPE_RASSIGN:
+				_SYNTAX(token);
+				break;
+			case ZTYPE_COMMA:
+				if (NULL == node) {
+					node = new AST(token);
+				} else if (ZTYPE_COMMA != node->type()) {
+					_SYNTAX(token);
+				}
+				node->insert(this->merge_arithmetic_all(stack));
+				break;
+			default:
+				this->test_expr(token, prev);
+				break;
+		}
+
+		prev  = token;
+		token = this->lexer();
+	} while (ZTYPE_NEWLINE != token.second);
+
+	sub = this->merge_arithmetic_all(stack);
+	if (NULL == node) {
+		node = sub;
+	} else {
+		node->insert(sub);
+	}
+
+	return node;
+}
+void Zerg::test_expr(ZergToken &token, ZergToken prev) {
+	static AST *op = NULL;
 
 	std::map<ZType, int> OPPriority = {
 		{ZTYPE_POW,			1},
@@ -130,76 +160,62 @@ AST* Zerg::test_expr(ZergToken &token) {
 	};
 
 
-	do {
-		_D(LOG_DEBUG_PARSER, "expression on %s", token.first.c_str());
-		/* save the expression as suffix in stack */
+	_D(LOG_DEBUG_PARSER, "expression on %s", token.first.c_str());
+	/* save the expression as suffix in stack */
 
-		switch(token.second) {
-			case ZTYPE_LOG_OR:
-			case ZTYPE_LOG_XOR:
-			case ZTYPE_LOG_AND:
-			case ZTYPE_CMP_EQ:
-			case ZTYPE_CMP_LS: case ZTYPE_CMP_GT:
-			case ZTYPE_BIT_OR:
-			case ZTYPE_BIT_XOR:
-			case ZTYPE_BIT_AND:
-			case ZTYPE_RSHT: case ZTYPE_LSHT:
-			case ZTYPE_ADD: case ZTYPE_SUB:
-			case ZTYPE_MUL: case ZTYPE_DIV: case ZTYPE_MOD: case ZTYPE_LIKE:
-				if (0 == stack.size() || NULL != op) {
-					/* NOTE - sign with first statement */
-					stack.push_back(this->term_expr(token, prev));
-					prev  = token;
-
-					if (op) {
-						stack.push_back(op);
-						op = NULL;
-					}
-					break;
-				}
-
-				if (NULL != op) _SYNTAX(token);
-				op = new AST(token);
-
-				while (3 <= stack.size()) {
-					cur = stack[stack.size()-1];
-
-					if (OPPriority[token.second] >= OPPriority[cur->type()]) {
-						this->merge_arithmetic(stack);
-						continue;
-					}
-
-					std::iter_swap(stack.end()-2, stack.end()-1);
-					break;
-				}
-				break;
-			case ZTYPE_POW:
-				if (NULL != op) _SYNTAX(token);
-				op = new AST(token);
-
-				if (3 <= stack.size()) std::iter_swap(stack.end()-2, stack.end()-1);
-				break;
-			default:
+	switch(token.second) {
+		case ZTYPE_LOG_OR:
+		case ZTYPE_LOG_XOR:
+		case ZTYPE_LOG_AND:
+		case ZTYPE_CMP_EQ:
+		case ZTYPE_CMP_LS: case ZTYPE_CMP_GT:
+		case ZTYPE_BIT_OR:
+		case ZTYPE_BIT_XOR:
+		case ZTYPE_BIT_AND:
+		case ZTYPE_RSHT: case ZTYPE_LSHT:
+		case ZTYPE_ADD: case ZTYPE_SUB:
+		case ZTYPE_MUL: case ZTYPE_DIV: case ZTYPE_MOD: case ZTYPE_LIKE:
+			if (0 == stack.size() || NULL != op) {
+				/* NOTE - sign with first statement */
 				stack.push_back(this->term_expr(token, prev));
-				prev  = token;
 
-				if (NULL != op) {
+				if (op) {
 					stack.push_back(op);
 					op = NULL;
 				}
 				break;
-		}
+			}
 
-		token = this->lexer();
-	} while (ZTYPE_NEWLINE != token.second);
+			if (NULL != op) _SYNTAX(token);
+			op = new AST(token);
 
-	if (NULL != op) _SYNTAX(prev);
+			while (3 <= stack.size()) {
+				AST *cur = stack[stack.size()-1];
 
-	/* transfer the suffix into infix tree */
-	while(0 != stack.size()) {
-		node = this->merge_arithmetic(stack);
+				if (OPPriority[token.second] >= OPPriority[cur->type()]) {
+					this->merge_arithmetic(stack);
+					continue;
+				}
+
+				std::iter_swap(stack.end()-2, stack.end()-1);
+				break;
+			}
+			break;
+		case ZTYPE_POW:
+			if (NULL != op) _SYNTAX(token);
+			op = new AST(token);
+
+			if (3 <= stack.size()) std::iter_swap(stack.end()-2, stack.end()-1);
+			break;
+		default:
+			stack.push_back(this->term_expr(token, prev));
+
+			if (NULL != op) {
+				stack.push_back(op);
+				op = NULL;
+			}
+			break;
 	}
-	return node;
 }
 AST* Zerg::term_expr(ZergToken &token, ZergToken prev) {
 	AST *node = NULL;
@@ -257,5 +273,14 @@ AST* Zerg::merge_arithmetic(std::vector<AST *> &stack) {
 		node = stack[0];
 		stack.pop_back();
 	}
+	return node;
+}
+AST* Zerg::merge_arithmetic_all(std::vector<AST *> &stack) {
+	AST *node = NULL;
+
+	while(0 != stack.size()) {
+		node = this->merge_arithmetic(stack);
+	}
+
 	return node;
 }

@@ -111,18 +111,20 @@ class Zerg : public IR {
 
 		/* expression */
 		virtual AST* expression(ZergToken &token);
-		virtual AST* test_expr(ZergToken &token);
+		virtual void test_expr(ZergToken &token, ZergToken prev=_EMPTY_);
 		virtual AST* term_expr(ZergToken &token, ZergToken prev=_EMPTY_);
 		virtual AST* atom_expr(ZergToken &token, ZergToken prev=_EMPTY_);
 		virtual ZergToken lexer(void);
 
 		/** merge the latest three node in arithmetic scope */
 		virtual AST* merge_arithmetic(std::vector<AST *> &stack);
+		virtual AST* merge_arithmetic_all(std::vector<AST *> &stack);
 	private:
 		Args _args_;
 		int _lineno_;
 		std::string _srcfile_;
 		std::fstream _fp_;
+		std::vector<AST *> stack;
 };
 
 #endif /* __ZERG_H__ */
