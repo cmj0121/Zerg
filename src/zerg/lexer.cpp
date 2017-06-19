@@ -4,12 +4,12 @@
 #include "zerg.h"
 
 /* Private Properties */
-ZergToken Zerg::lexer(std::fstream &fp) {
+ZergToken Zerg::lexer(void) {
 	int pos = 0, base=10;
 	std::string token;
 	ZType type = ZTYPE_UNKNOWN;
 
-	static bool blNewline = false;
+	static bool blNewline = false, blEOF = false;
 	static int _indent_cnt_ = 0, _indent_cur_ = 0;;
 	static std::string _linebuf_, _indent_word_;
 
@@ -20,12 +20,17 @@ ZergToken Zerg::lexer(std::fstream &fp) {
 		while (0 == _linebuf_.size()) {
 			this->_lineno_ ++;
 
-			if (std::getline(fp, _linebuf_)) {
-				_D(LOG_DEBUG_PARSER, "parse the line - #%-4d %s", _lineno_, _linebuf_.c_str());
+			if (std::getline(this->_fp_, _linebuf_)) {
+				_D(LOG_DEBUG_LEXER, "parse the line - #%-4d %s", _lineno_, _linebuf_.c_str());
 				token = "[NEWLINE]";
 				type  = ZTYPE_NEWLINE;
 			} else {
 				_indent_cur_ = 0;
+				if (!blEOF) {
+					blEOF = true;
+					token = "[NEWLINE]";
+					type  = ZTYPE_NEWLINE;
+				}
 				goto INDENT_PROCESSOR;
 			}
 
@@ -145,6 +150,30 @@ ZergToken Zerg::lexer(std::fstream &fp) {
 				else { _D(LOG_CRIT, "Unknown token %s", token.c_str());	}
 				goto END_LEXER;
 				break;
+			case '=':
+				type      = ZTYPE_LASSIGN;
+				token     = _linebuf_.substr(0, 1);
+				_linebuf_ = _linebuf_.substr(1);
+				goto END_LEXER;
+				break;
+			case '&':
+				type      = ZTYPE_BIT_AND;
+				token     = _linebuf_.substr(0, 1);
+				_linebuf_ = _linebuf_.substr(1);
+				goto END_LEXER;
+				break;
+			case '|':
+				type      = ZTYPE_BIT_OR;
+				token     = _linebuf_.substr(0, 1);
+				_linebuf_ = _linebuf_.substr(1);
+				goto END_LEXER;
+				break;
+			case '^':
+				type      = ZTYPE_BIT_XOR;
+				token     = _linebuf_.substr(0, 1);
+				_linebuf_ = _linebuf_.substr(1);
+				goto END_LEXER;
+				break;
 			case '.':									/* OPERATOR with single */
 				type      = ZTYPE_DOT;
 				token     = _linebuf_.substr(0, 1);
@@ -187,7 +216,7 @@ ZergToken Zerg::lexer(std::fstream &fp) {
 					if (_linebuf_[pos] == '\0') {
 						std::string line;
 
-						if (!std::getline(fp, line)) {
+						if (!std::getline(this->_fp_, line)) {
 							_D(LOG_CRIT, "syntax error on #%-4d %s ", _lineno_,
 																		_linebuf_.c_str());
 						}
@@ -221,6 +250,9 @@ ZergToken Zerg::lexer(std::fstream &fp) {
 				else if (token == "continue")		{ type = ZTYPE_CMD_CONTINUE;  }
 				else if (token == "break")			{ type = ZTYPE_CMD_BREAK;     }
 				else if (token == "asm")			{ type = ZTYPE_CMD_ASM;       }
+				else if (token == "and")			{ type = ZTYPE_LOG_AND;       }
+				else if (token == "xor")			{ type = ZTYPE_LOG_XOR;       }
+				else if (token == "or")				{ type = ZTYPE_LOG_OR;        }
 
 				goto END_LEXER;
 				break;

@@ -3,6 +3,7 @@
 #  define __ZERG_H__
 
 #include "utils.h"
+#include "zerg/tree.h"
 #include "zerg/ir.h"
 
 #define ZERG_VERSION		"1.0"
@@ -30,7 +31,7 @@ typedef enum _tag_token_type_ {
 	ZTYPE_SEMICOLON,	/* ;  */
 
 	ZTYPE_LASSIGN,	/* =   */
-	ZTYPE_RASSIGN,	/* <-  */
+	ZTYPE_RASSIGN,	/* ->  */
 	ZTYPE_ADD,		/* +   */
 	ZTYPE_SUB,		/* -   */
 	ZTYPE_MUL,		/* *   */
@@ -83,6 +84,17 @@ typedef enum _tag_token_type_ {
 
 typedef std::pair<std::string, ZType> ZergToken;
 
+class AST : public Tree<AST> {
+	public:
+		AST(std::string token, ZType type) : Tree<AST>(token), _node_(token, type) {};
+		AST(ZergToken &token) : Tree<AST>(token.first), _node_(token) {};
+
+		ZType type() { return _node_.second; }
+	private:
+		ZergToken _node_;
+};
+
+static ZergToken _EMPTY_ = {"[INIT]", ZTYPE_UNKNOWN};
 class Zerg : public IR {
 	public:
 		Zerg(std::string dst, Args &args);
@@ -91,12 +103,26 @@ class Zerg : public IR {
 		/* compile the source code and pass to IR */
 		void compile(std::string src);
 
-		virtual void parser(std::string srcfile);
-		virtual ZergToken lexer(std::fstream &fp);
+		virtual AST* parser(std::string srcfile);	/* parse AST */
+
+		/* statement */
+		virtual AST* parse_stmt(ZergToken &token);
+		virtual AST* parse_simple_stmt(ZergToken &token);
+
+		/* expression */
+		virtual AST* expression(ZergToken &token);
+		virtual AST* test_expr(ZergToken &token);
+		virtual AST* term_expr(ZergToken &token, ZergToken prev=_EMPTY_);
+		virtual AST* atom_expr(ZergToken &token, ZergToken prev=_EMPTY_);
+		virtual ZergToken lexer(void);
+
+		/** merge the latest three node in arithmetic scope */
+		virtual AST* merge_arithmetic(std::vector<AST *> &stack);
 	private:
 		Args _args_;
 		int _lineno_;
 		std::string _srcfile_;
+		std::fstream _fp_;
 };
 
 #endif /* __ZERG_H__ */
