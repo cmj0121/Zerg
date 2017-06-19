@@ -95,9 +95,11 @@ AST* Zerg::parse_simple_stmt(ZergToken token, ZergToken &next) {
 			node = new AST(token);
 			if (ZTYPE_NEWLINE != next.second) _SYNTAX(token);
 				break;
-		case ZTYPE_CMD_PRINT:
-		/* print statement */
-			_SYNTAX(token);
+		case ZTYPE_CMD_PRINT:		/* print statement */
+			node  = new AST(token);
+			token = next;
+			next  = this->lexer();
+			node->insert(this->expression(token, next));
 			break;
 		default:
 			node = this->expression(token, next);
@@ -114,9 +116,6 @@ AST* Zerg::expression(ZergToken token, ZergToken &next) {
 	do {
 		_D(LOG_DEBUG_PARSER, "expression %s #%d", token.first.c_str(), token.second);
 		switch(token.second) {
-			case ZTYPE_LASSIGN: case ZTYPE_RASSIGN:
-				_SYNTAX(token);
-				break;
 			case ZTYPE_COMMA:
 				if (NULL == node && NULL == sub) {
 					/* comma following with nothing */
@@ -219,13 +218,24 @@ AST* Zerg::test_expr(ZergToken token, ZergToken &next) {
 		}
 
 		switch(next.second) {
-			case ZTYPE_NEWLINE:
-			case ZTYPE_COMMA:
-				blEndParse = true;
-				break;
-			default:
+			case ZTYPE_LOG_OR:
+			case ZTYPE_LOG_XOR:
+			case ZTYPE_LOG_AND:
+			case ZTYPE_CMP_EQ:
+			case ZTYPE_CMP_LS: case ZTYPE_CMP_GT:
+			case ZTYPE_BIT_OR:
+			case ZTYPE_BIT_XOR:
+			case ZTYPE_BIT_AND:
+			case ZTYPE_RSHT: case ZTYPE_LSHT:
+			case ZTYPE_ADD: case ZTYPE_SUB:
+			case ZTYPE_MUL: case ZTYPE_DIV: case ZTYPE_MOD: case ZTYPE_LIKE:
+			case ZTYPE_POW:
+			case ZTYPE_NUMBER: case ZTYPE_STRING: case ZTYPE_IDENTIFIER:
 				token = next;
 				next  = this->lexer();
+				break;
+			default:
+				blEndParse = true;
 				break;
 		}
 	} while (false == blEndParse && ZTYPE_UNKNOWN != token.second);
