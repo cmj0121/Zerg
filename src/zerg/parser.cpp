@@ -84,7 +84,7 @@ AST* Zerg::parse_stmt(ZergToken token, ZergToken &next) {
 	return node;
 }
 AST* Zerg::parse_simple_stmt(ZergToken token, ZergToken &next) {
-	AST *node = NULL;
+	AST *node = NULL, *sub = NULL;
 
 	_D(LOG_DEBUG_PARSER, "simple statement on %s #%d", token.first.c_str(), token.second);
 
@@ -102,7 +102,22 @@ AST* Zerg::parse_simple_stmt(ZergToken token, ZergToken &next) {
 			node->insert(this->expression(token, next));
 			break;
 		default:
-			node = this->expression(token, next);
+			sub = this->expression(token, next);
+			switch(next.second) {
+				case ZTYPE_NEWLINE:
+					node = sub;
+					break;
+				case ZTYPE_LASSIGN: case ZTYPE_RASSIGN:
+					node  = new AST(next);
+					token = this->lexer();
+					next  = this->lexer();
+					node->insert(sub);
+					node->insert(this->expression(token, next));
+					break;
+				default:
+					_SYNTAX(next);
+					break;
+			}
 			break;
 	}
 
@@ -111,6 +126,7 @@ AST* Zerg::parse_simple_stmt(ZergToken token, ZergToken &next) {
 
 /* expression */
 AST* Zerg::expression(ZergToken token, ZergToken &next) {
+	bool blEndParse = false;
 	AST *node = NULL, *sub = NULL;
 
 	do {
@@ -131,9 +147,29 @@ AST* Zerg::expression(ZergToken token, ZergToken &next) {
 				break;
 		}
 
-		token = next;
-		next  = this->lexer();
-	} while (ZTYPE_NEWLINE != token.second);
+		switch(next.second) {
+			case ZTYPE_COMMA:
+			case ZTYPE_LOG_OR:
+			case ZTYPE_LOG_XOR:
+			case ZTYPE_LOG_AND:
+			case ZTYPE_CMP_EQ:
+			case ZTYPE_CMP_LS: case ZTYPE_CMP_GT:
+			case ZTYPE_BIT_OR:
+			case ZTYPE_BIT_XOR:
+			case ZTYPE_BIT_AND:
+			case ZTYPE_RSHT: case ZTYPE_LSHT:
+			case ZTYPE_ADD: case ZTYPE_SUB:
+			case ZTYPE_MUL: case ZTYPE_DIV: case ZTYPE_MOD: case ZTYPE_LIKE:
+			case ZTYPE_POW:
+			case ZTYPE_NUMBER: case ZTYPE_STRING: case ZTYPE_IDENTIFIER:
+				token = next;
+				next  = this->lexer();
+				break;
+			default:
+				blEndParse = true;
+				break;
+		}
+	} while (false == blEndParse && ZTYPE_NEWLINE != token.second);
 
 	if (NULL == node) node = sub;
 

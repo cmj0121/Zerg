@@ -2,7 +2,7 @@
 
 ## All kinds of the valid statement
 stmt          : ( simple_stmt | compound_stmt ) NEWLINE
-simple_stmt   : 'nop' | 'continue' | 'break' | [ args '=' ] expr | 'print' expression
+simple_stmt   : 'nop' | 'continue' | 'break' | expression | assign | 'print' expression
 compound_stmt : if_stmt | while_stmt | for_stmt | func_stmt | cls_stmt
 
 if_stmt       : 'if'    test ':'  suite ( 'elif' ':' suite )* [ 'else' ':' suite ]
@@ -12,7 +12,7 @@ func_stmt     : 'func'  VAR  '('  [ parameter ] ')' ':' suite
 cls_stmt      : 'cls'   VAR  '('  [ args ]      ')' ':' suite
 suite         : INDENT stmt+ DEDENT
 
-
+assign		: VAR '=' expression | expression '->' VAR
 args        : VAR  | args ',' VAR
 kwargs      : VAR '=' test | kwargs ',' VAR '=' test
 parameter   : ( args | VAR '=' expression ) [ args ]
