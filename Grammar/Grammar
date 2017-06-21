@@ -37,4 +37,5 @@ pow_expr    : term        | term '**' pow_expr
 
 ## Should be the minimal element
 term        : atom | ( '+' | '-' | '~' | 'not' ) term
-atom        : VAR  | NUMBER | '(' test ')' | atom '(' [ argument ]')'
+atom        : VAR  | NUMBER | pair_atom
+pair_atom	: '(' expression ')' | '[' expression ']' | '{' expression '}'

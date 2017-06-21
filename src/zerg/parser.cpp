@@ -468,6 +468,33 @@ AST* Zerg::atom_expr(ZergToken token, ZergToken &next) {
 
 	_D(LOG_DEBUG_PARSER, "atom on %s", token.first.c_str());
 	switch(token.second) {
+		case ZTYPE_PAIR_GROUP_OPEN:
+			token = next;
+			next  = this->lexer();
+			node  = this->expression(token, next);
+			if (ZTYPE_PAIR_GROUP_CLOSE != next.second) _SYNTAX(next);
+
+			token = next;
+			next  = this->lexer();
+			break;
+		case ZTYPE_PAIR_BRAKES_OPEN:
+			token = next;
+			next  = this->lexer();
+			node  = this->expression(token, next);
+			if (ZTYPE_PAIR_BRAKES_CLOSE != next.second) _SYNTAX(next);
+
+			token = next;
+			next  = this->lexer();
+			break;
+		case ZTYPE_PAIR_DICT_OPEN:
+			token = next;
+			next  = this->lexer();
+			node  = this->expression(token, next);
+			if (ZTYPE_PAIR_DICT_CLOSE != next.second) _SYNTAX(next);
+
+			token = next;
+			next  = this->lexer();
+			break;
 		case ZTYPE_TRUE: case ZTYPE_FALSE:
 		case ZTYPE_NUMBER: case ZTYPE_STRING: case ZTYPE_IDENTIFIER: /* atom */
 			node = new AST(token);
