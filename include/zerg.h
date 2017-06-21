@@ -21,6 +21,7 @@ typedef enum _tag_token_type_ {
 	ZTYPE_INDENT,
 	ZTYPE_DEDENT,
 
+	ZTYPE_NONE,
 	ZTYPE_TRUE,
 	ZTYPE_FALSE,
 	ZTYPE_NUMBER,

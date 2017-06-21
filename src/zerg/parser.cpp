@@ -23,7 +23,7 @@
 AST* Zerg::parser(std::string srcfile) {
 	std::string line;
 	ZergToken token, next;
-	AST *node = new AST("[ROOT]", ZTYPE_UNKNOWN), *cur = NULL;
+	AST *node = new AST("[" + srcfile + "]", ZTYPE_UNKNOWN), *cur = NULL;
 
 	this->_fp_.open(srcfile);
 	if (!this->_fp_.is_open()) {
@@ -35,7 +35,6 @@ AST* Zerg::parser(std::string srcfile) {
 	this->_srcfile_ = srcfile;
 
 	for (token = this->lexer(); ZTYPE_UNKNOWN != token.second; ) {
-
 		next = this->lexer();
 		if (token.second != ZTYPE_NEWLINE) {
 			ALERT(NULL == (cur = this->parse_stmt(token, next)));
@@ -345,11 +344,25 @@ AST* Zerg::test_expr(ZergToken token, ZergToken &next) {
 	};
 
 
+	if (ZTYPE_LOG_NOT == token.second) {
+		node  = new AST(token);
+
+		token = next;
+		next  = this->lexer();
+		node->insert(this->expression(token, next));
+
+		return node;
+	}
+
 	/* save the expression as suffix in stack */
 	do {
-		_D(LOG_DEBUG_PARSER, "expression on %s #%d", token.first.c_str(), token.second);
+		_D(LOG_DEBUG_PARSER, "test expr on %s #%d", token.first.c_str(), token.second);
 
 		switch(token.second) {
+			case ZTYPE_LOG_NOT:
+				if (ZTYPE_CMP_EQ != next.second) _SYNTAX(token);
+				_D(LOG_CRIT, "`not eq` is NOT implemented");
+				break;
 			case ZTYPE_LOG_OR:
 			case ZTYPE_LOG_XOR:
 			case ZTYPE_LOG_AND:
@@ -404,6 +417,7 @@ AST* Zerg::test_expr(ZergToken token, ZergToken &next) {
 		}
 
 		switch(next.second) {
+			case ZTYPE_LOG_NOT:
 			case ZTYPE_LOG_OR:
 			case ZTYPE_LOG_XOR:
 			case ZTYPE_LOG_AND:

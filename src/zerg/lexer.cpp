@@ -274,6 +274,9 @@ ZergToken Zerg::lexer(void) {
 				else if (token == "or")				{ type = ZTYPE_LOG_OR;        }
 				else if (token == "True")			{ type = ZTYPE_TRUE;          }
 				else if (token == "False")			{ type = ZTYPE_FALSE;         }
+				else if (token == "None")			{ type = ZTYPE_NONE;          }
+				else if (token == "not")			{ type = ZTYPE_LOG_NOT;       }
+				else if (token == "eq")				{ type = ZTYPE_CMP_EQ;        }
 
 				goto END_LEXER;
 				break;

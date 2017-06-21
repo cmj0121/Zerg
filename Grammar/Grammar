@@ -18,7 +18,7 @@ kwargs      : VAR '=' test | kwargs ',' VAR '=' test
 parameter   : ( args | VAR '=' expression ) [ args ]
 argument    : ( expression | kwargs ) [ ',' kwargs ]
 
-expression  : test        | expression ',' test
+expression  : [ 'not' ] test | expression ',' test
 ## test expression, return true or false
 test        : xor_test    | or_test    'or'  xor_test
 xor_test    : and_test    | xor_test   'xor' and_test
