@@ -109,7 +109,8 @@ class Zerg : public IR {
 		/* statement */
 		virtual AST* parse_stmt(ZergToken token, ZergToken &next);
 		virtual AST* parse_simple_stmt(ZergToken token, ZergToken &next);
-		/* scope : INDENT stmt+ DEDENT */
+		virtual AST* parse_if_stmt(ZergToken token, ZergToken &next);
+		/* scope : NEWLINE INDENT stmt+ DEDENT NEWLINE */
 		virtual AST* scope(ZergToken token, ZergToken &next);
 
 		/* expression */

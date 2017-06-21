@@ -59,40 +59,7 @@ AST* Zerg::parse_stmt(ZergToken token, ZergToken &next) {
 	/* Construct the AST repeat */
 	switch(token.second) {
 		case ZTYPE_CMD_IF: /* if statement */
-			/* if_stmt : 'if' test_expr ':' NEWLINE scope */
-			node  = new AST(token);
-
-			token = next;
-			next  = this->lexer();
-			node->insert(this->test_expr(token, next));
-
-			token = next;				/* :       */
-			next  = this->lexer();
-			if (ZTYPE_COLON != token.second) _SYNTAX(token);
-			token = next;				/* NEWLINE */
-			next  = this->lexer();
-			if (ZTYPE_NEWLINE != token.second) _SYNTAX(token);
-
-			token = next;
-			next  = this->lexer();
-			node->insert(this->scope(token, next));
-
-			/* else part */
-			if (ZTYPE_CMD_ELSE == next.second) {
-				token = next;			/* else */
-				next  = this->lexer();
-
-				token = next;			/* :   */
-				next  = this->lexer();
-				if (ZTYPE_COLON != token.second) _SYNTAX(token);
-				token = next;
-				next  = this->lexer();
-				if (ZTYPE_NEWLINE != token.second) _SYNTAX(token);
-
-				token = next;
-				next  = this->lexer();
-				node->insert(this->scope(token, next));
-			}
+			node = this->parse_if_stmt(token, next);
 			break;
 		case ZTYPE_CMD_WHILE:
 		/* while statement */
@@ -155,16 +122,60 @@ AST* Zerg::parse_simple_stmt(ZergToken token, ZergToken &next) {
 
 	return node;
 }
+AST* Zerg::parse_if_stmt(ZergToken token, ZergToken &next) {
+	/* if_stmt : 'if' test_expr ':' scope [ 'else' ':' scope ] */
+	AST *node = new AST(token);
+
+	_D(LOG_DEBUG_PARSER, "if statement on %s #%d", token.first.c_str(), token.second);
+	ALERT(ZTYPE_CMD_IF != token.second && ZTYPE_CMD_ELIF != token.second);
+
+	/* get the test expression */
+	token = next;
+	next  = this->lexer();
+	node->insert(this->test_expr(token, next));
+
+	token = next;				/* :       */
+	next  = this->lexer();
+	if (ZTYPE_COLON != token.second) _SYNTAX(token);
+
+	/* scope */
+	token = next;
+	next  = this->lexer();
+	node->insert(this->scope(token, next));
+
+	if (ZTYPE_CMD_ELIF == next.second) {			/* elif part */
+		token = next;			/* elif */
+		next  = this->lexer();
+		node->insert(this->parse_if_stmt(token, next));
+	} else if (ZTYPE_CMD_ELSE == next.second) {		/* else part if possible */
+		token = next;			/* else */
+		next  = this->lexer();
+
+		token = next;			/* :   */
+		next  = this->lexer();
+		if (ZTYPE_COLON != token.second) _SYNTAX(token);
+
+		token = next;
+		next  = this->lexer();
+		node->insert(this->scope(token, next));
+	}
+
+	return node;
+}
 AST* Zerg::scope(ZergToken token, ZergToken &next) {
-	/* scope : INDENT stmt+ DEDENT */
+	/* scope : NEWLINE INDENT stmt+ DEDENT NEWLINE */
 	AST *node = new AST("[ROOT]", ZTYPE_UNKNOWN), *sub = NULL;
+
+	if (ZTYPE_NEWLINE != token.second) _SYNTAX(token);
+	token = next;
+	next = this->lexer();
 
 	if (ZTYPE_INDENT != token.second) _SYNTAX(token);
 	token = next;
 	next = this->lexer();
 
 	do {
-		_D(LOG_DEBUG_PARSER, "scope on %s", token.first.c_str());
+		_D(LOG_DEBUG_PARSER, "scope on %s #%d", token.first.c_str(), token.second);
 		switch(token.second) {
 			case ZTYPE_NEWLINE:
 				token = next;

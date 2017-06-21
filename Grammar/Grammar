@@ -10,7 +10,7 @@ while_stmt    : 'while' test ':'  scope
 for_stmt      : 'for'   args 'in' expression        ':' scope
 func_stmt     : 'func'  VAR  '('  [ parameter ] ')' ':' scope
 cls_stmt      : 'cls'   VAR  '('  [ args ]      ')' ':' scope
-scope         : INDENT stmt+ DEDENT
+scope         : NEWLINE INDENT stmt+ DEDENT
 
 assign		: VAR '=' expression | expression '->' VAR
 args        : VAR  | args ',' VAR

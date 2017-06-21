@@ -9,7 +9,7 @@ ZergToken Zerg::lexer(void) {
 	std::string token;
 	ZType type = ZTYPE_UNKNOWN;
 
-	static bool blNewline = false, blEOF = false;
+	static bool blNewline = false, blEOF = false, blEOL = false;
 	static int _indent_cnt_ = 0, _indent_cur_ = 0;;
 	static std::string _linebuf_, _indent_word_;
 
@@ -28,14 +28,23 @@ ZergToken Zerg::lexer(void) {
 				token = "[NEWLINE]";
 				type  = ZTYPE_NEWLINE;
 			} else {
+				/* EOF - reset all indent */
 				_indent_cur_ = 0;
+
 				if (!blEOF) {
 					blEOF = true;
 					token = "[NEWLINE]";
 					type  = ZTYPE_NEWLINE;
 					goto END_LEXER;
+				} else if (_indent_cur_ != _indent_cnt_) {
+					/* clean-up the indent */
+					goto INDENT_PROCESSOR;
+				} else if (false == blEOL) {
+					blEOL = true;
+					token = "[NEWLINE]";
+					type  = ZTYPE_NEWLINE;
+					goto END_LEXER;
 				}
-				goto INDENT_PROCESSOR;
 			}
 
 			goto END_LEXER;
