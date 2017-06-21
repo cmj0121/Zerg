@@ -58,17 +58,19 @@ AST* Zerg::parse_stmt(ZergToken token, ZergToken &next) {
 	_D(LOG_DEBUG_PARSER, "parse stmt on %s", token.first.c_str());
 	/* Construct the AST repeat */
 	switch(token.second) {
-		case ZTYPE_CMD_IF: /* if statement */
+		case ZTYPE_CMD_IF: 			/* if statement */
 			node = this->parse_if_stmt(token, next);
 			break;
-		case ZTYPE_CMD_WHILE:
-		/* while statement */
-		case ZTYPE_CMD_FOR:
-		/* for statement */
-		case ZTYPE_CMD_FUNCTION:
-		/* function */
-		case ZTYPE_CMD_CLASS:
-		/* class statement */
+		case ZTYPE_CMD_WHILE: 		/* while statement */
+			node = this->parse_while_stmt(token, next);
+			break;
+		case ZTYPE_CMD_FOR:			/* for statement */
+			node = this->parse_for_stmt(token, next);
+			break;
+		case ZTYPE_CMD_FUNCTION:	/* function */
+		case ZTYPE_CMD_CLASS:		/* class statement */
+			node = this->parse_func_cls_stmt(token, next);
+			break;
 		default:
 		/* simple statement */
 			node = parse_simple_stmt(token, next);
@@ -159,6 +161,79 @@ AST* Zerg::parse_if_stmt(ZergToken token, ZergToken &next) {
 		next  = this->lexer();
 		node->insert(this->scope(token, next));
 	}
+
+	return node;
+}
+AST* Zerg::parse_while_stmt(ZergToken token, ZergToken &next) {
+	/* while_stmt : 'while' test ':' scope */
+	AST *node = new AST(token);
+
+	_D(LOG_DEBUG_PARSER, "while statement on %s #%d", token.first.c_str(), token.second);
+	ALERT(ZTYPE_CMD_WHILE != token.second);
+
+	/* get the test expression */
+	token = next;
+	next  = this->lexer();
+	node->insert(this->test_expr(token, next));
+
+	token = next;				/* :       */
+	next  = this->lexer();
+	if (ZTYPE_COLON != token.second) _SYNTAX(token);
+
+	/* scope */
+	token = next;
+	next  = this->lexer();
+	node->insert(this->scope(token, next));
+
+	return node;
+}
+AST* Zerg::parse_for_stmt(ZergToken token, ZergToken &next) {
+	AST *node = NULL;
+
+	_SYNTAX(token);
+	return node;
+}
+AST* Zerg::parse_func_cls_stmt(ZergToken token, ZergToken &next) {
+	/* func_stmt : 'func' VAR '(' [ parameter ] ')' ':' scope */
+	/* cls_stmt  : 'cls'  VAR '(' [ args ] ')' ':' scope */
+	AST *node = new AST(token), *sub = new AST("[PARAM]", ZTYPE_UNKNOWN);
+
+	_D(LOG_DEBUG_PARSER, "func/cls statement on %s #%d", token.first.c_str(), token.second);
+	ALERT(ZTYPE_CMD_FUNCTION != token.second && ZTYPE_CMD_CLASS != token.second);
+
+	token = next;			/* VAR */
+	next  = this->lexer();
+	if (ZTYPE_IDENTIFIER != token.second) _SYNTAX(token);
+
+	node->insert(new AST(token));
+	token = next;			/* '(' */
+	next  = this->lexer();
+	if (ZTYPE_PAIR_GROUP_OPEN != token.second) _SYNTAX(token);
+
+	do {
+		token = next;
+		next  = this->lexer();
+
+		switch(token.second) {
+			case ZTYPE_PAIR_GROUP_CLOSE:
+				node->insert(sub);
+				sub = NULL;
+				break;
+			default:
+				/* FIXME - should process the parameter */
+				_SYNTAX(token);
+				break;
+		}
+	} while (ZTYPE_PAIR_GROUP_CLOSE != token.second && ZTYPE_UNKNOWN != token.second);
+	if (ZTYPE_PAIR_GROUP_CLOSE != token.second) _SYNTAX(token);
+
+	token = next;		/* ':'  */
+	next  = this->lexer();
+	if (ZTYPE_COLON != token.second) _SYNTAX(token);
+	token = next;
+	next  = this->lexer();
+
+	node->insert(this->scope(token, next));
 
 	return node;
 }

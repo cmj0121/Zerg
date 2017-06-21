@@ -110,6 +110,9 @@ class Zerg : public IR {
 		virtual AST* parse_stmt(ZergToken token, ZergToken &next);
 		virtual AST* parse_simple_stmt(ZergToken token, ZergToken &next);
 		virtual AST* parse_if_stmt(ZergToken token, ZergToken &next);
+		virtual AST* parse_while_stmt(ZergToken token, ZergToken &next);
+		virtual AST* parse_for_stmt(ZergToken token, ZergToken &next);
+		virtual AST* parse_func_cls_stmt(ZergToken token, ZergToken &next);
 		/* scope : NEWLINE INDENT stmt+ DEDENT NEWLINE */
 		virtual AST* scope(ZergToken token, ZergToken &next);
 
