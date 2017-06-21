@@ -13,6 +13,8 @@ ZergToken Zerg::lexer(void) {
 	static int _indent_cnt_ = 0, _indent_cur_ = 0;;
 	static std::string _linebuf_, _indent_word_;
 
+	/* First, handle the indent/dedent case */
+	if (_indent_cur_ != _indent_cnt_) goto INDENT_PROCESSOR;
 
 	/* lexer */
 	do {
@@ -20,6 +22,7 @@ ZergToken Zerg::lexer(void) {
 		while (0 == _linebuf_.size()) {
 			this->_lineno_ ++;
 
+			_D(LOG_DEBUG_LEXER, "reload the line buffer");
 			if (std::getline(this->_fp_, _linebuf_)) {
 				_D(LOG_DEBUG_LEXER, "parse the line - #%-4d %s", _lineno_, _linebuf_.c_str());
 				token = "[NEWLINE]";
@@ -30,6 +33,7 @@ ZergToken Zerg::lexer(void) {
 					blEOF = true;
 					token = "[NEWLINE]";
 					type  = ZTYPE_NEWLINE;
+					goto END_LEXER;
 				}
 				goto INDENT_PROCESSOR;
 			}
@@ -37,13 +41,14 @@ ZergToken Zerg::lexer(void) {
 			goto END_LEXER;
 		}
 
-		/* simple process the index case */
+		/* simple process the indent case when newline */
 		if (blNewline && !ISWHITESPACE(_linebuf_[0])) {
-			_D(LOG_DEBUG_LEXER, "new line without any indent");
+			_D(LOG_DEBUG_LEXER, "new line without any indent `%s`", _linebuf_.c_str());
 			_indent_cur_ = 0;
+			if (_indent_cur_ != _indent_cnt_) goto INDENT_PROCESSOR;
 		}
 
-		_D(LOG_DEBUG_LEXER, "lexer on line - %s", _linebuf_.c_str());
+		_D(LOG_DEBUG_LEXER, "lexer on line - `%s`", _linebuf_.c_str());
 		switch(_linebuf_[0]) {
 			case '#': case '\0':						/* End-of-Line*/
 				token = "";
@@ -63,6 +68,7 @@ ZergToken Zerg::lexer(void) {
 					continue;
 				} else if (blNewline) {			/* process the current indent status */
 					if(0 == _indent_word_.size()) {
+						_D(LOG_DEBUG_LEXER, "new indent detected");
 						_indent_word_ = _linebuf_.substr(0, pos);
 						_linebuf_     = _linebuf_.substr(pos);
 
@@ -78,7 +84,11 @@ ZergToken Zerg::lexer(void) {
 
 					if (0 != token.size()) _D(LOG_CRIT, "indent error");
 					_linebuf_ = _linebuf_.substr(pos);
-					goto INDENT_PROCESSOR;
+
+					if (_indent_cur_ != _indent_cnt_) goto INDENT_PROCESSOR;
+
+					blNewline = false;
+					continue;
 				}
 
 				_linebuf_ = _linebuf_.substr(pos);
@@ -253,6 +263,8 @@ ZergToken Zerg::lexer(void) {
 				else if (token == "and")			{ type = ZTYPE_LOG_AND;       }
 				else if (token == "xor")			{ type = ZTYPE_LOG_XOR;       }
 				else if (token == "or")				{ type = ZTYPE_LOG_OR;        }
+				else if (token == "True")			{ type = ZTYPE_TRUE;          }
+				else if (token == "False")			{ type = ZTYPE_FALSE;         }
 
 				goto END_LEXER;
 				break;
@@ -274,5 +286,6 @@ INDENT_PROCESSOR:
 	}
 END_LEXER:
 	blNewline = type == ZTYPE_NEWLINE;
+	_D(LOG_DEBUG_LEXER, "token -> #0x%-4X %s", type, token.c_str());
 	return std::make_pair(token, type);
 }

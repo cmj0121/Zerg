@@ -21,6 +21,8 @@ typedef enum _tag_token_type_ {
 	ZTYPE_INDENT,
 	ZTYPE_DEDENT,
 
+	ZTYPE_TRUE,
+	ZTYPE_FALSE,
 	ZTYPE_NUMBER,
 	ZTYPE_STRING,
 	ZTYPE_IDENTIFIER,
@@ -107,6 +109,8 @@ class Zerg : public IR {
 		/* statement */
 		virtual AST* parse_stmt(ZergToken token, ZergToken &next);
 		virtual AST* parse_simple_stmt(ZergToken token, ZergToken &next);
+		/* scope : INDENT stmt+ DEDENT */
+		virtual AST* scope(ZergToken token, ZergToken &next);
 
 		/* expression */
 		virtual AST* expression(ZergToken token, ZergToken &next);

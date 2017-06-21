@@ -5,12 +5,12 @@ stmt          : ( simple_stmt | compound_stmt ) NEWLINE
 simple_stmt   : 'nop' | 'continue' | 'break' | expression | assign | 'print' expression
 compound_stmt : if_stmt | while_stmt | for_stmt | func_stmt | cls_stmt
 
-if_stmt       : 'if'    test ':'  suite ( 'elif' ':' suite )* [ 'else' ':' suite ]
-while_stmt    : 'while' test ':'  suite
-for_stmt      : 'for'   args 'in' expression        ':' suite
-func_stmt     : 'func'  VAR  '('  [ parameter ] ')' ':' suite
-cls_stmt      : 'cls'   VAR  '('  [ args ]      ')' ':' suite
-suite         : INDENT stmt+ DEDENT
+if_stmt       : 'if'    test ':'  scope ( 'elif' ':' scope )* [ 'else' ':' scope ]
+while_stmt    : 'while' test ':'  scope
+for_stmt      : 'for'   args 'in' expression        ':' scope
+func_stmt     : 'func'  VAR  '('  [ parameter ] ')' ':' scope
+cls_stmt      : 'cls'   VAR  '('  [ args ]      ')' ':' scope
+scope         : INDENT stmt+ DEDENT
 
 assign		: VAR '=' expression | expression '->' VAR
 args        : VAR  | args ',' VAR
