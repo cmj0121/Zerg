@@ -360,9 +360,6 @@ AST* Zerg::test_expr(ZergToken token, ZergToken &next) {
 
 		switch(token.second) {
 			case ZTYPE_LOG_NOT:
-				if (ZTYPE_CMP_EQ != next.second) _SYNTAX(token);
-				_D(LOG_CRIT, "`not eq` is NOT implemented");
-				break;
 			case ZTYPE_LOG_OR:
 			case ZTYPE_LOG_XOR:
 			case ZTYPE_LOG_AND:
@@ -388,10 +385,23 @@ AST* Zerg::test_expr(ZergToken token, ZergToken &next) {
 				if (NULL != op) _SYNTAX(token);
 				op = new AST(token);
 
+				if (ZTYPE_LOG_NOT == token.second) {
+					if (ZTYPE_CMP_EQ != next.second) _SYNTAX(token);
+					token = next;
+					next  = this->lexer();
+
+					op->insert(new AST(token));	/* 'eq'  */
+				}
+
 				while (3 <= stack.size()) {
 					AST *cur = stack[stack.size()-1];
 
-					if (OPPriority[token.second] >= OPPriority[cur->type()]) {
+					if (1 == cur->length() && ZTYPE_LOG_NOT == cur->type()) {
+						if (OPPriority[token.second] >= OPPriority[ZTYPE_CMP_EQ]) {
+							this->merge_arithmetic(stack);
+							continue;
+						}
+					} else if (OPPriority[token.second] >= OPPriority[cur->type()]) {
 						this->merge_arithmetic(stack);
 						continue;
 					}
@@ -521,8 +531,13 @@ AST* Zerg::merge_arithmetic(std::vector<AST *> &stack) {
 		stack.pop_back();
 		stack.pop_back();
 
-		node->insert(left);
-		node->insert(right);
+		if (ZTYPE_LOG_NOT == node->type() && 1 == node->length()) {
+			node->child(0)->insert(left);
+			node->child(0)->insert(right);
+		} else {
+			node->insert(left);
+			node->insert(right);
+		}
 
 		stack.push_back(node);
 		if (1 < stack.size()) std::iter_swap(stack.end()-1, stack.end()-2);
