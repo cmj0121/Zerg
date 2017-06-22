@@ -53,7 +53,7 @@ syn keyword ZERGStatement     syscall del
 syn keyword ZERGLogical       eq not in and or not xor
 syn match   ZERGAssign        "\(<-\|->\)"
 syn keyword ZERGCondition     if elif else
-syn keyword ZERGRepeat        while break continue
+syn keyword ZERGRepeat        for while break continue
 syn match   ZERGFunction      "\%(\(func\|cls\)\s\+\)\@<=\w\+" contained
 syn keyword ZERGException     try except finally raise
 syn keyword ZERGInclude       from import

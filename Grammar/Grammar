@@ -7,15 +7,15 @@ compound_stmt : if_stmt | while_stmt | for_stmt | func_stmt | cls_stmt
 
 if_stmt       : 'if'    test ':'  scope ( 'elif' ':' scope )* [ 'else' ':' scope ]
 while_stmt    : 'while' test ':'  scope
-for_stmt      : 'for'   args 'in' expression        ':' scope
+for_stmt      : 'for' varargs 'in' expression  ':' scope
 func_stmt     : 'func'  VAR  '('  [ parameter ] ')' ':' scope
-cls_stmt      : 'cls'   VAR  '('  [ args ]      ')' ':' scope
+cls_stmt      : 'cls'   VAR  '('  [ varargs ]      ')' ':' scope
 scope         : NEWLINE INDENT stmt+ DEDENT
 
 assign		: VAR '=' expression | expression '->' VAR
-args        : VAR  | args ',' VAR
+varargs     : VAR ( ',' VAR )*
 kwargs      : VAR '=' test | kwargs ',' VAR '=' test
-parameter   : ( args | VAR '=' expression ) [ args ]
+parameter   : ( varargs | VAR '=' expression ) [ varargs ]
 argument    : ( expression | kwargs ) [ ',' kwargs ]
 
 expression  : [ 'not' ] test | expression ',' test

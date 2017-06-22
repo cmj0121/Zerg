@@ -107,15 +107,20 @@ class Zerg : public IR {
 
 		virtual AST* parser(std::string srcfile);	/* parse AST */
 
+
+	protected:
 		/* statement */
 		virtual AST* parse_stmt(ZergToken token, ZergToken &next);
 		virtual AST* parse_simple_stmt(ZergToken token, ZergToken &next);
 		virtual AST* parse_if_stmt(ZergToken token, ZergToken &next);
 		virtual AST* parse_while_stmt(ZergToken token, ZergToken &next);
 		virtual AST* parse_for_stmt(ZergToken token, ZergToken &next);
-		virtual AST* parse_func_cls_stmt(ZergToken token, ZergToken &next);
+		virtual AST* parse_func_stmt(ZergToken token, ZergToken &next);
+		virtual AST* parse_cls_stmt(ZergToken token, ZergToken &next);
 		/* scope : NEWLINE INDENT stmt+ DEDENT NEWLINE */
 		virtual AST* scope(ZergToken token, ZergToken &next);
+		/* varargs : VAR ( ',' VAR )* */
+		virtual AST* varargs(ZergToken token, ZergToken &next);
 
 		/* expression */
 		virtual AST* expression(ZergToken token, ZergToken &next);
