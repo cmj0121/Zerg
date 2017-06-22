@@ -257,6 +257,10 @@ AST* Zerg::parse_func_stmt(ZergToken token, ZergToken &next) {
 		next  = this->lexer();
 
 		switch(token.second) {
+			case ZTYPE_IDENTIFIER:
+				sub->insert(this->varargs(token, next));
+				std::cerr << *sub << std::endl;
+				break;
 			case ZTYPE_PAIR_GROUP_CLOSE:
 				node->insert(sub);
 				sub = NULL;
