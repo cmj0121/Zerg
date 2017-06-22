@@ -674,6 +674,7 @@ AST* Zerg::atom_expr(ZergToken token, ZergToken &next) {
 				token = next;				/* '(' */
 				next  = this->lexer();
 				sub   = new AST("call", ZTYPE_FUNCCALL);
+				sub->insert(cur);
 
 				token = next;
 				next  = this->lexer();
@@ -689,8 +690,31 @@ AST* Zerg::atom_expr(ZergToken token, ZergToken &next) {
 						break;
 				}
 
-				cur->insert(sub);
-				cur = sub;
+				cur  = sub;
+				node = cur->root();
+				break;
+			case ZTYPE_PAIR_BRAKES_OPEN:		/* element getter */
+				token = next;				/* '[' */
+				next  = this->lexer();
+				sub   = new AST("getter", ZTYPE_GETTER);
+				sub->insert(cur);
+
+				token = next;
+				next  = this->lexer();
+				switch(token.second) {
+					case ZTYPE_PAIR_BRAKES_CLOSE:
+						break;
+					default:
+						sub->insert(this->expression(token, next));
+
+						token = next;				/* ']' */
+						next  = this->lexer();
+						if (ZTYPE_PAIR_BRAKES_CLOSE != token.second) _SYNTAX(token);
+						break;
+				}
+
+				cur  = sub;
+				node = cur->root();
 				break;
 			default:
 				blEOP = true;
