@@ -49,9 +49,9 @@ syn keyword ZERGConstant      none true false
 syn keyword ZERGIdentifier    this
 syn keyword ZERGStatement     nop as return yield
 syn keyword ZERGStatement     func cls nextgroup=ZERGFunction skipwhite
-syn keyword ZERGStatement     syscall del
+syn keyword ZERGStatement     syscall del asm
 syn keyword ZERGLogical       eq not in and or not xor
-syn match   ZERGAssign        "\(<-\|->\)"
+syn match   ZERGAssign        "\(=\|->\)"
 syn keyword ZERGCondition     if elif else
 syn keyword ZERGRepeat        for while break continue
 syn match   ZERGFunction      "\%(\(func\|cls\)\s\+\)\@<=\w\+" contained

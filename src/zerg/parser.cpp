@@ -91,6 +91,15 @@ AST* Zerg::parse_simple_stmt(ZergToken token, ZergToken &next) {
 
 	_D(LOG_DEBUG_PARSER, "simple statement on %s #%d", token.first.c_str(), token.second);
 	switch(token.second) {
+		case ZTYPE_CMD_ASM:			/* inline asm */
+			if (ZTYPE_STRING != next.second) _SYNTAX(token);
+			node = new AST(token);
+			node->insert(new AST(next));
+
+			token = next;
+			next  = this->lexer();
+			if (ZTYPE_NEWLINE != next.second) _SYNTAX(next);
+			break;
 		case ZTYPE_CMD_NOP:			/* nop statement */
 		case ZTYPE_CMD_CONTINUE:	/* continue statement */
 		case ZTYPE_CMD_BREAK:		/* break statement */

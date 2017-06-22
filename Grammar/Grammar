@@ -1,7 +1,7 @@
 # Grammar for the Zerg Language
 
 ## All kinds of the valid statement
-stmt          : ( simple_stmt | compound_stmt ) NEWLINE
+stmt          : ( simple_stmt | compound_stmt | inline_asm ) NEWLINE
 simple_stmt   : 'nop' | 'continue' | 'break' | expression | assign | print_stmt | inc_dec
 compound_stmt : if_stmt | while_stmt | for_stmt | func_stmt | cls_stmt
 
@@ -12,6 +12,7 @@ func_stmt     : 'func'  VAR  '('  [ parameter ] ')' ':' scope
 cls_stmt      : 'cls'   VAR  '('  [ varargs ]      ')' ':' scope
 print_stmt    : 'print' expression
 inc_dec       : VAR ( '++' | '--' )
+inline_asm    : 'asm' STRING
 scope         : NEWLINE INDENT stmt+ DEDENT
 
 assign		: VAR '=' expression | expression '->' VAR
