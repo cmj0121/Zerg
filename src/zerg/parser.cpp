@@ -103,6 +103,17 @@ AST* Zerg::parse_simple_stmt(ZergToken token, ZergToken &next) {
 			next  = this->lexer();
 			node->insert(this->expression(token, next));
 			break;
+		case ZTYPE_IDENTIFIER:		/* special statement : inc / dec */
+			if (ZTYPE_INC == next.second || ZTYPE_DEC == next.second) {
+				node = new AST(next);
+				node->insert(new AST(token));
+
+				token = next;			/* '++' | '--' */
+				next  = this->lexer();
+				if (ZTYPE_NEWLINE != next.second) _SYNTAX(token);
+
+				break;
+			}
 		default:
 			sub = this->expression(token, next);
 			switch(next.second) {
