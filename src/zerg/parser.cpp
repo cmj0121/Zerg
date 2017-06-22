@@ -588,7 +588,8 @@ AST* Zerg::term_expr(ZergToken token, ZergToken &next) {
 	return node;
 }
 AST* Zerg::atom_expr(ZergToken token, ZergToken &next) {
-	AST *node = NULL;
+	bool blEOP = false;
+	AST *node = NULL, *sub = NULL, *cur = NULL;
 
 	_D(LOG_DEBUG_PARSER, "atom on %s", token.first.c_str());
 	switch(token.second) {
@@ -627,6 +628,51 @@ AST* Zerg::atom_expr(ZergToken token, ZergToken &next) {
 			_SYNTAX(token);
 			break;
 	}
+
+	cur = node;
+	do {
+		_D(LOG_DEBUG_PARSER, "special atom check on %s", next.first.c_str());
+		switch(next.second) {
+			case ZTYPE_DOT:						/* attribute */
+				token = next;
+				next  = this->lexer();
+				sub   = new AST(token);	/* '.' */
+
+				token = next;
+				next  = this->lexer();
+
+				sub->insert(node);
+				sub->insert(this->atom_expr(token, next));
+				node = sub;
+				cur  = sub;
+				break;
+			case ZTYPE_PAIR_GROUP_OPEN:			/* function call */
+				token = next;				/* '(' */
+				next  = this->lexer();
+				sub   = new AST("call", ZTYPE_FUNCCALL);
+
+				token = next;
+				next  = this->lexer();
+				switch(token.second) {
+					case ZTYPE_PAIR_GROUP_CLOSE:
+						break;
+					default:
+						sub->insert(this->expression(token, next));
+
+						token = next;				/* ')' */
+						next  = this->lexer();
+						if (ZTYPE_PAIR_GROUP_CLOSE != token.second) _SYNTAX(token);
+						break;
+				}
+
+				cur->insert(sub);
+				cur = sub;
+				break;
+			default:
+				blEOP = true;
+				break;
+		}
+	} while (false == blEOP);
 
 	return node;
 }

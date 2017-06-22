@@ -20,6 +20,7 @@ typedef enum _tag_token_type_ {
 	ZTYPE_NEWLINE,
 	ZTYPE_INDENT,
 	ZTYPE_DEDENT,
+	ZTYPE_FUNCCALL,		/* special token */
 
 	ZTYPE_NONE,
 	ZTYPE_TRUE,
