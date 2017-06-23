@@ -6,12 +6,6 @@
 #include <unistd.h>
 #include "zerg.h"
 
-Zerg::Zerg(std::string dst, Args &args) : IR(dst, args), _args_(args) {
-	this->_lineno_		= 1;
-	this->_args_		= args;
-}
-Zerg::~Zerg() {
-}
 
 void Zerg::compile(std::string src) {
 	AST *ast = NULL;
@@ -25,4 +19,12 @@ void Zerg::compile(std::string src) {
 		}
 		ast = this->parser(src);
 	}
+}
+
+AST* Zerg::parser(std::string srcfile) {
+	AST *node = Parser::parser(srcfile);
+
+	/* generate the CFG is possible */
+
+	return node;
 }

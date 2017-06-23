@@ -14,13 +14,14 @@
 						_token.first.c_str());		\
 	} while (0)
 
+
 /* Parse the source file and generate the CFG by following steps
  *
  *     1. Lexer by function `lexer`
  *     2. Parse and generate a big AST
  *     3. Split into several AST and generate a CFG
  */
-AST* Zerg::parser(std::string srcfile) {
+AST* Parser::parser(std::string srcfile) {
 	std::string line;
 	ZergToken token, next;
 	AST *node = new AST("[" + srcfile + "]", ZTYPE_UNKNOWN), *cur = NULL;
@@ -51,7 +52,7 @@ AST* Zerg::parser(std::string srcfile) {
 	#endif /* DEBUG_AST */
 	return node;
 }
-AST* Zerg::parse_stmt(ZergToken token, ZergToken &next) {
+AST* Parser::parse_stmt(ZergToken token, ZergToken &next) {
 	AST *node = NULL;
 
 	_D(LOG_DEBUG_PARSER, "parse stmt on %s", token.first.c_str());
@@ -86,7 +87,7 @@ AST* Zerg::parse_stmt(ZergToken token, ZergToken &next) {
 	#endif /* DEBUG_AST */
 	return node;
 }
-AST* Zerg::parse_simple_stmt(ZergToken token, ZergToken &next) {
+AST* Parser::parse_simple_stmt(ZergToken token, ZergToken &next) {
 	AST *node = NULL, *sub = NULL;
 
 	_D(LOG_DEBUG_PARSER, "simple statement on %s #%d", token.first.c_str(), token.second);
@@ -145,7 +146,7 @@ AST* Zerg::parse_simple_stmt(ZergToken token, ZergToken &next) {
 
 	return node;
 }
-AST* Zerg::parse_if_stmt(ZergToken token, ZergToken &next) {
+AST* Parser::parse_if_stmt(ZergToken token, ZergToken &next) {
 	/* if_stmt : 'if' test_expr ':' scope [ 'else' ':' scope ] */
 	AST *node = new AST(token);
 
@@ -185,7 +186,7 @@ AST* Zerg::parse_if_stmt(ZergToken token, ZergToken &next) {
 
 	return node;
 }
-AST* Zerg::parse_while_stmt(ZergToken token, ZergToken &next) {
+AST* Parser::parse_while_stmt(ZergToken token, ZergToken &next) {
 	/* while_stmt : 'while' test ':' scope */
 	AST *node = new AST(token);
 
@@ -208,7 +209,7 @@ AST* Zerg::parse_while_stmt(ZergToken token, ZergToken &next) {
 
 	return node;
 }
-AST* Zerg::parse_for_stmt(ZergToken token, ZergToken &next) {
+AST* Parser::parse_for_stmt(ZergToken token, ZergToken &next) {
 	AST *node = NULL;
 
 	ALERT(ZTYPE_CMD_FOR != token.second);
@@ -236,7 +237,7 @@ AST* Zerg::parse_for_stmt(ZergToken token, ZergToken &next) {
 	node->insert(this->scope(token, next));
 	return node;
 }
-AST* Zerg::parse_func_stmt(ZergToken token, ZergToken &next) {
+AST* Parser::parse_func_stmt(ZergToken token, ZergToken &next) {
 	/* func_stmt : 'func' VAR '(' [ parameter ] ')' ':' scope */
 	AST *node = new AST(token), *sub = new AST("[PARAM]", ZTYPE_UNKNOWN);
 
@@ -283,7 +284,7 @@ AST* Zerg::parse_func_stmt(ZergToken token, ZergToken &next) {
 
 	return node;
 }
-AST* Zerg::parse_cls_stmt(ZergToken token, ZergToken &next) {
+AST* Parser::parse_cls_stmt(ZergToken token, ZergToken &next) {
 	/* cls_stmt  : 'cls'  VAR '(' [ args ] ')' ':' scope */
 	AST *node = new AST(token), *sub = new AST("[PARAM]", ZTYPE_UNKNOWN);
 
@@ -331,7 +332,7 @@ AST* Zerg::parse_cls_stmt(ZergToken token, ZergToken &next) {
 
 	return node;
 }
-AST* Zerg::scope(ZergToken token, ZergToken &next) {
+AST* Parser::scope(ZergToken token, ZergToken &next) {
 	/* scope : NEWLINE INDENT stmt+ DEDENT NEWLINE */
 	AST *node = new AST("[ROOT]", ZTYPE_UNKNOWN), *sub = NULL;
 
@@ -367,7 +368,7 @@ AST* Zerg::scope(ZergToken token, ZergToken &next) {
 	return node;
 }
 
-AST* Zerg::varargs(ZergToken token, ZergToken &next) {
+AST* Parser::varargs(ZergToken token, ZergToken &next) {
 	/* varargs : VAR ( ',' VAR )* */
 	bool blEOP = false;
 	AST *node = NULL, *sub = NULL;
@@ -411,7 +412,7 @@ AST* Zerg::varargs(ZergToken token, ZergToken &next) {
 }
 
 /* expression */
-AST* Zerg::expression(ZergToken token, ZergToken &next) {
+AST* Parser::expression(ZergToken token, ZergToken &next) {
 	bool blEndParse = false;
 	AST *node = NULL, *sub = NULL;
 
@@ -462,7 +463,7 @@ AST* Zerg::expression(ZergToken token, ZergToken &next) {
 
 	return node;
 }
-AST* Zerg::test_expr(ZergToken token, ZergToken &next) {
+AST* Parser::test_expr(ZergToken token, ZergToken &next) {
 	bool blEndParse = false;
 	AST *node = NULL, *op = NULL;
 
@@ -593,7 +594,7 @@ AST* Zerg::test_expr(ZergToken token, ZergToken &next) {
 
 	return node;
 }
-AST* Zerg::term_expr(ZergToken token, ZergToken &next) {
+AST* Parser::term_expr(ZergToken token, ZergToken &next) {
 	AST *node = NULL;
 
 	_D(LOG_DEBUG_PARSER, "term on %s #%d", token.first.c_str(), token.second);
@@ -611,7 +612,7 @@ AST* Zerg::term_expr(ZergToken token, ZergToken &next) {
 
 	return node;
 }
-AST* Zerg::atom_expr(ZergToken token, ZergToken &next) {
+AST* Parser::atom_expr(ZergToken token, ZergToken &next) {
 	bool blEOP = false;
 	AST *node = NULL, *sub = NULL, *cur = NULL;
 
@@ -726,7 +727,7 @@ AST* Zerg::atom_expr(ZergToken token, ZergToken &next) {
 }
 
 /* arithmetic merge utils function */
-AST* Zerg::merge_arithmetic(std::vector<AST *> &stack) {
+AST* Parser::merge_arithmetic(std::vector<AST *> &stack) {
 	AST *node = NULL, *left = NULL, *right = NULL;
 
 	ALERT(0 == stack.size() || 2 == stack.size());
@@ -755,7 +756,7 @@ AST* Zerg::merge_arithmetic(std::vector<AST *> &stack) {
 	}
 	return node;
 }
-AST* Zerg::merge_arithmetic_all(std::vector<AST *> &stack) {
+AST* Parser::merge_arithmetic_all(std::vector<AST *> &stack) {
 	AST *node = NULL;
 
 	while(0 != stack.size()) {

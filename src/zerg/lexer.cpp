@@ -4,7 +4,7 @@
 #include "zerg.h"
 
 /* Private Properties */
-ZergToken Zerg::lexer(void) {
+ZergToken Parser::lexer(void) {
 	int pos = 0, base=10;
 	std::string token;
 	ZType type = ZTYPE_UNKNOWN;
