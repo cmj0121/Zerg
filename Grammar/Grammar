@@ -2,7 +2,7 @@
 
 ## All kinds of the valid statement
 stmt          : ( simple_stmt | compound_stmt | inline_asm ) NEWLINE
-simple_stmt   : 'nop' | 'continue' | 'break' | expression | assign | print_stmt | inc_dec
+simple_stmt   : 'nop' | 'continue' | 'break' | expression | assign | print_stmt
 compound_stmt : if_stmt | while_stmt | for_stmt | func_stmt | cls_stmt
 
 if_stmt       : 'if'    test ':'  scope ( 'elif' ':' scope )* [ 'else' ':' scope ]
@@ -11,7 +11,6 @@ for_stmt      : 'for' varargs 'in' expression  ':' scope
 func_stmt     : 'func'  VAR  '('  [ parameter ] ')' ':' scope
 cls_stmt      : 'cls'   VAR  '('  [ varargs ]      ')' ':' scope
 print_stmt    : 'print' expression
-inc_dec       : VAR ( '++' | '--' )
 inline_asm    : 'asm' STRING
 scope         : NEWLINE INDENT stmt+ DEDENT
 
@@ -39,7 +38,7 @@ factor_expr : pow_expr    | factor_expr ( '*' | '/' | '%' | '~' ) pow_expr
 pow_expr    : term        | term '**' pow_expr
 
 ## Should be the minimal element
-term        : atom | ( '+' | '-' | '~' | 'not' ) term
+term        : atom | ( '++' | '--' | '+' | '-' | '~' | 'not' ) term
 atom        : VAR  | NUMBER | pair_atom | atom '.' atom | funccall | getter
 funccall    : atom '(' expression ')'
 getter      : atom '[' expression ']'
