@@ -28,6 +28,10 @@ class Zerg : public IR, public Parser {
 
 		AST* parser(std::string srcfile);
 		AST* emitIR(AST *node);
+		virtual AST* emitIR_atom(AST *node);
+		virtual AST* emitIR_arithmetic(AST *node);
+		virtual AST* emitIR_assignment(AST *node);
+		virtual AST* emitIR_subroutine(AST *node);
 	private:
 		Args _args_;
 		int _regcnt_;

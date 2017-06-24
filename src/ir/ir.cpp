@@ -158,10 +158,10 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				(*this) += new Instruction("pop", "rdx");
 				break;
 			case IR_ARITHMETIC_SHR:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				_D(LOG_CRIT, "Not Implemented #%X", opcode);
 				break;
 			case IR_ARITHMETIC_SHL:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				_D(LOG_CRIT, "Not Implemented #%X", opcode);
 				break;
 			case IR_ARITHMETIC_INC:
 				(*this) += new Instruction("inc", dst);
@@ -186,13 +186,13 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				(*this) += new Instruction("neg", dst);
 				break;
 			case IR_LOGICAL_EQ:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				_D(LOG_CRIT, "Not Implemented #%X", opcode);
 				break;
 			case IR_LOGICAL_LS:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				_D(LOG_CRIT, "Not Implemented #%X", opcode);
 				break;
 			case IR_LOGICAL_GT:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				_D(LOG_CRIT, "Not Implemented #%X", opcode);
 				break;
 		/* condition / control flow */
 			case IR_CONDITION_JMP:
@@ -214,10 +214,10 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				(*this) += new Instruction("nop");
 				break;
 			case IR_PROLOGUE:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				_D(LOG_CRIT, "Not Implemented #%X", opcode);
 				break;
 			case IR_EPILOGUE:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				_D(LOG_CRIT, "Not Implemented #%X", opcode);
 				break;
 			case IR_INTERRUPT:
 				ALERT(this->_param_nr_ > ARRAY_SIZE(sys_param));
@@ -238,7 +238,7 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				this->assembleL(dst.substr(1, dst.size()-2));
 				break;
 		default:
-			_D(LOG_CRIT, "Not Improvement #%d %s %s %s #%d", opcode, _dst.c_str(),
+			_D(LOG_CRIT, "Not Implemented #%d %s %s %s #%d", opcode, _dst.c_str(),
 															_src.c_str(), size.c_str(),
 															opcode);
 			break;
