@@ -19,16 +19,17 @@
 
 class Zerg : public IR, public Parser {
 	public:
-		Zerg(std::string dst, Args &args) : IR(dst, args), _args_(args) {};
+		Zerg(std::string dst, Args &args) : IR(dst, args), _args_(args), _regcnt_(0) {};
 		virtual ~Zerg() {};
 
 		/* compile the source code and pass to IR */
 		void compile(std::string src);
 
 		AST* parser(std::string srcfile);
-		void emitIR(AST *node);
+		AST* emitIR(AST *node);
 	private:
 		Args _args_;
+		int _regcnt_;
 };
 
 #endif /* __ZERG_H__ */

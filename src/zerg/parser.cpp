@@ -14,7 +14,6 @@
 						_token.first.c_str());		\
 	} while (0)
 
-
 /* Parse the source file and generate the CFG by following steps
  *
  *     1. Lexer by function `lexer`

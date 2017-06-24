@@ -78,13 +78,17 @@ typedef std::pair<std::string, ZType> ZergToken;
 
 class AST : public Tree<AST> {
 	public:
-		AST(std::string token, ZType type) : Tree<AST>(token), _node_(token, type) {};
-		AST(ZergToken &token) : Tree<AST>(token.first), _node_(token) {};
+		AST(std::string token, ZType type);
+		AST(ZergToken &token);
 
 		ZType type() { return _node_.second; }
 		std::string raw(void) { return this->_node_.first; }
+		std::string data(void);
+		void setReg(int reg) { this->_reg_ = reg; }
+		int  getReg(void) { return this->_reg_; }
 	private:
 		ZergToken _node_;
+		int _reg_;
 };
 
 class Parser {

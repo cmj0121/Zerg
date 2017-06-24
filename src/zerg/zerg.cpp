@@ -32,12 +32,122 @@ AST* Zerg::parser(std::string srcfile) {
 	}
 	return node;
 }
-void Zerg::emitIR(AST *node) {
-	AST *sub = NULL;
+AST* Zerg::emitIR(AST *node) {
+	AST *sub = NULL, *x = NULL, *y = NULL;
 	ALERT(NULL == node);
 
 	_D(LOG_DEBUG_IR, "emit IR on %s", node->raw().c_str());
 	switch(node->type()) {
+		/* arithmetic */
+		case ZTYPE_ADD:
+		case ZTYPE_SUB:
+		case ZTYPE_MUL:
+		case ZTYPE_DIV:
+		case ZTYPE_MOD:
+		case ZTYPE_LIKE:
+		case ZTYPE_RSHT:
+		case ZTYPE_LSHT:
+
+		case ZTYPE_BIT_AND:
+		case ZTYPE_BIT_OR:
+		case ZTYPE_BIT_XOR:
+
+		case ZTYPE_LOG_AND:
+		case ZTYPE_LOG_OR:
+		case ZTYPE_LOG_XOR:
+		case ZTYPE_LOG_NOT:
+
+		case ZTYPE_CMP_EQ:
+		case ZTYPE_CMP_LS:
+		case ZTYPE_CMP_GT:
+			ALERT(2 != node->length());
+			x = this->emitIR(node->child(0));
+			y = this->emitIR(node->child(1));
+			break;
+		default:
+			break;
+	}
+
+	switch(node->type()) {
+		/* atom */
+		case ZTYPE_NUMBER:
+			node->setReg(++this->_regcnt_);
+			IR::emit(IR_MEMORY_STORE, node->data(), node->raw());
+			break;
+		case ZTYPE_STRING:
+		case ZTYPE_IDENTIFIER:
+			_D(LOG_CRIT, "Not implemented on %s #%d", node->raw().c_str(), node->type());
+			break;
+
+		/* arithmetic */
+		case ZTYPE_ADD:
+			IR::emit(IR_ARITHMETIC_ADD, x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case ZTYPE_SUB:
+			IR::emit(IR_ARITHMETIC_SUB, x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case ZTYPE_MUL:
+			IR::emit(IR_ARITHMETIC_MUL, x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case ZTYPE_DIV:
+			IR::emit(IR_ARITHMETIC_DIV, x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case ZTYPE_MOD:
+			IR::emit(IR_ARITHMETIC_MOD, x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case ZTYPE_LIKE:
+		case ZTYPE_INC:
+		case ZTYPE_DEC:
+		case ZTYPE_POW:
+			_D(LOG_CRIT, "Not implemented on %s #%d", node->raw().c_str(), node->type());
+			break;
+		case ZTYPE_RSHT:
+			IR::emit(IR_ARITHMETIC_SHR, x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+		case ZTYPE_LSHT:
+			IR::emit(IR_ARITHMETIC_SHL, x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
+
+		case ZTYPE_BIT_AND:
+		case ZTYPE_BIT_OR:
+		case ZTYPE_BIT_XOR:
+
+		case ZTYPE_LOG_AND:
+		case ZTYPE_LOG_OR:
+		case ZTYPE_LOG_XOR:
+		case ZTYPE_LOG_NOT:
+
+		case ZTYPE_CMP_EQ:
+		case ZTYPE_CMP_LS:
+		case ZTYPE_CMP_GT:
+
+		case ZTYPE_FUNCCALL:
+		case ZTYPE_GETTER:
+
+		case ZTYPE_LASSIGN:
+		case ZTYPE_RASSIGN:
+
+
+		case ZTYPE_CMD_INCLUDE:
+		case ZTYPE_CMD_PRINT:
+		case ZTYPE_CMD_FUNCTION:
+		case ZTYPE_CMD_CLASS:
+		case ZTYPE_CMD_WHILE:
+		case ZTYPE_CMD_FOR:
+		case ZTYPE_CMD_IN:
+		case ZTYPE_CMD_IF:
+		case ZTYPE_CMD_CONTINUE:
+		case ZTYPE_CMD_BREAK:
+			_D(LOG_CRIT, "Not implemented on %s #%d", node->raw().c_str(), node->type());
+			break;
+
 		case ZTYPE_CMD_NOP:
 			ALERT(0 != node->length());
 			IR::emit(IR_NOP);
@@ -45,10 +155,13 @@ void Zerg::emitIR(AST *node) {
 		case ZTYPE_CMD_ASM:
 			sub = node->child(0);
 			ALERT(ZTYPE_STRING != sub->type() || 0 != sub->length());
-			IR::emit("INLINE", sub->raw(), "", "");
+			IR::emit(IR_INLINE_ASM, sub->raw(), "", "");
 			break;
+
 		default:
-			_D(LOG_CRIT, "Not implemented on #%d", node->type());
+			_D(LOG_CRIT, "Not implemented on %s #%d", node->raw().c_str(), node->type());
 			break;
 	}
+
+	return node;
 }
