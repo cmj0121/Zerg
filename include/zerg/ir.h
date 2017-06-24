@@ -31,7 +31,7 @@
 #include <string>
 
 typedef enum _tag_ir_ {
-	IR_UNKNOWN,	/* unknown IR op */
+	IR_UNKNOWN = 0,	/* unknown IR op */
 
 	/* data-related */
 	IR_MEMORY_STORE,
@@ -76,6 +76,46 @@ typedef enum _tag_ir_ {
 	IR_DEFINE,
 	IR_INLINE_ASM,
 } IROP;
+const std::vector<std::pair<std::string, IROP>> IROP_map = {
+	/* memory access*/
+	{"STORE"	, IR_MEMORY_STORE},
+	{"LOAD"		, IR_MEMORY_LOAD},
+	{"XCHG"		, IR_MEMORY_XCHG},
+	{"PUSH"		, IR_MEMORY_PUSH},
+	{"POP"		, IR_MEMORY_POP},
+	/* arithmetic operation */
+	{"ADD"		, IR_ARITHMETIC_ADD},
+	{"SUB"		, IR_ARITHMETIC_SUB},
+	{"MUL"		, IR_ARITHMETIC_MUL},
+	{"DIV"		, IR_ARITHMETIC_DIV},
+	{"MOD"		, IR_ARITHMETIC_MOD},
+	{"SHR"		, IR_ARITHMETIC_SHR},
+	{"SHL"		, IR_ARITHMETIC_SHL},
+	{"INC"		, IR_ARITHMETIC_INC},
+	{"DEC"		, IR_ARITHMETIC_DEC},
+	/* logical operation */
+	{"AND"		, IR_LOGICAL_AND},
+	{"OR"		, IR_LOGICAL_OR},
+	{"XOR"		, IR_LOGICAL_XOR},
+	{"NOT"		, IR_LOGICAL_NOT},
+	{"NEG"		, IR_LOGICAL_NEG},
+	{"EQ"		, IR_LOGICAL_EQ},
+	{"LS"		, IR_LOGICAL_LS},
+	{"GT"		, IR_LOGICAL_GT},
+	/* condition / control flow */
+	{"JMP"		, IR_CONDITION_JMP},
+	{"JMPIF"	, IR_CONDITION_JMPIF},
+	{"CALL"		, IR_CONDITION_CALL},
+	{"RET"		, IR_CONDITION_RET},
+	/* extra */
+	{"NOP"		, IR_NOP},
+	{"PROLOGUE"	, IR_PROLOGUE},
+	{"EPILOGUE"	, IR_EPILOGUE},
+	{"INTERRUPT", IR_INTERRUPT},
+	{"LABEL"	, IR_LABEL},
+	{"DEFINE"	, IR_DEFINE},
+	{"INLINE"	, IR_INLINE_ASM},
+};
 
 class IR : public Zasm {
 	public:

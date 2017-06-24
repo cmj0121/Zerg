@@ -72,7 +72,7 @@ AST* Zerg::emitIR(AST *node) {
 		/* atom */
 		case ZTYPE_NUMBER:
 			node->setReg(++this->_regcnt_);
-			IR::emit(IR_MEMORY_STORE, node->data(), node->raw());
+			this->emit(IR_MEMORY_STORE, node->data(), node->raw());
 			break;
 		case ZTYPE_STRING:
 		case ZTYPE_IDENTIFIER:
@@ -81,23 +81,23 @@ AST* Zerg::emitIR(AST *node) {
 
 		/* arithmetic */
 		case ZTYPE_ADD:
-			IR::emit(IR_ARITHMETIC_ADD, x->data(), y->data());
+			this->emit(IR_ARITHMETIC_ADD, x->data(), y->data());
 			node->setReg(x->getReg());
 			break;
 		case ZTYPE_SUB:
-			IR::emit(IR_ARITHMETIC_SUB, x->data(), y->data());
+			this->emit(IR_ARITHMETIC_SUB, x->data(), y->data());
 			node->setReg(x->getReg());
 			break;
 		case ZTYPE_MUL:
-			IR::emit(IR_ARITHMETIC_MUL, x->data(), y->data());
+			this->emit(IR_ARITHMETIC_MUL, x->data(), y->data());
 			node->setReg(x->getReg());
 			break;
 		case ZTYPE_DIV:
-			IR::emit(IR_ARITHMETIC_DIV, x->data(), y->data());
+			this->emit(IR_ARITHMETIC_DIV, x->data(), y->data());
 			node->setReg(x->getReg());
 			break;
 		case ZTYPE_MOD:
-			IR::emit(IR_ARITHMETIC_MOD, x->data(), y->data());
+			this->emit(IR_ARITHMETIC_MOD, x->data(), y->data());
 			node->setReg(x->getReg());
 			break;
 		case ZTYPE_LIKE:
@@ -107,11 +107,11 @@ AST* Zerg::emitIR(AST *node) {
 			_D(LOG_CRIT, "Not implemented on %s #%d", node->raw().c_str(), node->type());
 			break;
 		case ZTYPE_RSHT:
-			IR::emit(IR_ARITHMETIC_SHR, x->data(), y->data());
+			this->emit(IR_ARITHMETIC_SHR, x->data(), y->data());
 			node->setReg(x->getReg());
 			break;
 		case ZTYPE_LSHT:
-			IR::emit(IR_ARITHMETIC_SHL, x->data(), y->data());
+			this->emit(IR_ARITHMETIC_SHL, x->data(), y->data());
 			node->setReg(x->getReg());
 			break;
 
@@ -150,12 +150,12 @@ AST* Zerg::emitIR(AST *node) {
 
 		case ZTYPE_CMD_NOP:
 			ALERT(0 != node->length());
-			IR::emit(IR_NOP);
+			this->emit(IR_NOP);
 			break;
 		case ZTYPE_CMD_ASM:
 			sub = node->child(0);
 			ALERT(ZTYPE_STRING != sub->type() || 0 != sub->length());
-			IR::emit(IR_INLINE_ASM, sub->raw(), "", "");
+			this->emit(IR_INLINE_ASM, sub->raw(), "", "");
 			break;
 
 		default:
@@ -164,4 +164,20 @@ AST* Zerg::emitIR(AST *node) {
 	}
 
 	return node;
+}
+void Zerg::emit(IROP opcode, std::string dst, std::string src, std::string size) {
+	if (this->_args_.only_ir) {
+		for (auto it : IROP_map) {
+			if (it.second == opcode) {
+				std::cout << std::setw(14) << std::left << it.first
+							<< std::setw(11) << dst
+							<< std::setw(11) << src
+							<< std::setw(11) << size << std::endl;
+				return ;
+			}
+		}
+		_D(LOG_CRIT, "Cannot found opcode #%d", opcode);
+	} else {
+		return IR::emit(opcode, dst, src, size);
+	}
 }
