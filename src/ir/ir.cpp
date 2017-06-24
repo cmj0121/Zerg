@@ -25,7 +25,7 @@ void IR::compile(std::string src) {
 
 	while (std::getline(fs, line)) {
 		unsigned int pos, nr = 0;
-		std::string irs[4] = {""};
+		std::string irs[4] = {""}, tmp;
 
 		/* lexer IR line-by-line */
 		_D(LOG_DEBUG_LEXER, "IR lexer - %s L#%d", line.c_str(), _lineno_);
@@ -37,6 +37,21 @@ void IR::compile(std::string src) {
 					goto EMIT;
 				case ' ': case '\t':
 					/* whitespace */
+					break;
+				case '"': case '\'':			/* String */
+					tmp = line[cur++];
+					while ('\0' != line[cur]) {
+						tmp += line[cur];
+
+						if (tmp[0] == line[cur]) break;
+						++cur;
+					}
+
+					if (tmp[0] != line[cur]) {
+						/* invalid syntax for string */
+						_D(LOG_CRIT, "syntax error - %s", line.c_str());
+					}
+					irs[nr++] = tmp;
 					break;
 				default:
 					for (pos = cur+1; pos <= line.size(); ++pos) {
@@ -108,9 +123,15 @@ IROP IR::opcode(std::string src) {
 	return opcode;
 }
 void IR::emit(std::string op, std::string _dst, std::string _src, std::string size) {
+	IROP opcode = IR::opcode(op);
+
+	_D(LOG_DEBUG_IR, "emit %s %s %s %s", op.c_str(), _dst.c_str(),
+											_src.c_str(), size.c_str());
+	this->emit(opcode, _dst, _src, size);
+}
+void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size) {
 	std::string dst, src;
 	std::string sys_param[] = { SYSCALL_PARAM };
-	IROP opcode = IR::opcode(op);
 
 	dst = IR::regalloc(_dst, size);
 	src = IR::regalloc(_src, size);
@@ -254,10 +275,10 @@ void IR::emit(std::string op, std::string _dst, std::string _src, std::string si
 				(*this) += new Instruction("define", dst, src);
 				break;
 			case IR_INLINE_ASM:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				this->assembleL(dst.substr(1, dst.size()-2));
 				break;
 		default:
-			_D(LOG_CRIT, "Not Improvement %s %s %s %s #%d", op.c_str(), _dst.c_str(),
+			_D(LOG_CRIT, "Not Improvement #%d %s %s %s #%d", opcode, _dst.c_str(),
 															_src.c_str(), size.c_str(),
 															opcode);
 			break;

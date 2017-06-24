@@ -82,6 +82,7 @@ class AST : public Tree<AST> {
 		AST(ZergToken &token) : Tree<AST>(token.first), _node_(token) {};
 
 		ZType type() { return _node_.second; }
+		std::string raw(void) { return this->_node_.first; }
 	private:
 		ZergToken _node_;
 };

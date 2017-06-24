@@ -26,5 +26,29 @@ AST* Zerg::parser(std::string srcfile) {
 
 	/* generate the CFG is possible */
 
+	/* emit the IR from CFG-AST */
+	for (ssize_t i = 0; i < node->length(); ++i) {
+		this->emitIR(node->child(i));
+	}
 	return node;
+}
+void Zerg::emitIR(AST *node) {
+	AST *sub = NULL;
+	ALERT(NULL == node);
+
+	_D(LOG_DEBUG_IR, "emit IR on %s", node->raw().c_str());
+	switch(node->type()) {
+		case ZTYPE_CMD_NOP:
+			ALERT(0 != node->length());
+			IR::emit(IR_NOP);
+			break;
+		case ZTYPE_CMD_ASM:
+			sub = node->child(0);
+			ALERT(ZTYPE_STRING != sub->type() || 0 != sub->length());
+			IR::emit("INLINE", sub->raw(), "", "");
+			break;
+		default:
+			_D(LOG_CRIT, "Not implemented on #%d", node->type());
+			break;
+	}
 }

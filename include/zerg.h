@@ -26,6 +26,7 @@ class Zerg : public IR, public Parser {
 		void compile(std::string src);
 
 		AST* parser(std::string srcfile);
+		void emitIR(AST *node);
 	private:
 		Args _args_;
 };

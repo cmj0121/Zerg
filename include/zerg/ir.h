@@ -87,6 +87,7 @@ class IR : public Zasm {
 
 		/* emit from IR to machine code */
 		void emit(std::string op, std::string dst, std::string src, std::string size);
+		void emit(IROP op, std::string dst="", std::string src="", std::string size="");
 		IROP opcode(std::string src);
 
 		std::string regalloc(std::string src, std::string size);
