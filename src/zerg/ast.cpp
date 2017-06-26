@@ -4,10 +4,12 @@
 #include "zerg.h"
 
 AST::AST(std::string token, ZType type) : Tree<AST>(token) ,_node_(token, type) {
-	_reg_ = 0;
+	_reg_   = 0;
+	_otype_ = OBJ_UNKNOWN;
 }
 AST::AST(ZergToken &token) : Tree<AST>(token.first), _node_(token) {
-	_reg_ = 0;
+	_reg_   = 0;
+	_otype_ = OBJ_UNKNOWN;
 }
 
 std::string AST::data(void) {

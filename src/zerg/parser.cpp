@@ -635,8 +635,24 @@ AST* Parser::atom_expr(ZergToken token, ZergToken &next) {
 			token = next;
 			next  = this->lexer();
 			break;
-		case ZTYPE_TRUE: case ZTYPE_FALSE:
-		case ZTYPE_NUMBER: case ZTYPE_STRING: case ZTYPE_IDENTIFIER: /* atom */
+		case ZTYPE_NONE:
+			node = new AST(token);
+			node->otype(OBJ_NONE);
+			break;
+		case ZTYPE_TRUE:
+		case ZTYPE_FALSE:
+			node = new AST(token);
+			node->otype(OBJ_BOOLEAN);
+			break;
+		case ZTYPE_NUMBER:
+			node = new AST(token);
+			node->otype(OBJ_INT);
+			break;
+		case ZTYPE_STRING:
+			node = new AST(token);
+			node->otype(OBJ_STRING);
+			break;
+		case ZTYPE_IDENTIFIER: /* atom */
 			node = new AST(token);
 			break;
 		default:

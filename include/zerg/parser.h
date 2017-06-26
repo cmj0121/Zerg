@@ -73,8 +73,17 @@ typedef enum _tag_token_type_ {
 
 	ZTYPE_MAX
 } ZType;
-
 typedef std::pair<std::string, ZType> ZergToken;
+
+typedef enum _tag_object_type_ {
+	OBJ_UNKNOWN = 0,
+	OBJ_NONE,
+	OBJ_BOOLEAN,
+	OBJ_INT,
+	OBJ_FLOAT,
+	OBJ_STRING,
+	OBJ_OBJECT,
+} OBJType;
 
 class AST : public Tree<AST> {
 	public:
@@ -86,9 +95,13 @@ class AST : public Tree<AST> {
 		std::string data(void);
 		void setReg(int reg) { this->_reg_ = reg; }
 		int  getReg(void) { return this->_reg_; }
+
+		OBJType otype(void)         { return this->_otype_; }
+		void    otype(OBJType type) { this->_otype_ = type; }
 	private:
 		ZergToken _node_;
 		int _reg_;
+		OBJType _otype_;
 };
 
 class Parser {

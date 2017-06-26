@@ -45,7 +45,7 @@ hi def link ZERGString        String
 hi def link ZERGEscape        Special
 
 " Reserved words
-syn keyword ZERGConstant      none true false
+syn keyword ZERGConstant      None True False
 syn keyword ZERGIdentifier    this
 syn keyword ZERGStatement     nop as return yield
 syn keyword ZERGStatement     func cls nextgroup=ZERGFunction skipwhite
@@ -57,9 +57,8 @@ syn keyword ZERGRepeat        for while break continue
 syn match   ZERGFunction      "\%(\(func\|cls\)\s\+\)\@<=\w\+" contained
 syn keyword ZERGException     try except finally raise
 syn keyword ZERGInclude       from import
-syn keyword ZERGConstant      True False
 syn keyword ZERGBuiltinType   __buffer__
-hi def link ZERGConstant      Constant
+hi def link ZERGConstant      Identifier
 hi def link ZERGIdentifier    Identifier
 hi def link ZERGStatement     Statement
 hi def link ZERGLogical       Statement
@@ -69,7 +68,6 @@ hi def link ZERGRepeat        Statement
 hi def link ZERGFunction      Function
 hi def link ZERGException     Statement
 hi def link ZERGInclude       Include
-hi def link ZERGConstant      Constant
 hi def link ZERGBuiltinType   StorageClass
 
 " Reserved Function
