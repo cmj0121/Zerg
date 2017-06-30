@@ -8,7 +8,6 @@
 
 
 void Zerg::compile(std::string src) {
-	AST *ast = NULL;
 	if (this->_args_.compile_ir) {
 		IR::compile(src);
 	} else {
@@ -17,7 +16,7 @@ void Zerg::compile(std::string src) {
 			_D(LOG_INFO, "Load the built-in library `%s`", BUILTIN_LIBRARY);
 			//this->parser(BUILTIN_LIBRARY);
 		}
-		ast = this->parser(src);
+		this->parser(src);
 	}
 }
 

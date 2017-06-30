@@ -24,8 +24,8 @@ clean: $(SUBDIR)
 	rm -f $(BIN)
 
 install: $(SUBDIR) install-syntax
-	install -d ~/.vim/syntax/
-	install -d /usr/local/lib/zerg/
+	install -m755 -d ~/.vim/syntax/
+	install -m775 -d /usr/local/lib/zerg/
 	install -m644 LIBS/* /usr/local/lib/zerg/
 
 install-syntax: $(VIMRC)
