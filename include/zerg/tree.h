@@ -77,6 +77,7 @@ class Tree {
 					break;
 				}
 			}
+			this->_parent_ = NULL;
 		}
 
 		void replace(T *src) {
