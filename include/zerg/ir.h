@@ -135,7 +135,8 @@ class IR : public Zasm {
 		std::string randstr(unsigned int size=24, std::string prefix=".");
 		std::vector<std::string> _repeate_label_;
 	private:
-		int _param_nr_, _lineno_;
+		int _lineno_;
+		size_t _param_nr_;
 		Args _args_;
 
 		std::vector<std::string> _alloc_regs_ = { USED_REGISTERS };

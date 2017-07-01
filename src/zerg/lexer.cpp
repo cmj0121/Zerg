@@ -5,7 +5,8 @@
 
 /* Private Properties */
 ZergToken Parser::lexer(void) {
-	int pos = 0, base=10;
+	int base=10;
+	size_t pos = 0;
 	std::string token;
 	ZType type = ZTYPE_UNKNOWN;
 

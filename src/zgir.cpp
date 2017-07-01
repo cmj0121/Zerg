@@ -31,10 +31,10 @@ int main(int argc, char *argv[]) {
 	};
 	std::string dst = "a.out";
 	Args args = {
-		.entry			= 0x1000,
-		.only_ir		= false,
 		.pie			= false,
 		.symbol			= false,
+		.entry			= 0x1000,
+		.only_ir		= false,
 		.compile_ir		= false,
 		.no_stdlib		= false,
 	};
