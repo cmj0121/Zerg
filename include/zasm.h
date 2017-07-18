@@ -6,6 +6,7 @@
 
 #define ZASM_VERSION		"1.1"
 #define ZASM_ENTRY_POINT	".zasm.entry"
+#define ZASM_MAIN_FUNCTION	"__MAIN__"
 
 #define ZASM_DEFINE			"define"
 #define ZASM_INCLUDE		"include"

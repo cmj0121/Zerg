@@ -67,7 +67,8 @@ bool Instruction::isShowLabel(void) {
 	std::string symb = this->label();
 
 	return  "" == this->src.raw() &&
-		(ZASM_ENTRY_POINT == symb || ("" != symb && '.' != symb[0] && '_' != symb[0]));
+		(ZASM_ENTRY_POINT == symb || ZASM_MAIN_FUNCTION == symb ||
+		("" != symb && '.' != symb[0] && '_' != symb[0]));
 }
 Instruction& Instruction::operator << (std::fstream &dst) {
 	if ("" != this->_label_ && "" != this->src.raw()) {
