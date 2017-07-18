@@ -2,6 +2,7 @@
 
 LABEL		.zasm.entry
 CALL		&__MAIN__
+CALL		&Foo
 PUSH		0x2000001
 PUSH		0x04
 INTERRUPT
@@ -21,6 +22,35 @@ PUSH		0x18
 INTERRUPT
 EPILOGUE	0x08
 RET			.reg.3
+
+LABEL		Foo
+PROLOGUE	0x08
+PUSH		0x20000C5
+PUSH		0x00
+PUSH		0x400
+PUSH		0x07
+PUSH		0x1001
+PUSH		0xFFFFFFFF
+PUSH		0x00
+INTERRUPT
+
+STORE		x		.reg.sys
+LOAD		.reg.1	x
+
+STORE		.reg.1		0x69727473	dword	0x00
+STORE		.reg.1		0x6320676E	dword	0x04
+STORE		.reg.1		0x74616572	dword	0x08
+STORE		.reg.1		0x66206465	dword	0x0C
+STORE		.reg.1		0x206D6F72	dword	0x10
+STORE		.reg.1		0x66667562	dword	0x14
+STORE		.reg.1		0x000A7265	dword	0x18
+PUSH		0x2000004
+PUSH		0x02
+PUSH		.reg.1
+PUSH		0x1C
+INTERRUPT
+EPILOGUE	0x08
+RET			.reg.sys
 
 DEFINE		STR		"Simple Zerg IR program\n"
 
