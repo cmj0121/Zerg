@@ -1,0 +1,27 @@
+#! /usr/bin/env zgr
+
+LABEL		.zasm.entry
+CALL		&__MAIN__
+PUSH		0x2000001
+PUSH		0x04
+INTERRUPT
+
+LABEL		__MAIN__
+PROLOGUE	0x08
+STORE		x		1
+STORE		y		2
+LOAD		.reg.1	x
+LOAD		.reg.2	y
+ADD			.reg.1	.reg.2
+PUSH		0x2000004
+PUSH		0x01
+LOAD		.reg.3	&STR
+PUSH		.reg.3
+PUSH		0x18
+INTERRUPT
+EPILOGUE	0x08
+RET			.reg.3
+
+DEFINE		STR		"Simple Zerg IR program\n"
+
+# vim: set ft=zgr:
