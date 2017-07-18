@@ -106,6 +106,8 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 						cnt = std::find(_local_.begin(), _local_.end(), src) - _local_.begin();
 						snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1)* PARAM_SIZE);
 						(*this) += new Instruction("mov", dst, buff);
+					} else if (__IR_REFERENCE__ == src.substr(0, 1)) {
+						(*this) += new Instruction("lea", dst, src);
 					} else {
 						(*this) += new Instruction("mov", dst, src);
 					}
@@ -235,7 +237,7 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				(*this) += new Instruction("call", dst);
 				break;
 			case IR_CONDITION_RET:
-				ALERT("" != _dst);
+				if ("" != _dst) (*this) += new Instruction("mov", "rax", dst);
 				(*this) += new Instruction("ret");
 				break;
 		/* extra */
