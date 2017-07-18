@@ -98,7 +98,7 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 	switch(opcode) {
 		/* memory access*/
 			case IR_MEMORY_LOAD:
-				if ('.' != src[0]) {
+				if ('.' != _src[0]) {
 					size_t cnt = 0;
 					char buff[BUFSIZ] = {0};
 
@@ -106,7 +106,7 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 						cnt = std::find(_local_.begin(), _local_.end(), src) - _local_.begin();
 						snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1)* PARAM_SIZE);
 						(*this) += new Instruction("mov", dst, buff);
-					} else if (__IR_REFERENCE__ == src.substr(0, 1)) {
+					} else if (__IR_REFERENCE__ == _src.substr(0, 1)) {
 						(*this) += new Instruction("lea", dst, src);
 					} else {
 						(*this) += new Instruction("mov", dst, src);
@@ -116,10 +116,10 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				}
 				break;
 			case IR_MEMORY_STORE:
-				if (__IR_REFERENCE__ == src.substr(0, 1)) {
+				if (__IR_REFERENCE__ == _src.substr(0, 1)) {
 					/* Load from referenced data */
 					(*this) += new Instruction("lea", dst, src);
-				} else if ('.' != dst[0]) {
+				} else if ('.' != _dst[0]) {
 					size_t cnt = 0;
 					char buff[BUFSIZ] = {0};
 
@@ -217,13 +217,22 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				(*this) += new Instruction("neg", dst);
 				break;
 			case IR_LOGICAL_EQ:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				ALERT("" == _dst && "" == _src);
+				(*this) += new Instruction("cmp", dst, src);
+				(*this) += new Instruction("xor", dst, dst);
+				(*this) += new Instruction("setz", this->regalloc(_dst, ZASM_MEM_BYTE));
 				break;
 			case IR_LOGICAL_LS:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				ALERT("" == _dst && "" == _src);
+				(*this) += new Instruction("cmp", dst, src);
+				(*this) += new Instruction("xor", dst, dst);
+				(*this) += new Instruction("setl", this->regalloc(_dst, ZASM_MEM_BYTE));
 				break;
 			case IR_LOGICAL_GT:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				ALERT("" == _dst && "" == _src);
+				(*this) += new Instruction("cmp", dst, src);
+				(*this) += new Instruction("xor", dst, dst);
+				(*this) += new Instruction("setg", this->regalloc(_dst, ZASM_MEM_BYTE));
 				break;
 		/* condition / control flow */
 			case IR_CONDITION_JMP:
