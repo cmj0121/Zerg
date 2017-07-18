@@ -98,12 +98,41 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 	switch(opcode) {
 		/* memory access*/
 			case IR_MEMORY_LOAD:
-				(*this) += new Instruction("mov", dst, src);
+				if ('.' != src[0]) {
+					size_t cnt = 0;
+					char buff[BUFSIZ] = {0};
+
+					if (_local_.end() != std::find(_local_.begin(), _local_.end(), src)) {
+						cnt = std::find(_local_.begin(), _local_.end(), src) - _local_.begin();
+						snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1)* PARAM_SIZE);
+						(*this) += new Instruction("mov", dst, buff);
+					} else {
+						(*this) += new Instruction("mov", dst, src);
+					}
+				} else {
+					(*this) += new Instruction("mov", dst, src);
+				}
 				break;
 			case IR_MEMORY_STORE:
 				if (__IR_REFERENCE__ == src.substr(0, 1)) {
 					/* Load from referenced data */
 					(*this) += new Instruction("lea", dst, src);
+				} else if ('.' != dst[0]) {
+					size_t cnt = 0;
+					char buff[BUFSIZ] = {0};
+
+					if (_local_.end() == std::find(_local_.begin(), _local_.end(), dst)) {
+						/* new token, treated as local variable */
+						cnt = _local_.size();
+						snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1) * PARAM_SIZE);
+						(*this) += new Instruction("mov", buff, src);
+
+						_local_.push_back(dst);
+					} else {
+						cnt = std::find(_local_.begin(), _local_.end(), dst) - _local_.begin();
+						snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1) * PARAM_SIZE);
+						(*this) += new Instruction("mov", buff, src);
+					}
 				} else if (dst != src) {
 					/* simple register movement */
 					(*this) += new Instruction("mov", dst, src);
@@ -206,7 +235,7 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				(*this) += new Instruction("call", dst);
 				break;
 			case IR_CONDITION_RET:
-				ALERT("" !=dst);
+				ALERT("" != _dst);
 				(*this) += new Instruction("ret");
 				break;
 		/* extra */
@@ -214,10 +243,27 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				(*this) += new Instruction("nop");
 				break;
 			case IR_PROLOGUE:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				/* FIXME - Should be more smart */
+				(*this) += new Instruction("push", "rcx");
+				(*this) += new Instruction("push", "rdx");
+				(*this) += new Instruction("push", "rbx");
+
+				(*this) += new Instruction("push", "rbp");
+				(*this) += new Instruction("mov", "rbp", "rsp");
+				if ("" != _dst) {
+					(*this) += new Instruction("sub", "rsp", _dst);
+				}
 				break;
 			case IR_EPILOGUE:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				if ("" != _dst) {
+					(*this) += new Instruction("add", "rsp", _dst);
+				}
+				(*this) += new Instruction("pop", "rbp");
+
+				/* FIXME - Should be more smart */
+				(*this) += new Instruction("pop", "rbx");
+				(*this) += new Instruction("pop", "rdx");
+				(*this) += new Instruction("pop", "rcx");
 				break;
 			case IR_INTERRUPT:
 				ALERT(this->_param_nr_ > ARRAY_SIZE(sys_param));

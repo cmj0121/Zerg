@@ -20,7 +20,7 @@ void help(void) {
 
 int main(int argc, char *argv[]) {
 	int optIdx = -1;
-	char ch, opts[] = "hpSv";
+	char ch, opts[] = "ho:pSv";
 	struct option options[] = {
 		{"help",		no_argument,		0, 'h'},
 		{"output",		required_argument,	0, 'o'},

@@ -140,6 +140,7 @@ class IR : public Zasm {
 
 		std::vector<std::string> _alloc_regs_ = { USED_REGISTERS };
 		std::map<std::string, std::string> _alloc_regs_map_;
+		std::vector<std::string> _local_;
 };
 
 #endif /* __ZERG_IR_H__ */

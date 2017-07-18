@@ -55,8 +55,8 @@ Zerg 的 IR (Intermediate Representation, 中介語言) 在第一個版本只支
 ##  其他程式碼 ##
 以下20是額外的 IR 程式碼：所有不歸類在上述四種的 IR Code 都屬於這個類別：
 	27. NOP               - No Operation
-	28. PROLOGUE  DST     - 暫存目前所有狀態，用於子程序的開頭 (假設有 DST 的區域變數)
-	29. EPILOGUE  DST     - 回覆之前暫存的狀態，當子程序結束時呼叫 (有 DST 個區域變數)
+	28. PROLOGUE  DST     - 暫存目前所有狀態，用於子程序的開頭
+	29. EPILOGUE  DST     - 回覆之前暫存的狀態，當子程序結束時呼叫
 	30. INTERRUPT DST     - 系統中斷，使用所有 STACK 中的資料當作參數並將結果儲存到 DST
 	31. LABEL     DST     - 定位符號
 	32. DEFINE    DST SRC - 定義 DST 其內容為 SRC (字串)

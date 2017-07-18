@@ -234,7 +234,7 @@ void Instruction::modRW(X86_64_INST &inst) {
 		_payload_[_length_++] = (mod & 0x3) << 6 | (reg & 0x7) << 3 | (rm & 0x7);
 		_D(LOG_ZASM_INFO, "Mod R/W       - %02X", _payload_[_length_-1]);
 
-		if (mod == 0x01 && NULL != this->src.indexReg()) {
+		if (mod == 0x01) {
 			_payload_[_length_++] = 0x0;
 			_D(LOG_ZASM_INFO, "Mod R/W       - %02X", _payload_[_length_-1]);
 		}

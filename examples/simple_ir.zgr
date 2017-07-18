@@ -1,0 +1,8 @@
+#! /usr/bin/env zgr
+
+LABEL		.zasm.entry
+INLINE		"mov rax 0x2000001"
+INLINE		"mov rdi 0x04"
+INTERRUPT
+
+# vim: set ft=zgr:
