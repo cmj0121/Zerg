@@ -155,15 +155,25 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				break;
 		/* arithmetic operation */
 			case IR_ARITHMETIC_ADD:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				(*this) += new Instruction("add", dst, src);
 				break;
 			case IR_ARITHMETIC_SUB:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				(*this) += new Instruction("sub", dst, src);
 				break;
 			case IR_ARITHMETIC_MUL:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				(*this) += new Instruction("mul", dst, src);
 				break;
 			case IR_ARITHMETIC_DIV:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				(*this) += new Instruction("push", "rdx");
 				if (dst != "rax") (*this) += new Instruction("push", "rax");
 				if (dst != "rax") (*this) += new Instruction("mov", "rax", dst);
@@ -177,6 +187,10 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				(*this) += new Instruction("pop", "rdx");
 				break;
 			case IR_ARITHMETIC_MOD:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				/* FIXME - Should always return the sign same as divisor */
 				(*this) += new Instruction("push", "rdx");
 				(*this) += new Instruction("push", "rax");
@@ -191,46 +205,122 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				(*this) += new Instruction("pop", "rdx");
 				break;
 			case IR_ARITHMETIC_SHR:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
+
+				if ("rcx" == regalloc(_dst, ZASM_MEM_QWORD)) {
+					/* save the rax register */
+					(*this) += new Instruction("push", "rax");
+					(*this) += new Instruction("mov", "rax", regalloc(_dst, ZASM_MEM_QWORD));
+					dst = "rax";
+				} else {
+					dst = regalloc(_dst, size);
+				}
+
+				if ("rcx" != regalloc(_src, ZASM_MEM_QWORD)) {
+					(*this) += new Instruction("push", "rcx");
+					(*this) += new Instruction("mov", "rcx", regalloc(_src, ZASM_MEM_QWORD));
+					src = "cl";
+				} else {
+					src = regalloc(_src, ZASM_MEM_BYTE);
+				}
+
+				(*this) += new Instruction("shr", dst, src);
+
+				if ("rcx" != regalloc(_src, ZASM_MEM_QWORD)) {
+					(*this) += new Instruction("pop", "rcx");
+				}
+				if ("rcx" == regalloc(_dst, ZASM_MEM_QWORD)) {
+					/* save the rax register */
+					(*this) += new Instruction("mov", regalloc(_dst, ZASM_MEM_QWORD), "rax");
+					(*this) += new Instruction("pop", "rax");
+				}
 				break;
 			case IR_ARITHMETIC_SHL:
-				_D(LOG_CRIT, "Not Improvement #%X", opcode);
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
+
+				if ("rcx" == regalloc(_dst, ZASM_MEM_QWORD)) {
+					/* save the rax register */
+					(*this) += new Instruction("push", "rax");
+					(*this) += new Instruction("mov", "rax", regalloc(_dst, ZASM_MEM_QWORD));
+					dst = "rax";
+				} else {
+					dst = regalloc(_dst, size);
+				}
+
+				if ("rcx" != regalloc(_src, ZASM_MEM_QWORD)) {
+					(*this) += new Instruction("push", "rcx");
+					(*this) += new Instruction("mov", "rcx", regalloc(_src, ZASM_MEM_QWORD));
+					src = "cl";
+				} else {
+					src = regalloc(_src, ZASM_MEM_BYTE);
+				}
+
+				(*this) += new Instruction("shl", dst, src);
+
+				if ("rcx" != regalloc(_src, ZASM_MEM_QWORD)) {
+					(*this) += new Instruction("pop", "rcx");
+				}
+				if ("rcx" == regalloc(_dst, ZASM_MEM_QWORD)) {
+					/* save the rax register */
+					(*this) += new Instruction("mov", regalloc(_dst, ZASM_MEM_QWORD), "rax");
+					(*this) += new Instruction("pop", "rax");
+				}
 				break;
 			case IR_ARITHMETIC_INC:
+				ALERT(IR_TOKEN_REGISTER != token(_dst) || IR_TOKEN_REGISTER != token(_src));
 				(*this) += new Instruction("inc", dst);
 				break;
 			case IR_ARITHMETIC_DEC:
+				ALERT(IR_TOKEN_REGISTER != token(_dst) || IR_TOKEN_REGISTER != token(_src));
 				(*this) += new Instruction("inc", dst);
 				break;
 		/* logical operation */
 			case IR_LOGICAL_AND:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				(*this) += new Instruction("and", dst, src);
 				break;
 			case IR_LOGICAL_OR:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				(*this) += new Instruction("or", dst, src);
 				break;
 			case IR_LOGICAL_XOR:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				(*this) += new Instruction("xor", dst, src);
 				break;
 			case IR_LOGICAL_NOT:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(IR_TOKEN_UNKNOWN != token(_src));
 				(*this) += new Instruction("not", dst);
 				break;
 			case IR_LOGICAL_NEG:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(IR_TOKEN_UNKNOWN != token(_src));
 				(*this) += new Instruction("neg", dst);
 				break;
 			case IR_LOGICAL_EQ:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				ALERT("" == _dst && "" == _src);
 				(*this) += new Instruction("cmp", dst, src);
 				(*this) += new Instruction("xor", dst, dst);
 				(*this) += new Instruction("setz", this->regalloc(_dst, ZASM_MEM_BYTE));
 				break;
 			case IR_LOGICAL_LS:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				ALERT("" == _dst && "" == _src);
 				(*this) += new Instruction("cmp", dst, src);
 				(*this) += new Instruction("xor", dst, dst);
 				(*this) += new Instruction("setl", this->regalloc(_dst, ZASM_MEM_BYTE));
 				break;
 			case IR_LOGICAL_GT:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				ALERT("" == _dst && "" == _src);
 				(*this) += new Instruction("cmp", dst, src);
 				(*this) += new Instruction("xor", dst, dst);
@@ -238,24 +328,34 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				break;
 		/* condition / control flow */
 			case IR_CONDITION_JMP:
+				ALERT(!(IR_TOKEN_REF == token(_dst) && IR_TOKEN_UNKNOWN == token(_src)));
 				(*this) += new Instruction("jmp", dst);
 				break;
 			case IR_CONDITION_JMPIF:
+				ALERT(!(IR_TOKEN_REF == token(_dst) && IR_TOKEN_REGISTER == token(_src)));
 				(*this) += new Instruction("cmp", src, "0x0");
 				(*this) += new Instruction("jne", dst);
 				break;
 			case IR_CONDITION_CALL:
+				ALERT(!(IR_TOKEN_REF == token(_dst) || IR_TOKEN_REGISTER == token(_dst)));
+				ALERT(IR_TOKEN_UNKNOWN != token(_src));
 				(*this) += new Instruction("call", dst);
 				break;
 			case IR_CONDITION_RET:
+				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) || IR_TOKEN_REGISTER == token(_dst)));
+				ALERT(IR_TOKEN_UNKNOWN != token(_src));
 				if ("" != _dst) (*this) += new Instruction("mov", "rax", dst);
 				(*this) += new Instruction("ret");
 				break;
 		/* extra */
 			case IR_NOP:
+				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) && IR_TOKEN_UNKNOWN == token(_src)));
 				(*this) += new Instruction("nop");
 				break;
 			case IR_PROLOGUE:
+				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) || IR_TOKEN_INT == token(_dst)));
+				ALERT(IR_TOKEN_UNKNOWN != token(_src));
+
 				/* FIXME - Should be more smart */
 				(*this) += new Instruction("push", "rcx");
 				(*this) += new Instruction("push", "rdx");
@@ -268,6 +368,9 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				}
 				break;
 			case IR_EPILOGUE:
+				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) || IR_TOKEN_INT == token(_dst)));
+				ALERT(IR_TOKEN_UNKNOWN != token(_src));
+
 				if ("" != _dst) {
 					(*this) += new Instruction("add", "rsp", _dst);
 				}
@@ -279,6 +382,7 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				(*this) += new Instruction("pop", "rcx");
 				break;
 			case IR_INTERRUPT:
+				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) && IR_TOKEN_UNKNOWN == token(_src)));
 				ALERT(this->_param_nr_ > ARRAY_SIZE(sys_param));
 
 				while (0 < this->_param_nr_) {
@@ -288,12 +392,16 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				(*this) += new Instruction("syscall");
 				break;
 			case IR_LABEL:
+				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) || IR_TOKEN_VAR == token(_dst)));
+				ALERT(IR_TOKEN_UNKNOWN != token(_src));
+
 				(*this) += new Instruction(dst+":");
 				break;
 			case IR_DEFINE:
 				(*this) += new Instruction("define", dst, src);
 				break;
 			case IR_INLINE_ASM:
+				ALERT(IR_TOKEN_STRING != token(_dst) || IR_TOKEN_UNKNOWN != token(_src));
 				this->assembleL(dst.substr(1, dst.size()-2));
 				break;
 		default:
@@ -363,4 +471,29 @@ std::string IR::randstr(unsigned int size, std::string prefix) {
 	}
 
 	return ret;
+}
+
+IRType IR::token(std::string src) {
+	int cnt = 0;
+	IRType type = IR_TOKEN_UNKNOWN;
+
+	if (1 == sscanf(src.c_str(), __IR_REG_FMT__, &cnt) || __IR_SYSCALL_REG__ == src) {
+		/* register */
+		type = IR_TOKEN_REGISTER;
+	} else if (__IR_REFERENCE__ == src.substr(0, 1)) {
+		/* reference */
+		type = IR_TOKEN_REF;
+	} else if ("0x" == src.substr(0, 2) || ('0' <= src[0] && '9' >= src[0])) {
+		/* digit */
+		type = IR_TOKEN_INT;
+	} else if ("" != src) {
+		/* variable */
+		type = IR_TOKEN_VAR;
+	} else if ('\'' == src[0] || '\"' == src[0]) {
+		/* string */
+		type = IR_TOKEN_STRING;
+	}
+
+	_D(LOG_DEBUG_IR, "%-12s -> %d", src.c_str(), type);
+	return type;
 }
