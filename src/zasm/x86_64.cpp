@@ -210,11 +210,11 @@ void Instruction::modRW(X86_64_INST &inst) {
 		} else if (this->src.isMEM() && !this->src.isREF()) {
 			InstToken *base = this->src.asReg();
 
-			mod = base->isPosREG() ? 0x01 : 0x00;
+			mod = base->isPosREG() && 4 != base->asInt() % 8 ? 0x01 : 0x00;
 		} else if (this->dst.isMEM() && !this->dst.isREF()) {
 			InstToken *base = this->dst.asReg();
 
-			mod = base->isPosREG() ? 0x01 : 0x00;
+			mod = base->isPosREG() && 4 != base->asInt() % 8 ? 0x01 : 0x00;
 		}
 
 
@@ -234,9 +234,14 @@ void Instruction::modRW(X86_64_INST &inst) {
 		_payload_[_length_++] = (mod & 0x3) << 6 | (reg & 0x7) << 3 | (rm & 0x7);
 		_D(LOG_ZASM_INFO, "Mod R/W       - %02X", _payload_[_length_-1]);
 
-		/* FIXME - mov [rbp] 0x0 */
-		if (mod == 0x01 && NULL != this->src.indexReg()) {
+		if ((mod == 0x01 && NULL != this->src.indexReg())
+			|| (this->src.isMEM() && 5 == this->src.asInt() % 8)
+			|| (this->dst.isMEM() && 5 == this->dst.asInt() % 8)) {
 			_payload_[_length_++] = 0x0;
+			_D(LOG_ZASM_INFO, "Mod R/W       - %02X", _payload_[_length_-1]);
+		} else if ((this->src.isMEM() && 4 == this->src.asInt() % 8) ||
+					(this->dst.isMEM() && 4 == this->dst.asInt() % 8)) {
+			_payload_[_length_++] = 0x24;
 			_D(LOG_ZASM_INFO, "Mod R/W       - %02X", _payload_[_length_-1]);
 		}
 	}
