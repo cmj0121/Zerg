@@ -76,6 +76,16 @@ typedef enum _tag_ir_ {
 	IR_DEFINE,
 	IR_INLINE_ASM,
 } IROP;
+
+typedef enum _tag_ir_type_ {
+	IR_TOKEN_UNKNOWN	= 0,
+	IR_TOKEN_INT,
+	IR_TOKEN_REGISTER,
+	IR_TOKEN_VAR,
+	IR_TOKEN_REF,
+	IR_TOKEN_STRING,
+} IRType;
+
 const std::vector<std::pair<std::string, IROP>> IROP_map = {
 	/* memory access*/
 	{"STORE"	, IR_MEMORY_STORE},
@@ -126,8 +136,8 @@ class IR : public Zasm {
 		void compile(std::string src);
 
 		/* emit from IR to machine code */
-		void emit(std::string op, std::string dst, std::string src, std::string size);
-		void emit(IROP op, std::string dst="", std::string src="", std::string size="");
+		void emit(STRING op, STRING dst, STRING src, STRING size, STRING index);
+		void emit(IROP op, STRING dst="", STRING src="", STRING size="",STRING idx="");
 		IROP opcode(std::string src);
 
 		std::string regalloc(std::string src, std::string size);
@@ -142,6 +152,8 @@ class IR : public Zasm {
 		std::vector<std::string> _alloc_regs_ = { USED_REGISTERS };
 		std::map<std::string, std::string> _alloc_regs_map_;
 		std::vector<std::string> _local_;
+
+		IRType token(std::string src);
 };
 
 #endif /* __ZERG_IR_H__ */

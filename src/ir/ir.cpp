@@ -25,7 +25,8 @@ void IR::compile(std::string src) {
 
 	while (std::getline(fs, line)) {
 		unsigned int pos, nr = 0;
-		std::string irs[4] = {""}, tmp;
+		std::string irs[5] = {""}, tmp;
+		/* OPCODE DST SRC SIZE INDEX */
 
 		/* lexer IR line-by-line */
 		_D(LOG_DEBUG_LEXER, "IR lexer - %s L#%d", line.c_str(), _lineno_);
@@ -69,7 +70,7 @@ void IR::compile(std::string src) {
 		}
 
 		EMIT:
-			if (0 != nr) IR::emit(irs[0], irs[1], irs[2], irs[3]);
+			if (0 != nr) IR::emit(irs[0], irs[1], irs[2], irs[3], irs[4]);
 	}
 }
 IROP IR::opcode(std::string src) {
@@ -82,31 +83,31 @@ IROP IR::opcode(std::string src) {
 	_D(LOG_DEBUG, "%s -> #%X", src.c_str(), opcode);
 	return opcode;
 }
-void IR::emit(std::string op, std::string _dst, std::string _src, std::string size) {
+void IR::emit(STRING op, STRING _dst, STRING _src, STRING size, STRING index) {
 	IROP opcode = IR::opcode(op);
 
 	_D(LOG_DEBUG_IR, "emit %s %s %s %s", op.c_str(), _dst.c_str(),
 											_src.c_str(), size.c_str());
-	this->emit(opcode, _dst, _src, size);
+	this->emit(opcode, _dst, _src, size, index);
 }
-void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size) {
-	std::string dst, src;
+void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) {
+	size_t cnt = 0;
+	char buff[BUFSIZ] = {0};
+	std::string dst, src, idx;
 	std::string sys_param[] = { SYSCALL_PARAM };
 
 	dst = IR::regalloc(_dst, size);
 	src = IR::regalloc(_src, size);
+	idx = IR::regalloc(index, ZASM_MEM_DWORD);
 	switch(opcode) {
 		/* memory access*/
 			case IR_MEMORY_LOAD:
-				if ('.' != src[0]) {
-					size_t cnt = 0;
-					char buff[BUFSIZ] = {0};
-
+				if ('.' != _src[0]) {
 					if (_local_.end() != std::find(_local_.begin(), _local_.end(), src)) {
 						cnt = std::find(_local_.begin(), _local_.end(), src) - _local_.begin();
 						snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1)* PARAM_SIZE);
 						(*this) += new Instruction("mov", dst, buff);
-					} else if (__IR_REFERENCE__ == src.substr(0, 1)) {
+					} else if (__IR_REFERENCE__ == _src.substr(0, 1)) {
 						(*this) += new Instruction("lea", dst, src);
 					} else {
 						(*this) += new Instruction("mov", dst, src);
@@ -116,13 +117,10 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				}
 				break;
 			case IR_MEMORY_STORE:
-				if (__IR_REFERENCE__ == src.substr(0, 1)) {
+				if (__IR_REFERENCE__ == _src.substr(0, 1)) {
 					/* Load from referenced data */
 					(*this) += new Instruction("lea", dst, src);
-				} else if ('.' != dst[0]) {
-					size_t cnt = 0;
-					char buff[BUFSIZ] = {0};
-
+				} else if ('.' != _dst[0]) {
 					if (_local_.end() == std::find(_local_.begin(), _local_.end(), dst)) {
 						/* new token, treated as local variable */
 						cnt = _local_.size();
@@ -135,6 +133,10 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 						snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1) * PARAM_SIZE);
 						(*this) += new Instruction("mov", buff, src);
 					}
+				} else if ("" != idx) {
+					dst = IR::regalloc(_dst, ZASM_MEM_QWORD);
+					snprintf(buff, sizeof(buff), "%s [%s+%s]", size.c_str(), dst.c_str(), idx.c_str());
+					(*this) += new Instruction("mov", buff, src);
 				} else if (dst != src) {
 					/* simple register movement */
 					(*this) += new Instruction("mov", dst, src);
@@ -153,15 +155,25 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				break;
 		/* arithmetic operation */
 			case IR_ARITHMETIC_ADD:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				(*this) += new Instruction("add", dst, src);
 				break;
 			case IR_ARITHMETIC_SUB:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				(*this) += new Instruction("sub", dst, src);
 				break;
 			case IR_ARITHMETIC_MUL:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				(*this) += new Instruction("mul", dst, src);
 				break;
 			case IR_ARITHMETIC_DIV:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				(*this) += new Instruction("push", "rdx");
 				if (dst != "rax") (*this) += new Instruction("push", "rax");
 				if (dst != "rax") (*this) += new Instruction("mov", "rax", dst);
@@ -175,6 +187,10 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				(*this) += new Instruction("pop", "rdx");
 				break;
 			case IR_ARITHMETIC_MOD:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				/* FIXME - Should always return the sign same as divisor */
 				(*this) += new Instruction("push", "rdx");
 				(*this) += new Instruction("push", "rax");
@@ -189,62 +205,157 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				(*this) += new Instruction("pop", "rdx");
 				break;
 			case IR_ARITHMETIC_SHR:
-				_D(LOG_CRIT, "Not Implemented #%X", opcode);
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
+
+				if ("rcx" == regalloc(_dst, ZASM_MEM_QWORD)) {
+					/* save the rax register */
+					(*this) += new Instruction("push", "rax");
+					(*this) += new Instruction("mov", "rax", regalloc(_dst, ZASM_MEM_QWORD));
+					dst = "rax";
+				} else {
+					dst = regalloc(_dst, size);
+				}
+
+				if ("rcx" != regalloc(_src, ZASM_MEM_QWORD)) {
+					(*this) += new Instruction("push", "rcx");
+					(*this) += new Instruction("mov", "rcx", regalloc(_src, ZASM_MEM_QWORD));
+					src = "cl";
+				} else {
+					src = regalloc(_src, ZASM_MEM_BYTE);
+				}
+
+				(*this) += new Instruction("shr", dst, src);
+
+				if ("rcx" != regalloc(_src, ZASM_MEM_QWORD)) {
+					(*this) += new Instruction("pop", "rcx");
+				}
+				if ("rcx" == regalloc(_dst, ZASM_MEM_QWORD)) {
+					/* save the rax register */
+					(*this) += new Instruction("mov", regalloc(_dst, ZASM_MEM_QWORD), "rax");
+					(*this) += new Instruction("pop", "rax");
+				}
 				break;
 			case IR_ARITHMETIC_SHL:
-				_D(LOG_CRIT, "Not Implemented #%X", opcode);
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
+
+				if ("rcx" == regalloc(_dst, ZASM_MEM_QWORD)) {
+					/* save the rax register */
+					(*this) += new Instruction("push", "rax");
+					(*this) += new Instruction("mov", "rax", regalloc(_dst, ZASM_MEM_QWORD));
+					dst = "rax";
+				} else {
+					dst = regalloc(_dst, size);
+				}
+
+				if ("rcx" != regalloc(_src, ZASM_MEM_QWORD)) {
+					(*this) += new Instruction("push", "rcx");
+					(*this) += new Instruction("mov", "rcx", regalloc(_src, ZASM_MEM_QWORD));
+					src = "cl";
+				} else {
+					src = regalloc(_src, ZASM_MEM_BYTE);
+				}
+
+				(*this) += new Instruction("shl", dst, src);
+
+				if ("rcx" != regalloc(_src, ZASM_MEM_QWORD)) {
+					(*this) += new Instruction("pop", "rcx");
+				}
+				if ("rcx" == regalloc(_dst, ZASM_MEM_QWORD)) {
+					/* save the rax register */
+					(*this) += new Instruction("mov", regalloc(_dst, ZASM_MEM_QWORD), "rax");
+					(*this) += new Instruction("pop", "rax");
+				}
 				break;
 			case IR_ARITHMETIC_INC:
+				ALERT(IR_TOKEN_REGISTER != token(_dst) || IR_TOKEN_REGISTER != token(_src));
 				(*this) += new Instruction("inc", dst);
 				break;
 			case IR_ARITHMETIC_DEC:
+				ALERT(IR_TOKEN_REGISTER != token(_dst) || IR_TOKEN_REGISTER != token(_src));
 				(*this) += new Instruction("inc", dst);
 				break;
 		/* logical operation */
 			case IR_LOGICAL_AND:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				(*this) += new Instruction("and", dst, src);
 				break;
 			case IR_LOGICAL_OR:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				(*this) += new Instruction("or", dst, src);
 				break;
 			case IR_LOGICAL_XOR:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				(*this) += new Instruction("xor", dst, src);
 				break;
 			case IR_LOGICAL_NOT:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(IR_TOKEN_UNKNOWN != token(_src));
 				(*this) += new Instruction("not", dst);
 				break;
 			case IR_LOGICAL_NEG:
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(IR_TOKEN_UNKNOWN != token(_src));
 				(*this) += new Instruction("neg", dst);
 				break;
 			case IR_LOGICAL_EQ:
-				_D(LOG_CRIT, "Not Implemented #%X", opcode);
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
+				ALERT("" == _dst && "" == _src);
+				(*this) += new Instruction("cmp", dst, src);
+				(*this) += new Instruction("xor", dst, dst);
+				(*this) += new Instruction("setz", this->regalloc(_dst, ZASM_MEM_BYTE));
 				break;
 			case IR_LOGICAL_LS:
-				_D(LOG_CRIT, "Not Implemented #%X", opcode);
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
+				ALERT("" == _dst && "" == _src);
+				(*this) += new Instruction("cmp", dst, src);
+				(*this) += new Instruction("xor", dst, dst);
+				(*this) += new Instruction("setl", this->regalloc(_dst, ZASM_MEM_BYTE));
 				break;
 			case IR_LOGICAL_GT:
-				_D(LOG_CRIT, "Not Implemented #%X", opcode);
+				ALERT(IR_TOKEN_REGISTER != token(_dst));
+				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
+				ALERT("" == _dst && "" == _src);
+				(*this) += new Instruction("cmp", dst, src);
+				(*this) += new Instruction("xor", dst, dst);
+				(*this) += new Instruction("setg", this->regalloc(_dst, ZASM_MEM_BYTE));
 				break;
 		/* condition / control flow */
 			case IR_CONDITION_JMP:
+				ALERT(!(IR_TOKEN_REF == token(_dst) && IR_TOKEN_UNKNOWN == token(_src)));
 				(*this) += new Instruction("jmp", dst);
 				break;
 			case IR_CONDITION_JMPIF:
+				ALERT(!(IR_TOKEN_REF == token(_dst) && IR_TOKEN_REGISTER == token(_src)));
 				(*this) += new Instruction("cmp", src, "0x0");
 				(*this) += new Instruction("jne", dst);
 				break;
 			case IR_CONDITION_CALL:
+				ALERT(!(IR_TOKEN_REF == token(_dst) || IR_TOKEN_REGISTER == token(_dst)));
+				ALERT(IR_TOKEN_UNKNOWN != token(_src));
 				(*this) += new Instruction("call", dst);
 				break;
 			case IR_CONDITION_RET:
+				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) || IR_TOKEN_REGISTER == token(_dst)));
+				ALERT(IR_TOKEN_UNKNOWN != token(_src));
 				if ("" != _dst) (*this) += new Instruction("mov", "rax", dst);
 				(*this) += new Instruction("ret");
 				break;
 		/* extra */
 			case IR_NOP:
+				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) && IR_TOKEN_UNKNOWN == token(_src)));
 				(*this) += new Instruction("nop");
 				break;
 			case IR_PROLOGUE:
+				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) || IR_TOKEN_INT == token(_dst)));
+				ALERT(IR_TOKEN_UNKNOWN != token(_src));
+
 				/* FIXME - Should be more smart */
 				(*this) += new Instruction("push", "rcx");
 				(*this) += new Instruction("push", "rdx");
@@ -257,6 +368,9 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				}
 				break;
 			case IR_EPILOGUE:
+				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) || IR_TOKEN_INT == token(_dst)));
+				ALERT(IR_TOKEN_UNKNOWN != token(_src));
+
 				if ("" != _dst) {
 					(*this) += new Instruction("add", "rsp", _dst);
 				}
@@ -268,6 +382,7 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				(*this) += new Instruction("pop", "rcx");
 				break;
 			case IR_INTERRUPT:
+				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) && IR_TOKEN_UNKNOWN == token(_src)));
 				ALERT(this->_param_nr_ > ARRAY_SIZE(sys_param));
 
 				while (0 < this->_param_nr_) {
@@ -277,12 +392,16 @@ void IR::emit(IROP opcode, std::string _dst, std::string _src, std::string size)
 				(*this) += new Instruction("syscall");
 				break;
 			case IR_LABEL:
+				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) || IR_TOKEN_VAR == token(_dst)));
+				ALERT(IR_TOKEN_UNKNOWN != token(_src));
+
 				(*this) += new Instruction(dst+":");
 				break;
 			case IR_DEFINE:
 				(*this) += new Instruction("define", dst, src);
 				break;
 			case IR_INLINE_ASM:
+				ALERT(IR_TOKEN_STRING != token(_dst) || IR_TOKEN_UNKNOWN != token(_src));
 				this->assembleL(dst.substr(1, dst.size()-2));
 				break;
 		default:
@@ -323,6 +442,9 @@ std::string IR::regalloc(std::string src, std::string size) {
 		} else if (ZASM_MEM_DWORD == size) {
 			pos = std::find(regs.begin(), regs.end(), tmp) - regs.begin();
 			tmp = regs[(pos & 0xE0) + (pos % 8) + 8];
+		} else if (ZASM_MEM_QWORD == size) {
+			pos = std::find(regs.begin(), regs.end(), tmp) - regs.begin();
+			tmp = regs[(pos & 0xE0) + (pos % 8)];
 		}
 
 		_alloc_regs_map_[src] = tmp;
@@ -349,4 +471,29 @@ std::string IR::randstr(unsigned int size, std::string prefix) {
 	}
 
 	return ret;
+}
+
+IRType IR::token(std::string src) {
+	int cnt = 0;
+	IRType type = IR_TOKEN_UNKNOWN;
+
+	if (1 == sscanf(src.c_str(), __IR_REG_FMT__, &cnt) || __IR_SYSCALL_REG__ == src) {
+		/* register */
+		type = IR_TOKEN_REGISTER;
+	} else if (__IR_REFERENCE__ == src.substr(0, 1)) {
+		/* reference */
+		type = IR_TOKEN_REF;
+	} else if ("0x" == src.substr(0, 2) || ('0' <= src[0] && '9' >= src[0])) {
+		/* digit */
+		type = IR_TOKEN_INT;
+	} else if ("" != src) {
+		/* variable */
+		type = IR_TOKEN_VAR;
+	} else if ('\'' == src[0] || '\"' == src[0]) {
+		/* string */
+		type = IR_TOKEN_STRING;
+	}
+
+	_D(LOG_DEBUG_IR, "%-12s -> %d", src.c_str(), type);
+	return type;
 }
