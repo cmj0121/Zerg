@@ -237,8 +237,11 @@ void Instruction::modRW(X86_64_INST &inst) {
 		if ((mod == 0x01 && NULL != this->src.indexReg())
 			|| (this->src.isMEM() && 5 == this->src.asInt() % 8)
 			|| (this->dst.isMEM() && 5 == this->dst.asInt() % 8)) {
-			_payload_[_length_++] = 0x0;
-			_D(LOG_ZASM_INFO, "Mod R/W       - %02X", _payload_[_length_-1]);
+
+			if (0 == (~0x7F & this->offset())) {
+				_payload_[_length_++] = 0x0;
+				_D(LOG_ZASM_INFO, "Mod R/W       - %02X", _payload_[_length_-1]);
+			}
 		} else if ((this->src.isMEM() && 4 == this->src.asInt() % 8) ||
 					(this->dst.isMEM() && 4 == this->dst.asInt() % 8)) {
 			_payload_[_length_++] = 0x24;
