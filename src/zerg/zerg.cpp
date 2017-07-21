@@ -16,7 +16,7 @@ void Zerg::compile(std::string src) {
 		/* Set the entry point of the program */
 		this->emit(IR_LABEL, ZASM_ENTRY_POINT);
 		this->emit(IR_CONDITION_CALL, __IR_REFERENCE__ ZASM_MAIN_FUNCTION);
-		this->emit(IR_MEMORY_STORE, "rax", "0x2000001");
+		this->emit(IR_MEMORY_PUSH, "0x2000001");
 		this->emit(IR_INTERRUPT);
 
 		/* load the built-in library if possible */
