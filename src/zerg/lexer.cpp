@@ -278,6 +278,7 @@ ZergToken Parser::lexer(void) {
 				else if (token == "None")			{ type = ZTYPE_NONE;          }
 				else if (token == "not")			{ type = ZTYPE_LOG_NOT;       }
 				else if (token == "eq")				{ type = ZTYPE_CMP_EQ;        }
+				else if (token == "return")			{ type = ZTYPE_CMD_RETURN;    }
 
 				goto END_LEXER;
 				break;

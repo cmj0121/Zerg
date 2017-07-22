@@ -78,12 +78,12 @@ AST* Parser::parse_stmt(ZergToken token, ZergToken &next) {
 			break;
 	}
 
-	#if defined(DEBUG_AST) || defined(DEBUG)
+	#if defined(DEBUG)
 		if (node) {
 			std::cerr << "==== statement ====" << std::endl;
 			std::cerr << *node << std::endl;
 		}
-	#endif /* DEBUG_AST */
+	#endif /* DEBUG */
 	return node;
 }
 AST* Parser::parse_simple_stmt(ZergToken token, ZergToken &next) {
@@ -106,6 +106,7 @@ AST* Parser::parse_simple_stmt(ZergToken token, ZergToken &next) {
 			node = new AST(token);
 			if (ZTYPE_NEWLINE != next.second) _SYNTAX(next);
 				break;
+		case ZTYPE_CMD_RETURN:		/* return statement */
 		case ZTYPE_CMD_PRINT:		/* print statement */
 			node  = new AST(token);
 			token = next;

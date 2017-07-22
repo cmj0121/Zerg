@@ -69,6 +69,7 @@ typedef enum _tag_token_type_ {
 	ZTYPE_CMD_NOP,				/* nop      */
 	ZTYPE_CMD_CONTINUE,			/* continue */
 	ZTYPE_CMD_BREAK,			/* break    */
+	ZTYPE_CMD_RETURN,			/* return   */
 	ZTYPE_CMD_ASM,				/* asm      */
 
 	ZTYPE_MAX
