@@ -3,6 +3,7 @@
 #  define __ZERG_PARSER__
 
 #include "zerg/ast.h"
+#include "zerg/cfg.h"
 
 class Parser {
 	public:

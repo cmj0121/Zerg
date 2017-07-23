@@ -24,7 +24,7 @@ class Zerg : public IR, public Parser {
 
 		/* compile the source code and pass to IR */
 		void compile(std::string src);
-		void emit(AST *node, std::string name);
+		void emit(CFG *node, std::string name);
 		void emit(IROP op, std::string dst="", std::string src="", std::string size="");
 
 		AST* emitIR(AST *node);

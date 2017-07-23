@@ -8,7 +8,7 @@
 
 
 void Zerg::compile(std::string src) {
-	AST *node = NULL;
+	CFG *node = NULL;
 
 	if (this->_args_.compile_ir) {
 		IR::compile(src);
@@ -25,17 +25,23 @@ void Zerg::compile(std::string src) {
 			//this->parser(BUILTIN_LIBRARY);
 		}
 
-		node = Parser::parser(src);
+		node = new CFG(Parser::parser(src));
 		this->emit(node, ZASM_MAIN_FUNCTION);
 		this->emit(IR_CONDITION_RET);
 	}
 }
 
-void Zerg::emit(AST *node, std::string name) {
+void Zerg::emit(CFG *cfg, std::string name) {
 	int cnt = 0;
 	char buff[BUFSIZ] = {0};
+	AST  *node = cfg->ast();
 
-	/* caculate the number of local variables */
+	#if defined(DEBUG_CFG) || defined(DEBUG)
+		std::cerr << "==== CFG node ====" << std::endl;
+		std::cerr << *node << std::endl;
+	#endif /* DEBUG_CFG */
+
+	/* calculate the number of local variables */
 	if (ZTYPE_UNKNOWN == node->type()) {
 		for (int i = 0; i < node->length(); ++i)
 			switch(node->child(i)->type()) {
@@ -49,10 +55,19 @@ void Zerg::emit(AST *node, std::string name) {
 	}
 	snprintf(buff, sizeof(buff), "0x%X", cnt*PARAM_SIZE);
 
-	this->emit(IR_LABEL, ZASM_MAIN_FUNCTION);
+	this->emit(IR_LABEL, name);
 	this->emit(IR_PROLOGUE, buff);
 	this->emitIR(node);
 	this->emit(IR_EPILOGUE, buff);
+
+	switch(cfg->type()) {
+		case CFG_BLOCK:
+			if (NULL != cfg->transfer()) this->emit(cfg->transfer(), cfg->name());
+			break;
+		default:
+			_D(LOG_CRIT, "Not Implementation");
+			break;
+	}
 }
 
 void Zerg::emit(IROP opcode, std::string dst, std::string src, std::string size) {
