@@ -141,6 +141,7 @@ class IR : public Zasm {
 		IROP opcode(std::string src);
 
 		std::string regalloc(std::string src, std::string size);
+		std::string localvar(std::string src, std::string size, std::string idx);
 	protected:
 		std::string randstr(unsigned int size=24, std::string prefix=".");
 		std::vector<std::string> _repeate_label_;

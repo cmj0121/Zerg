@@ -17,6 +17,7 @@ AST* Zerg::emitIR(AST *node) {
 			break;
 
 		/* atom */
+		case ZTYPE_NONE: case ZTYPE_TRUE: case ZTYPE_FALSE:
 		case ZTYPE_NUMBER:
 		case ZTYPE_STRING:
 		case ZTYPE_IDENTIFIER:
@@ -54,15 +55,13 @@ AST* Zerg::emitIR(AST *node) {
 					sub = node->child(1)->child(i);
 
 					switch(sub->type()) {
+						case ZTYPE_NUMBER:
 						case ZTYPE_IDENTIFIER:
-							tmp = sub->raw();
-							sub->setReg(++this->_regcnt_);
-
-							this->emit(IR_MEMORY_LOAD, sub->data(), tmp);
 							this->emit(IR_MEMORY_PUSH, sub->data());
 							break;
 						default:
-							this->emit(IR_MEMORY_PUSH, sub->raw());
+							this->emitIR(sub);
+							this->emit(IR_MEMORY_PUSH, sub->data());
 							break;
 					}
 				}
@@ -142,11 +141,19 @@ AST* Zerg::emitIR_atom(AST *node) {
 			break;
 
 		/* atom */
+		case ZTYPE_NONE:
+			node->otype(OBJ_NONE);
+			break;
+		case ZTYPE_TRUE: case ZTYPE_FALSE:
+			node->otype(OBJ_BOOLEAN);
+			break;
 		case ZTYPE_NUMBER:
+			node->otype(OBJ_INT);
 			node->setReg(++this->_regcnt_);
 			this->emit(IR_MEMORY_STORE, node->data(), node->raw());
 			break;
 		case ZTYPE_STRING:
+			node->otype(OBJ_STRING);
 			symb = std::make_pair(randstr(8), node->raw());
 			globals_str.push_back(symb);
 			node->setSymb(symb.first);
@@ -203,27 +210,34 @@ AST* Zerg::emitIR_arithmetic(AST *node) {
 
 		/* bitwise */
 		case ZTYPE_BIT_AND:
+			this->emit(IR_LOGICAL_AND, x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
 		case ZTYPE_BIT_OR:
+			this->emit(IR_LOGICAL_OR, x->data(), y->data());
+			node->setReg(x->getReg());
+			break;
 		case ZTYPE_BIT_XOR:
-			_D(LOG_CRIT, "Not implemented on %s #%d", node->raw().c_str(), node->type());
+			this->emit(IR_LOGICAL_XOR, x->data(), y->data());
+			node->setReg(x->getReg());
 			break;
 
 		/* logical */
 		case ZTYPE_LOG_AND:
-			this->emit(IR_LOGICAL_AND, x->data(), y->data());
-			node->setReg(x->getReg());
+			_D(LOG_CRIT, "Not Implemented");
+			node->otype(OBJ_BOOLEAN);
 			break;
 		case ZTYPE_LOG_OR:
-			this->emit(IR_LOGICAL_OR, x->data(), y->data());
-			node->setReg(x->getReg());
+			_D(LOG_CRIT, "Not Implemented");
+			node->otype(OBJ_BOOLEAN);
 			break;
 		case ZTYPE_LOG_XOR:
-			this->emit(IR_LOGICAL_XOR, x->data(), y->data());
-			node->setReg(x->getReg());
+			_D(LOG_CRIT, "Not Implemented");
+			node->otype(OBJ_BOOLEAN);
 			break;
 		case ZTYPE_LOG_NOT:
-			this->emit(IR_LOGICAL_NOT, x->data());
-			node->setReg(x->getReg());
+			_D(LOG_CRIT, "Not Implemented");
+			node->otype(OBJ_BOOLEAN);
 			break;
 
 		/* compare */
@@ -271,8 +285,15 @@ AST* Zerg::emitIR_assignment(AST *node) {
 		_D(LOG_CRIT, "Not Implemented");
 	}
 
-	switch(expr->type()) {
-		case ZTYPE_STRING:
+	switch(expr->otype()) {
+		case OBJ_NONE:
+			this->emit(IR_MEMORY_STORE, dst->raw(), "0x0");
+			break;
+		case OBJ_BOOLEAN:
+			tmp = ZTYPE_TRUE == expr->type() ? "0x1" : "0x0";
+			this->emit(IR_MEMORY_STORE, dst->raw(), tmp);
+			break;
+		case OBJ_STRING:
 			tmp = expr->data();
 			expr->setReg(++this->_regcnt_);
 
@@ -283,6 +304,9 @@ AST* Zerg::emitIR_assignment(AST *node) {
 			this->emit(IR_MEMORY_STORE, dst->raw(), expr->data());
 			break;
 	}
+
+	node->otype(expr->otype());
+	_D(LOG_DEBUG, "set object type %s -> 0x%X", node->raw().c_str(), node->otype());
 	return node;
 }
 AST* Zerg::emitIR_subroutine(AST *node) {

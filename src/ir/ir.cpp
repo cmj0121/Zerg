@@ -91,8 +91,6 @@ void IR::emit(STRING op, STRING _dst, STRING _src, STRING size, STRING index) {
 	this->emit(opcode, _dst, _src, size, index);
 }
 void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) {
-	size_t cnt = 0;
-	char buff[BUFSIZ] = {0};
 	std::string dst, src, idx;
 	std::string sys_param[] = { SYSCALL_PARAM };
 
@@ -102,17 +100,11 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 	switch(opcode) {
 		/* memory access*/
 			case IR_MEMORY_LOAD:
-				if ('.' != _src[0]) {
-					if (_local_.end() != std::find(_local_.begin(), _local_.end(), src)) {
-						cnt = std::find(_local_.begin(), _local_.end(), src) - _local_.begin();
-						snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1)* PARAM_SIZE);
-						(*this) += new Instruction("mov", dst, buff);
-					} else if (__IR_REFERENCE__ == _src.substr(0, 1)) {
-						(*this) += new Instruction("lea", dst, src);
-					} else {
-						(*this) += new Instruction("mov", dst, src);
-					}
+				if (__IR_REFERENCE__ == _src.substr(0, 1)) {
+					/* Load from referenced data */
+					(*this) += new Instruction("lea", dst, src);
 				} else {
+					src = localvar(_src, size, idx);
 					(*this) += new Instruction("mov", dst, src);
 				}
 				break;
@@ -120,25 +112,9 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				if (__IR_REFERENCE__ == _src.substr(0, 1)) {
 					/* Load from referenced data */
 					(*this) += new Instruction("lea", dst, src);
-				} else if ('.' != _dst[0]) {
-					if (_local_.end() == std::find(_local_.begin(), _local_.end(), dst)) {
-						/* new token, treated as local variable */
-						cnt = _local_.size();
-						snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1) * PARAM_SIZE);
-						(*this) += new Instruction("mov", buff, src);
-
-						_local_.push_back(dst);
-					} else {
-						cnt = std::find(_local_.begin(), _local_.end(), dst) - _local_.begin();
-						snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1) * PARAM_SIZE);
-						(*this) += new Instruction("mov", buff, src);
-					}
-				} else if ("" != idx) {
-					dst = IR::regalloc(_dst, ZASM_MEM_QWORD);
-					snprintf(buff, sizeof(buff), "%s [%s+%s]", size.c_str(), dst.c_str(), idx.c_str());
-					(*this) += new Instruction("mov", buff, src);
 				} else if (dst != src) {
 					/* simple register movement */
+					dst = localvar(_dst, size, idx);
 					(*this) += new Instruction("mov", dst, src);
 				}
 				break;
@@ -146,6 +122,7 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				(*this) += new Instruction("xchg", dst, src);
 				break;
 			case IR_MEMORY_PUSH:
+				dst = localvar(_dst, size, idx);
 				(*this) += new Instruction("push", dst);
 				this->_param_nr_ ++;
 				break;
@@ -496,4 +473,30 @@ IRType IR::token(std::string src) {
 
 	_D(LOG_DEBUG_IR, "%-12s -> %d", src.c_str(), type);
 	return type;
+}
+std::string IR::localvar(std::string _src, std::string size, std::string idx) {
+	size_t cnt = 0;
+	char buff[BUFSIZ] = {0};
+	std::string src;
+
+
+	src = IR::regalloc(_src, ZASM_MEM_QWORD);
+	if (_local_.end() != std::find(_local_.begin(), _local_.end(), src)) {
+		/* find the local variable */
+		cnt = std::find(_local_.begin(), _local_.end(), src) - _local_.begin();
+		snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1) * PARAM_SIZE);
+	} else if ('.' != _src[0] && !('0' <= _src[0] && '9' >= _src[0])) {
+		/* new token, treated as local variable */
+		cnt = _local_.size();
+		snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1) * PARAM_SIZE);
+	} else if ("" != idx) {
+		/* index case */
+		src = IR::regalloc(src, ZASM_MEM_QWORD);
+		snprintf(buff, sizeof(buff), "%s [%s+%s]", size.c_str(), src.c_str(), idx.c_str());
+	} else {
+		/* others */
+		snprintf(buff, sizeof(buff), "%s", src.c_str());
+	}
+
+	return buff;
 }
