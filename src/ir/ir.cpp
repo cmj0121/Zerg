@@ -486,12 +486,12 @@ IRType IR::token(std::string src) {
 	} else if ("0x" == src.substr(0, 2) || ('0' <= src[0] && '9' >= src[0])) {
 		/* digit */
 		type = IR_TOKEN_INT;
-	} else if ("" != src) {
-		/* variable */
-		type = IR_TOKEN_VAR;
 	} else if ('\'' == src[0] || '\"' == src[0]) {
 		/* string */
 		type = IR_TOKEN_STRING;
+	} else if ("" != src) {
+		/* variable */
+		type = IR_TOKEN_VAR;
 	}
 
 	_D(LOG_DEBUG_IR, "%-12s -> %d", src.c_str(), type);
