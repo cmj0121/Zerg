@@ -280,6 +280,8 @@ ZergToken Parser::lexer(void) {
 				else if (token == "eq")				{ type = ZTYPE_CMP_EQ;        }
 				else if (token == "return")			{ type = ZTYPE_CMD_RETURN;    }
 
+				else if (token == "syscall")		{ type = ZTYPE_BUILTIN_SYSCALL;}
+
 				goto END_LEXER;
 				break;
 		}

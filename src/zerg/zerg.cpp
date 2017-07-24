@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <set>
 
 #include <unistd.h>
 #include "zerg.h"
@@ -28,12 +29,18 @@ void Zerg::compile(std::string src) {
 		node = new CFG(Parser::parser(src));
 		this->emit(node, ZASM_MAIN_FUNCTION);
 		this->emit(IR_CONDITION_RET);
+
+		/* dump all globals symbol */
+		for (auto it : this->globals_str) {
+			/* FIXME - Should we need globals defined? of just set in local part */
+			this->emit(IR_DEFINE, it.first, it.second);
+		}
 	}
 }
 
 void Zerg::emit(CFG *cfg, std::string name) {
-	int cnt = 0;
 	char buff[BUFSIZ] = {0};
+	std::set<std::string> locals = {};
 	AST  *node = cfg->ast();
 
 	#if defined(DEBUG_CFG) || defined(DEBUG)
@@ -47,13 +54,13 @@ void Zerg::emit(CFG *cfg, std::string name) {
 			switch(node->child(i)->type()) {
 				case ZTYPE_RASSIGN:
 				case ZTYPE_LASSIGN:
-					cnt ++;
+					locals.insert(node->child(i)->child(0)->raw());
 					break;
 				default:
 					break;
 			}
 	}
-	snprintf(buff, sizeof(buff), "0x%X", cnt*PARAM_SIZE);
+	snprintf(buff, sizeof(buff), "0x%lX", locals.size()*PARAM_SIZE);
 
 	this->emit(IR_LABEL, name);
 	this->emit(IR_PROLOGUE, buff);

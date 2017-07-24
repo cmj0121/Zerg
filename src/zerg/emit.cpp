@@ -3,6 +3,7 @@
 #include "zerg.h"
 
 AST* Zerg::emitIR(AST *node) {
+	std::string tmp;
 	AST *sub = NULL;
 
 	ALERT(NULL == node);
@@ -44,6 +45,34 @@ AST* Zerg::emitIR(AST *node) {
 			break;
 
 		case ZTYPE_FUNCCALL:
+			ALERT(1 >= node->length());
+
+			if (ZTYPE_BUILTIN_SYSCALL == node->child(0)->type()) {
+				ALERT(2 != node->length() || 0 == node->child(1)->length());
+
+				for (int i = 0; i < node->child(1)->length(); ++i) {
+					sub = node->child(1)->child(i);
+
+					switch(sub->type()) {
+						case ZTYPE_IDENTIFIER:
+							tmp = sub->raw();
+							sub->setReg(++this->_regcnt_);
+
+							this->emit(IR_MEMORY_LOAD, sub->data(), tmp);
+							this->emit(IR_MEMORY_PUSH, sub->data());
+							break;
+						default:
+							this->emit(IR_MEMORY_PUSH, sub->raw());
+							break;
+					}
+				}
+				this->emit(IR_INTERRUPT);
+			} else {
+				/* general function call */
+				_D(LOG_CRIT, "Not Implemented function call");
+			}
+
+			break;
 		case ZTYPE_GETTER:
 		case ZTYPE_CMD_IN:
 
@@ -77,6 +106,7 @@ AST* Zerg::emitIR(AST *node) {
 }
 AST* Zerg::emitIR_atom(AST *node) {
 	AST *x = NULL;
+	std::pair<std::string, std::string> symb;
 
 	_D(LOG_DEBUG_IR, "emit IR on atom %s", node->raw().c_str());
 	switch(node->type()) {
@@ -117,6 +147,10 @@ AST* Zerg::emitIR_atom(AST *node) {
 			this->emit(IR_MEMORY_STORE, node->data(), node->raw());
 			break;
 		case ZTYPE_STRING:
+			symb = std::make_pair(randstr(8), node->raw());
+			globals_str.push_back(symb);
+			node->setSymb(symb.first);
+			break;
 		case ZTYPE_IDENTIFIER:
 		default:
 			_D(LOG_CRIT, "Not implemented on %s #%d", node->raw().c_str(), node->type());
@@ -214,6 +248,7 @@ AST* Zerg::emitIR_arithmetic(AST *node) {
 	return node;
 }
 AST* Zerg::emitIR_assignment(AST *node) {
+	std::string tmp;
 	AST *dst = NULL, *expr = NULL;
 
 	ALERT(2 != node->length());
@@ -236,7 +271,18 @@ AST* Zerg::emitIR_assignment(AST *node) {
 		_D(LOG_CRIT, "Not Implemented");
 	}
 
-	this->emit(IR_MEMORY_STORE, __IR_REFERENCE__ + dst->raw(), expr->data());
+	switch(expr->type()) {
+		case ZTYPE_STRING:
+			tmp = expr->data();
+			expr->setReg(++this->_regcnt_);
+
+			this->emit(IR_MEMORY_STORE, expr->data(), tmp);
+			this->emit(IR_MEMORY_STORE, dst->raw(), expr->data());
+			break;
+		default:
+			this->emit(IR_MEMORY_STORE, dst->raw(), expr->data());
+			break;
+	}
 	return node;
 }
 AST* Zerg::emitIR_subroutine(AST *node) {

@@ -72,6 +72,8 @@ typedef enum _tag_token_type_ {
 	ZTYPE_CMD_RETURN,			/* return   */
 	ZTYPE_CMD_ASM,				/* asm      */
 
+	ZTYPE_BUILTIN_SYSCALL,		/* syscall  */
+
 	ZTYPE_MAX
 } ZType;
 typedef std::pair<std::string, ZType> ZergToken;
@@ -97,12 +99,15 @@ class AST : public Tree<AST> {
 		void setReg(int reg) { this->_reg_ = reg; }
 		int  getReg(void) { return this->_reg_; }
 
+		void setSymb(std::string src) { this->_symb_ = src; }
+
 		OBJType otype(void)         { return this->_otype_; }
 		void    otype(OBJType type) { this->_otype_ = type; }
 	private:
 		ZergToken _node_;
 		int _reg_;
 		OBJType _otype_;
+		std::string _symb_;
 };
 
 #endif /* __ZERG_AST__ */

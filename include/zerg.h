@@ -35,6 +35,8 @@ class Zerg : public IR, public Parser {
 	private:
 		Args _args_;
 		int _regcnt_;
+
+		std::vector<std::pair<std::string, std::string>> globals_str;
 };
 
 #endif /* __ZERG_H__ */

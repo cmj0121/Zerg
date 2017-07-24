@@ -13,15 +13,16 @@ AST::AST(ZergToken &token) : Tree<AST>(token.first), _node_(token) {
 }
 
 std::string AST::data(void) {
-	std::string tmp;
 	char buff[BUFSIZ] = {0};
 
 	if (0 != this->_reg_) {
 		snprintf(buff, sizeof(buff), __IR_REG_FMT__, this->_reg_);
-		tmp = buff;
+	} else if (ZTYPE_FUNCCALL == this->type()) {
+		snprintf(buff, sizeof(buff), "%s", __IR_SYSCALL_REG__);
+	} else if ("" != this->_symb_) {
+		snprintf(buff, sizeof(buff), "%s%s", __IR_REFERENCE__, this->_symb_.c_str());
 	} else {
-		tmp = this->raw();
-		_D(LOG_CRIT, "Not Improvement");
+		snprintf(buff, sizeof(buff), "%s", this->raw().c_str());
 	}
 	return buff;
 }
