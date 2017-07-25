@@ -47,10 +47,10 @@ Zerg 的 IR (Intermediate Representation, 中介語言) 在第一個版本只支
 
 ## 條件運算 ##
 條件運算是 IR 用來改變執行順序的運算子：
-	23. JMP   DST      - 跳轉到 DST 所表示的記憶體位址
-	24. JMPIF DST SRC  - 當 SRC 非 0 時跳轉到 DST 所表示的記憶體位址
-	25. CALL  DST SRC  - 呼叫 SRC 所表示位址的子程序 (sub-routine) 並且將結果儲存到 DST 中
-	26. RET   DST      - 回傳 DST 並且回到上一個呼叫子程序的位址
+	23. JMP    DST      - 跳轉到 DST 所表示的記憶體位址
+	24. JMPIFN DST SRC  - 當 SRC 為 0 時跳轉到 DST 所表示的記憶體位址
+	25. CALL   DST SRC  - 呼叫 SRC 所表示位址的子程序 (sub-routine) 並且將結果儲存到 DST 中
+	26. RET    DST      - 回傳 DST 並且回到上一個呼叫子程序的位址
 
 ##  其他程式碼 ##
 以下20是額外的 IR 程式碼：所有不歸類在上述四種的 IR Code 都屬於這個類別：

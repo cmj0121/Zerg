@@ -308,10 +308,10 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				ALERT(!(IR_TOKEN_REF == token(_dst) && IR_TOKEN_UNKNOWN == token(_src)));
 				(*this) += new Instruction("jmp", dst);
 				break;
-			case IR_CONDITION_JMPIF:
+			case IR_CONDITION_JMPIFN:
 				ALERT(!(IR_TOKEN_REF == token(_dst) && IR_TOKEN_REGISTER == token(_src)));
 				(*this) += new Instruction("cmp", src, "0x0");
-				(*this) += new Instruction("jne", dst);
+				(*this) += new Instruction("je", dst);
 				break;
 			case IR_CONDITION_CALL:
 				ALERT(!(IR_TOKEN_REF == token(_dst) || IR_TOKEN_REGISTER == token(_dst)));
