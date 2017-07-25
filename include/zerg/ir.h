@@ -63,7 +63,7 @@ typedef enum _tag_ir_ {
 
 	/* control flow */
 	IR_CONDITION_JMP,
-	IR_CONDITION_JMPIF,
+	IR_CONDITION_JMPIFN,
 	IR_CONDITION_CALL,
 	IR_CONDITION_RET,
 
@@ -114,7 +114,7 @@ const std::vector<std::pair<std::string, IROP>> IROP_map = {
 	{"GT"		, IR_LOGICAL_GT},
 	/* condition / control flow */
 	{"JMP"		, IR_CONDITION_JMP},
-	{"JMPIF"	, IR_CONDITION_JMPIF},
+	{"JMPIFN"	, IR_CONDITION_JMPIFN},
 	{"CALL"		, IR_CONDITION_CALL},
 	{"RET"		, IR_CONDITION_RET},
 	/* extra */
