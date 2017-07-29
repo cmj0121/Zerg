@@ -322,7 +322,6 @@ AST* Zerg::emitIR_subroutine(AST *node) {
 			if (3 == node->length()) z = node->child(2);
 
 			x = this->emitIR(x);
-			this->emit(IR_LOGICAL_NOT, x->data());
 			this->emit(IR_CONDITION_JMPIFN, __IR_REFERENCE__  "tmp_label", x->data());
 			this->emitIR(y);
 			if (NULL != z) this->emit(IR_CONDITION_JMP, "tmp_label_end");
