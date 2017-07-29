@@ -20,6 +20,7 @@ void Zerg::compile(std::string src) {
 		this->emit(IR_CONDITION_CALL, __IR_REFERENCE__ ZASM_MAIN_FUNCTION);
 		this->emit(IR_MEMORY_PUSH, "0x2000001");
 		this->emit(IR_INTERRUPT);
+		this->flush();
 
 		/* load the built-in library if possible */
 		if (0 == access(BUILTIN_LIBRARY, F_OK) && false == this->_args_.no_stdlib) {
@@ -33,7 +34,6 @@ void Zerg::compile(std::string src) {
 		this->emit(IR_EPILOGUE, buff);
 		this->emit(IR_CONDITION_RET);
 		this->flush();
-		this->_ir_stack_.clear();
 
 		/* dump all globals symbol */
 		for (auto it : this->globals_str) {
@@ -52,6 +52,7 @@ void Zerg::emit(CFG *cfg, std::string name) {
 		std::cerr << *node << std::endl;
 	#endif /* DEBUG_CFG */
 
+	if ("" != name) this->emit(IR_LABEL, name);
 	this->emitIR(node);
 
 	switch(cfg->type()) {
@@ -85,12 +86,13 @@ void Zerg::flush(void) {
 	prologue.dst    = buff;
 
 	/* PROLOGUE and EPILOGUE */
-	this->_ir_stack_.insert(this->_ir_stack_.begin(), prologue);
+	this->_ir_stack_.insert(this->_ir_stack_.begin()+1, prologue);
 
 	_D(LOG_DEBUG_IR, "flush #%lu IR", this->_ir_stack_.size());
 	for (auto ir : this->_ir_stack_) {
 		if (this->_args_.only_ir) {
 			for (auto it : IROP_map) {
+				if (it.second == IR_LABEL) std::cout << "\n";
 				if (it.second == ir.opcode) {
 					std::cout << std::setw(14) << std::left << it.first
 								<< std::setw(11) << ir.dst
@@ -106,4 +108,5 @@ void Zerg::flush(void) {
 			IR::emit(ir.opcode, ir.dst, ir.src, ir.size);
 		}
 	}
+	this->_ir_stack_.clear();
 }
