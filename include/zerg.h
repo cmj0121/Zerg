@@ -16,6 +16,10 @@
 #include <string>
 #include <map>
 
+typedef struct _struct_zerg_ir_ {
+	IROP opcode;
+	std::string dst, src, size;
+} ZergIR;
 
 class Zerg : public IR, public Parser {
 	public:
@@ -26,6 +30,7 @@ class Zerg : public IR, public Parser {
 		void compile(std::string src);
 		void emit(CFG *node, std::string name);
 		void emit(IROP op, std::string dst="", std::string src="", std::string size="");
+		void flush(void);
 
 		AST* emitIR(AST *node);
 		virtual AST* emitIR_atom(AST *node);
@@ -35,7 +40,8 @@ class Zerg : public IR, public Parser {
 	private:
 		Args _args_;
 		int _regcnt_;
-
+		std::vector<ZergIR> _ir_stack_;
+		std::vector<std::string> _locals_;
 		std::vector<std::pair<std::string, std::string>> globals_str;
 };
 

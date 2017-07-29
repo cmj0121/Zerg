@@ -9,6 +9,7 @@
 
 
 void Zerg::compile(std::string src) {
+	char buff[BUFSIZ] = {0};
 	CFG *node = NULL;
 
 	if (this->_args_.compile_ir) {
@@ -28,19 +29,22 @@ void Zerg::compile(std::string src) {
 
 		node = new CFG(Parser::parser(src));
 		this->emit(node, ZASM_MAIN_FUNCTION);
+		snprintf(buff, sizeof(buff), "0x%lX", this->_locals_.size() * PARAM_SIZE);
+		this->emit(IR_EPILOGUE, buff);
 		this->emit(IR_CONDITION_RET);
+		this->flush();
+		this->_ir_stack_.clear();
 
 		/* dump all globals symbol */
 		for (auto it : this->globals_str) {
 			/* FIXME - Should we need globals defined? of just set in local part */
 			this->emit(IR_DEFINE, it.first, it.second);
 		}
+
 	}
 }
 
 void Zerg::emit(CFG *cfg, std::string name) {
-	char buff[BUFSIZ] = {0};
-	std::set<std::string> locals = {};
 	AST  *node = cfg->ast();
 
 	#if defined(DEBUG_CFG) || defined(DEBUG)
@@ -48,24 +52,7 @@ void Zerg::emit(CFG *cfg, std::string name) {
 		std::cerr << *node << std::endl;
 	#endif /* DEBUG_CFG */
 
-	/* calculate the number of local variables */
-	if (ZTYPE_UNKNOWN == node->type()) {
-		for (int i = 0; i < node->length(); ++i)
-			switch(node->child(i)->type()) {
-				case ZTYPE_RASSIGN:
-				case ZTYPE_LASSIGN:
-					locals.insert(node->child(i)->child(0)->raw());
-					break;
-				default:
-					break;
-			}
-	}
-	snprintf(buff, sizeof(buff), "0x%lX", locals.size()*PARAM_SIZE);
-
-	this->emit(IR_LABEL, name);
-	this->emit(IR_PROLOGUE, buff);
 	this->emitIR(node);
-	this->emit(IR_EPILOGUE, buff);
 
 	switch(cfg->type()) {
 		case CFG_BLOCK:
@@ -78,18 +65,45 @@ void Zerg::emit(CFG *cfg, std::string name) {
 }
 
 void Zerg::emit(IROP opcode, std::string dst, std::string src, std::string size) {
-	if (this->_args_.only_ir) {
-		for (auto it : IROP_map) {
-			if (it.second == opcode) {
-				std::cout << std::setw(14) << std::left << it.first
-							<< std::setw(11) << dst
-							<< std::setw(11) << src
-							<< std::setw(11) << size << std::endl;
-				return ;
-			}
+	ZergIR ir = {opcode, dst, src, size};
+
+	/* count the local variable */
+	if (opcode == IR_MEMORY_STORE && IR_TOKEN_VAR == IR::token(dst)) {
+		if (_locals_.end() == std::find(_locals_.begin(), _locals_.end(), dst)) {
+			this->_locals_.push_back(dst);
 		}
-		_D(LOG_CRIT, "Cannot found opcode #%d", opcode);
-	} else {
-		return IR::emit(opcode, dst, src, size);
+	}
+	this->_ir_stack_.push_back(ir);
+}
+void Zerg::flush(void) {
+	bool blFound = false;
+	char buff[BUFSIZ] = {0};
+	ZergIR prologue;
+
+	snprintf(buff, sizeof(buff), "0x%lX", this->_locals_.size() * PARAM_SIZE);
+	prologue.opcode = IR_PROLOGUE;
+	prologue.dst    = buff;
+
+	/* PROLOGUE and EPILOGUE */
+	this->_ir_stack_.insert(this->_ir_stack_.begin(), prologue);
+
+	_D(LOG_DEBUG_IR, "flush #%lu IR", this->_ir_stack_.size());
+	for (auto ir : this->_ir_stack_) {
+		if (this->_args_.only_ir) {
+			for (auto it : IROP_map) {
+				if (it.second == ir.opcode) {
+					std::cout << std::setw(14) << std::left << it.first
+								<< std::setw(11) << ir.dst
+								<< std::setw(11) << ir.src
+								<< std::setw(11) << ir.size << std::endl;
+
+					blFound = true;
+					break;
+				}
+			}
+			if (!blFound) _D(LOG_CRIT, "Cannot found opcode #%d", ir.opcode);
+		} else {
+			IR::emit(ir.opcode, ir.dst, ir.src, ir.size);
+		}
 	}
 }

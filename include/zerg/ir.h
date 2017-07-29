@@ -145,6 +145,7 @@ class IR : public Zasm {
 	protected:
 		std::string randstr(unsigned int size=24, std::string prefix=".");
 		std::vector<std::string> _repeate_label_;
+		IRType token(std::string src);
 	private:
 		int _lineno_;
 		size_t _param_nr_;
@@ -153,8 +154,6 @@ class IR : public Zasm {
 		std::vector<std::string> _alloc_regs_ = { USED_REGISTERS };
 		std::map<std::string, std::string> _alloc_regs_map_;
 		std::vector<std::string> _local_;
-
-		IRType token(std::string src);
 };
 
 #endif /* __ZERG_IR_H__ */
