@@ -46,8 +46,6 @@ AST* Zerg::emitIR(AST *node) {
 			break;
 
 		case ZTYPE_FUNCCALL:
-			ALERT(1 >= node->length());
-
 			if (ZTYPE_BUILTIN_SYSCALL == node->child(0)->type()) {
 				ALERT(2 != node->length() || 0 == node->child(1)->length());
 
@@ -57,7 +55,7 @@ AST* Zerg::emitIR(AST *node) {
 					switch(sub->type()) {
 						case ZTYPE_NUMBER:
 						case ZTYPE_IDENTIFIER:
-							this->emit(IR_MEMORY_PUSH, sub->data());
+							this->emit(IR_MEMORY_PUSH, sub->raw());
 							break;
 						default:
 							this->emitIR(sub);
@@ -68,7 +66,10 @@ AST* Zerg::emitIR(AST *node) {
 				this->emit(IR_INTERRUPT);
 			} else {
 				/* general function call */
-				_D(LOG_CRIT, "Not Implemented function call");
+				if (1 != node->length()) _D(LOG_CRIT, "Not Implemented function call");
+
+				sub = node->child(0);
+				this->emit(IR_CONDITION_CALL, __IR_REFERENCE__ + sub->data());
 			}
 
 			break;
@@ -81,8 +82,6 @@ AST* Zerg::emitIR(AST *node) {
 			break;
 		/* sub-routine */
 		case ZTYPE_CMD_FUNCTION: case ZTYPE_CMD_CLASS:
-		case ZTYPE_CMD_WHILE: case ZTYPE_CMD_FOR:
-		case ZTYPE_CMD_IF:
 			this->emitIR_subroutine(node);
 			break;
 

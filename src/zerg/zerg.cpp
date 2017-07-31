@@ -30,7 +30,7 @@ void Zerg::compile(std::string src) {
 
 		node = new CFG(Parser::parser(src));
 		this->emit(node, ZASM_MAIN_FUNCTION);
-		snprintf(buff, sizeof(buff), "0x%lX", this->_locals_.size() * PARAM_SIZE);
+		snprintf(buff, sizeof(buff), "0x%lX", IR::localvar_len() * PARAM_SIZE);
 		this->emit(IR_EPILOGUE, buff);
 		this->emit(IR_CONDITION_RET);
 		this->flush();
@@ -40,12 +40,13 @@ void Zerg::compile(std::string src) {
 			/* FIXME - Should we need globals defined? of just set in local part */
 			this->emit(IR_DEFINE, it.first, it.second);
 		}
-
+		this->flush();
 	}
 }
 
 void Zerg::emit(CFG *cfg, std::string name) {
-	AST  *node = cfg->ast();
+	std::string branch, end_of_branch;
+	AST *node = cfg->ast();
 
 	#if defined(DEBUG_CFG) || defined(DEBUG)
 		std::cerr << "==== CFG node ====" << std::endl;
@@ -59,6 +60,20 @@ void Zerg::emit(CFG *cfg, std::string name) {
 		case CFG_BLOCK:
 			if (NULL != cfg->transfer()) this->emit(cfg->transfer(), cfg->name());
 			break;
+		case CFG_BRANCH:
+			branch = IR::randstr(8);
+			end_of_branch = IR::randstr(8);
+
+			this->emit(IR_CONDITION_JMPIFN, __IR_REFERENCE__ + branch, node->data());
+			this->emit(cfg->branch(true), "");
+			if (NULL != cfg->branch(false)) this->emit(IR_CONDITION_JMP, __IR_REFERENCE__ + end_of_branch);
+			this->emit(IR_LABEL, branch);
+			if (NULL != cfg->branch(false)) {
+				this->emit(cfg->branch(false), "");
+				this->emit(IR_LABEL, end_of_branch);
+			}
+			break;
+
 		default:
 			_D(LOG_CRIT, "Not Implementation");
 			break;
@@ -70,9 +85,7 @@ void Zerg::emit(IROP opcode, std::string dst, std::string src, std::string size)
 
 	/* count the local variable */
 	if (opcode == IR_MEMORY_STORE && IR_TOKEN_VAR == IR::token(dst)) {
-		if (_locals_.end() == std::find(_locals_.begin(), _locals_.end(), dst)) {
-			this->_locals_.push_back(dst);
-		}
+		IR::localvar(dst);
 	}
 	this->_ir_stack_.push_back(ir);
 }
@@ -81,32 +94,36 @@ void Zerg::flush(void) {
 	char buff[BUFSIZ] = {0};
 	ZergIR prologue;
 
-	snprintf(buff, sizeof(buff), "0x%lX", this->_locals_.size() * PARAM_SIZE);
-	prologue.opcode = IR_PROLOGUE;
-	prologue.dst    = buff;
+	if (this->_ir_stack_.size()) {
+		snprintf(buff, sizeof(buff), "0x%lX", IR::localvar_len() * PARAM_SIZE);
+		prologue.opcode = IR_PROLOGUE;
+		prologue.dst    = buff;
 
-	/* PROLOGUE and EPILOGUE */
-	this->_ir_stack_.insert(this->_ir_stack_.begin()+1, prologue);
+		/* PROLOGUE and EPILOGUE */
+		this->_ir_stack_.insert(this->_ir_stack_.begin()+1, prologue);
 
-	_D(LOG_DEBUG_IR, "flush #%lu IR", this->_ir_stack_.size());
-	for (auto ir : this->_ir_stack_) {
-		if (this->_args_.only_ir) {
-			for (auto it : IROP_map) {
-				if (it.second == IR_LABEL) std::cout << "\n";
-				if (it.second == ir.opcode) {
-					std::cout << std::setw(14) << std::left << it.first
-								<< std::setw(11) << ir.dst
-								<< std::setw(11) << ir.src
-								<< std::setw(11) << ir.size << std::endl;
+		_D(LOG_DEBUG_IR, "flush #%lu IR", this->_ir_stack_.size());
+		for (auto ir : this->_ir_stack_) {
+			if (this->_args_.only_ir) {
+				for (auto it : IROP_map) {
+					if (it.second == IR_LABEL) std::cout << "\n";
+					if (it.second == ir.opcode) {
+						std::cout << std::setw(14) << std::left << it.first
+									<< std::setw(11) << ir.dst
+									<< std::setw(11) << ir.src
+									<< std::setw(11) << ir.size << std::endl;
 
-					blFound = true;
-					break;
+						blFound = true;
+						break;
+					}
 				}
+				if (!blFound) _D(LOG_CRIT, "Cannot found opcode #%d", ir.opcode);
+			} else {
+				IR::emit(ir.opcode, ir.dst, ir.src, ir.size);
 			}
-			if (!blFound) _D(LOG_CRIT, "Cannot found opcode #%d", ir.opcode);
-		} else {
-			IR::emit(ir.opcode, ir.dst, ir.src, ir.size);
 		}
+
+		this->_ir_stack_.clear();
+		IR::localvar_reset();
 	}
-	this->_ir_stack_.clear();
 }

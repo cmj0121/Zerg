@@ -142,6 +142,9 @@ class IR : public Zasm {
 
 		std::string regalloc(std::string src, std::string size);
 		std::string localvar(std::string src, std::string size, std::string idx);
+		void   localvar(std::string var);
+		void   localvar_reset(void);
+		size_t localvar_len(void);
 	protected:
 		std::string randstr(unsigned int size=24, std::string prefix=".");
 		std::vector<std::string> _repeate_label_;
@@ -153,7 +156,7 @@ class IR : public Zasm {
 
 		std::vector<std::string> _alloc_regs_ = { USED_REGISTERS };
 		std::map<std::string, std::string> _alloc_regs_map_;
-		std::vector<std::string> _local_;
+		std::vector<std::string> _locals_;
 };
 
 #endif /* __ZERG_IR_H__ */

@@ -297,7 +297,8 @@ std::string InstToken::unescape(void) {
 	std::string dst = "";
 	char tmp = 0x0;
 
-	ALERT('"' != this->_src_[0] || '"' != this->_src_[this->_src_.size()-1]);
+	ALERT(!('\"' == this->_src_[0] && this->_src_[0] == this->_src_[this->_src_.size()-1])
+	&&    !('\'' == this->_src_[0] && this->_src_[0] == this->_src_[this->_src_.size()-1]));
 	for (unsigned int i = 1; i < this->_src_.size()-1; ++i) {
 		if ('\\' == this->_src_[i]) {
 			switch (this->_src_[++i]) {

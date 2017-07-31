@@ -371,6 +371,7 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 			case IR_LABEL:
 				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) || IR_TOKEN_VAR == token(_dst)));
 				ALERT(IR_TOKEN_UNKNOWN != token(_src));
+				ALERT("" == dst);
 
 				(*this) += new Instruction(dst+":");
 				break;
@@ -479,15 +480,14 @@ std::string IR::localvar(std::string _src, std::string size, std::string idx) {
 	char buff[BUFSIZ] = {0};
 	std::string src;
 
-
 	src = IR::regalloc(_src, ZASM_MEM_QWORD);
-	if (_local_.end() != std::find(_local_.begin(), _local_.end(), src)) {
+	if (_locals_.end() != std::find(_locals_.begin(), _locals_.end(), src)) {
 		/* find the local variable */
-		cnt = std::find(_local_.begin(), _local_.end(), src) - _local_.begin();
+		cnt = std::find(_locals_.begin(), _locals_.end(), src) - _locals_.begin();
 		snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1) * PARAM_SIZE);
 	} else if ('.' != _src[0] && !('0' <= _src[0] && '9' >= _src[0])) {
 		/* new token, treated as local variable */
-		cnt = _local_.size();
+		cnt = _locals_.size();
 		snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1) * PARAM_SIZE);
 	} else if ("" != idx) {
 		/* index case */
@@ -499,4 +499,18 @@ std::string IR::localvar(std::string _src, std::string size, std::string idx) {
 	}
 
 	return buff;
+}
+void IR::localvar(std::string var) {
+	/* save local variable */
+	if (_locals_.end() == std::find(_locals_.begin(), _locals_.end(), var)) {
+		this->_locals_.push_back(var);
+	}
+}
+void IR::localvar_reset(void) {
+	/* clear-up all local variable */
+	this->_locals_.clear();
+}
+size_t IR::localvar_len(void) {
+	/* number of local variable */
+	return this->_locals_.size();
 }

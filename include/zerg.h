@@ -41,7 +41,6 @@ class Zerg : public IR, public Parser {
 		Args _args_;
 		int _regcnt_;
 		std::vector<ZergIR> _ir_stack_;
-		std::vector<std::string> _locals_;
 		std::vector<std::pair<std::string, std::string>> globals_str;
 };
 

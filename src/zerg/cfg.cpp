@@ -3,16 +3,16 @@
 #include "zerg.h"
 
 CFG::CFG(AST *node, std::string name) : _ast_(node), _parent_(NULL), _type_(CFG_UNKNOWN) {
+	int cnt = 0;
+	AST *ast = NULL, *sub = NULL;
+	CFG *cfg = NULL, *tmp = NULL;
+
 	_next_[0] = NULL;
 	_next_[1] = NULL;
 	_name_    = name;
-	_type_ = CFG_BLOCK;
 
 	if (ZTYPE_UNKNOWN == node->type()) {
-		int cnt = 0;
-		AST *ast = NULL;
-		CFG *tmp = NULL;
-
+		_type_ = CFG_BLOCK;
 		while (cnt < node->length()) {
 			switch(node->child(cnt)->type()) {
 				case ZTYPE_CMD_FUNCTION:
@@ -23,11 +23,51 @@ CFG::CFG(AST *node, std::string name) : _ast_(node), _parent_(NULL), _type_(CFG_
 
 					this->passto(tmp);
 					break;
+				case ZTYPE_CMD_IF:
+					if (cnt+1 < node->length()) {
+						sub = new AST("[ROOT]", ZTYPE_UNKNOWN);
+
+						while(cnt+1 < node->length()) {
+							ast = node->child(cnt+1);
+							ast->remove();
+							sub->insert(ast);
+						}
+					}
+
+					ast = node->child(cnt);
+					ast->remove();
+					cfg = new CFG(ast);
+					this->passto(cfg);
+
+					if (NULL != sub) {
+						tmp = new CFG(sub);
+						cfg->passto(tmp);
+					}
+					break;
+				case ZTYPE_CMD_WHILE:
+				case ZTYPE_CMD_FOR:
+					_D(LOG_CRIT, "Not Implemented");
+					break;
 				default:
 					++cnt;
 					break;
 			}
 		}
+	} else if (ZTYPE_CMD_IF == node->type()) {
+		_ast_ = node->child(0);
+		ast   = node->child(1);
+		sub   = 3 == node->length() ? node->child(2) : NULL;
+
+		_ast_->remove();
+		ast->remove();
+		_next_[0] = new CFG(ast);
+		if (NULL != sub) {
+			sub->remove();
+			_next_[1] = new CFG(sub);
+		}
+		_type_ = CFG_BRANCH;
+	} else {
+		_type_ = CFG_BLOCK;
 	}
 }
 
@@ -50,7 +90,7 @@ CFG* CFG::transfer(void) {
 
 CFG* CFG::branch(bool condition) {
 	ALERT(_type_ != CFG_BRANCH);
-	return _next_[condition ? 1 : 0];
+	return _next_[condition ? 0 : 1];
 }
 CFG* CFG::parent(void) {
 	return this->_parent_;
