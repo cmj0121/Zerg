@@ -18,6 +18,7 @@ ZergToken Parser::lexer(void) {
 	if (_indent_cur_ != _indent_cnt_) goto INDENT_PROCESSOR;
 
 	/* lexer */
+LEXER:
 	do {
 		/* flush the line from fp and store on _linebuf_ */
 		while (0 == _linebuf_.size()) {
@@ -286,7 +287,6 @@ ZergToken Parser::lexer(void) {
 				break;
 		}
 	} while (1);
-
 INDENT_PROCESSOR:
 	_D(LOG_DEBUG_LEXER, "current indent status %d / %d", _indent_cur_, _indent_cnt_);
 	if (_indent_cur_ < _indent_cnt_) {
@@ -301,6 +301,8 @@ INDENT_PROCESSOR:
 		goto END_LEXER;
 	}
 END_LEXER:
+	if (type == ZTYPE_NEWLINE && blNewline) goto LEXER;
+
 	blNewline = type == ZTYPE_NEWLINE;
 	_D(LOG_DEBUG_LEXER, "token -> #0x%-4X %s", type, token.c_str());
 	return std::make_pair(token, type);
