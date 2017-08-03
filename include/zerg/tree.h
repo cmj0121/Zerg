@@ -58,7 +58,7 @@ class Tree {
 		void insert(T *dst) {
 			/* insert a tree node */
 			this->_childs_.push_back(dst);
-			dst->_parent_ = (T *)this;
+			((Tree<T> *)dst)->_parent_ = (T *)this;
 		}
 		void remove(void) {
 			/* remove the current node in the tree */
@@ -78,6 +78,20 @@ class Tree {
 				}
 			}
 			this->_parent_ = NULL;
+		}
+
+		T* split(int nr) {
+			ALERT(nr >= this->length());
+
+			T* node = new T((T *)this), *cur = NULL;
+
+			while (nr < this->length()) {
+				cur = this->child(nr);
+				cur->remove();
+				node->insert(cur);
+			}
+
+			return node;
 		}
 
 		void replace(T *src) {

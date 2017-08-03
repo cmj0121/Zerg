@@ -28,7 +28,8 @@ class Zerg : public IR, public Parser {
 
 		/* compile the source code and pass to IR */
 		void compile(std::string src);
-		void emit(CFG *node, std::string name);
+		AST* parser(AST *node);
+		void emit(AST *node, bool init=false);
 		void emit(IROP op, std::string dst="", std::string src="", std::string size="");
 		void flush(void);
 
@@ -42,6 +43,7 @@ class Zerg : public IR, public Parser {
 		int _regcnt_;
 		std::vector<ZergIR> _ir_stack_;
 		std::vector<std::pair<std::string, std::string>> globals_str;
+		std::vector<AST *> _subroutine_;
 };
 
 #endif /* __ZERG_H__ */

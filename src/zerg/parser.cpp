@@ -23,7 +23,7 @@
 AST* Parser::parser(std::string srcfile) {
 	std::string line;
 	ZergToken token, next;
-	AST *node = new AST("[" + srcfile + "]", ZTYPE_UNKNOWN), *cur = NULL;
+	AST *node = new AST(ZASM_MAIN_FUNCTION, ZTYPE_UNKNOWN), *cur = NULL;
 
 	this->_fp_.open(srcfile);
 	if (!this->_fp_.is_open()) {
@@ -138,7 +138,7 @@ AST* Parser::parse_simple_stmt(ZergToken token, ZergToken &next) {
 }
 AST* Parser::parse_if_stmt(ZergToken token, ZergToken &next) {
 	/* if_stmt : 'if' test_expr ':' scope [ 'else' ':' scope ] */
-	AST *node = new AST(token);
+	AST *node = new AST(token, this->_lineno_);
 
 	_D(LOG_DEBUG_PARSER, "if statement on %s #%d", token.first.c_str(), token.second);
 	ALERT(ZTYPE_CMD_IF != token.second && ZTYPE_CMD_ELIF != token.second);

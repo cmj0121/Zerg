@@ -107,6 +107,9 @@ int main(int argc, char *argv[]) {
 		help();
 	} else if (_gen_grammar) {
 		_D(LOG_CRIT, "Not Implemented");
+	} else if (args.compile_ir) {
+		IR ir(dst, args);
+		ir.compile(argv[0]);
 	} else {
 		Zerg zerg(dst, args);
 		zerg.compile(argv[0]);

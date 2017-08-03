@@ -17,9 +17,8 @@
 
 /* Control-Flow */
 #define __IR_LABEL_IF__		".if.%04d"
+#define __IR_LABEL_IF_END__	".if.%04d.end"
 #define __IR_LABEL_WHILE__	".while.%04d"
-#define __IR_LABEL_END__	"%s.end"
-#define __IR_LABEL_FALSE__	"%s.false"
 
 /* Category of class property */
 #define __IR_CLS_NAME__		".name.%s"

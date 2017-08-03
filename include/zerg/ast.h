@@ -88,26 +88,43 @@ typedef enum _tag_object_type_ {
 	OBJ_OBJECT,
 } OBJType;
 
+typedef enum _tag_cfg_type_ {
+	CFG_UNKNOWN	= 0x0,
+	CFG_BLOCK,
+	CFG_BRANCH,
+} CFGType;
+
 class AST : public Tree<AST> {
 	public:
-		AST(std::string token, ZType type);
-		AST(ZergToken &token);
+		AST(AST *node, int lineno=0);
+		AST(std::string token, ZType type, int lineno=0);
+		AST(ZergToken &token, int lineno=0);
 
-		ZType type() { return _node_.second; }
 		std::string raw(void) { return this->_node_.first; }
 		std::string data(void);
+		std::string label(bool condition=true);
 		void setReg(int reg) { this->_reg_ = reg; }
 		int  getReg(void) { return this->_reg_; }
 
 		void setSymb(std::string src) { this->_symb_ = src; }
 
+		AST* transfer(void)					{ return this->_transfer_; }
+		AST* transfer(AST *node);
+		AST* branch(bool condition=true)	{ return this->_branch_[condition ? 0 : 1]; }
+		AST* branch(AST *node, AST *sub);
+
+		ZType   type()				{ return _node_.second; }
 		OBJType otype(void)         { return this->_otype_; }
 		void    otype(OBJType type) { this->_otype_ = type; }
+		CFGType ctype(void) 		{ return this->_ctype_; }
+		void    ctype(CFGType type)	{ this->_ctype_ = type; }
 	private:
 		ZergToken _node_;
-		int _reg_;
-		OBJType _otype_;
+		int _reg_, _lineno_;
 		std::string _symb_;
+		OBJType _otype_;
+		CFGType _ctype_;
+		AST *_branch_[2], *_transfer_, *_parent_;
 };
 
 #endif /* __ZERG_AST__ */
