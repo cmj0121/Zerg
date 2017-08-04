@@ -65,11 +65,29 @@ AST* Zerg::emitIR(AST *node) {
 				}
 				this->emit(IR_INTERRUPT);
 			} else {
+				int cnt = 0;
+				char buff[BUFSIZ] = {0};
+
 				/* general function call */
-				if (1 != node->length()) _D(LOG_CRIT, "Not Implemented function call");
+				if (1 < node->length()) {
+					sub = node->child(1);
+					switch(sub->type()) {
+						case ZTYPE_COMMA:
+						default:
+							this->emitIR(sub);
+							this->emit(IR_MEMORY_PUSH, sub->data());
+							++cnt;
+							break;
+					}
+				}
 
 				sub = node->child(0);
 				this->emit(IR_CONDITION_CALL, __IR_REFERENCE__ + sub->data());
+				snprintf(buff, sizeof(buff), __IR_REG_FMT__, ++this->_regcnt_);
+				while (0 < cnt) {
+					this->emit(IR_MEMORY_POP, buff);
+					--cnt;
+				}
 			}
 
 			break;
@@ -313,47 +331,19 @@ AST* Zerg::emitIR_subroutine(AST *node) {
 
 	_D(LOG_DEBUG_IR, "emit IR on subroutine %s", node->raw().c_str());
 	switch(node->type()) {
-		case ZTYPE_CMD_IF:
-			ALERT(2 > node->length());
-
-			x  = node->child(0);
-			y = node->child(1);
-			if (3 == node->length()) z = node->child(2);
-
-			x = this->emitIR(x);
-			this->emit(IR_CONDITION_JMPIFN, __IR_REFERENCE__  "tmp_label", x->data());
-			this->emitIR(y);
-			if (NULL != z) this->emit(IR_CONDITION_JMP, "tmp_label_end");
-			this->emit(IR_LABEL, "tmp_label");
-
-			if (NULL != z) {
-				this->emitIR(z);
-				this->emit(IR_LABEL, "tmp_label_end");
-			}
-			break;
-		case ZTYPE_CMD_WHILE:
-			ALERT(2 != node->length());
-
-			x  = node->child(0);
-			y = node->child(1);
-
-			this->emit(IR_LABEL, "tmp_label_start");
-			x = this->emitIR(x);
-			this->emit(IR_CONDITION_JMPIFN, __IR_REFERENCE__  "tmp_label", x->data());
-			this->emitIR(y);
-			this->emit(IR_CONDITION_JMP, __IR_REFERENCE__ "tmp_label_start");
-			this->emit(IR_LABEL, "tmp_label");
-			break;
-
 		case ZTYPE_CMD_FUNCTION:
 			ALERT(3 != node->length());
 
 			x = node->child(0);
-			y = node->child(1);
+			y = 1 == node->child(1)->length() ? node->child(1)->child(0) : NULL;
 			z = node->child(2);
 
 			this->emit(IR_LABEL, x->raw());
-			/* FIXME - parameter */
+			for (int i = 0; NULL != y && i < y->length(); ++i) {
+				/* process the parameter */
+				this->emit(IR_MEMORY_PARAM, y->child(i)->raw());
+			}
+
 			this->emitIR(z);
 			break;
 		case ZTYPE_CMD_CLASS:

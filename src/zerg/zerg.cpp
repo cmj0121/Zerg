@@ -162,19 +162,17 @@ void Zerg::emit(AST *node, bool init) {
 	}
 
 	if (init) {
-		if (this->IR::localvar_len()) {
-			char buff[BUFSIZ] = {0};
-			ZergIR prologue;
+		char buff[BUFSIZ] = {0};
+		ZergIR prologue;
 
-			snprintf(buff, sizeof(buff), "0x%lX", IR::localvar_len() * PARAM_SIZE);
-			prologue.opcode = IR_PROLOGUE;
-			prologue.dst    = buff;
+		snprintf(buff, sizeof(buff), "0x%lX", IR::localvar_len() * PARAM_SIZE);
+		prologue.opcode = IR_PROLOGUE;
+		prologue.dst    = buff;
 
-			/* PROLOGUE and EPILOGUE */
-			this->_ir_stack_.insert(this->_ir_stack_.begin()+1, prologue);
-			this->emit(IR_EPILOGUE, buff);
-			this->emit(IR_CONDITION_RET);
-		}
+		/* PROLOGUE and EPILOGUE */
+		this->_ir_stack_.insert(this->_ir_stack_.begin()+1, prologue);
+		this->emit(IR_EPILOGUE, buff);
+		this->emit(IR_CONDITION_RET);
 		this->flush();
 	}
 }

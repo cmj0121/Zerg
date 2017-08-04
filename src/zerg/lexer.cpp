@@ -301,7 +301,7 @@ INDENT_PROCESSOR:
 		goto END_LEXER;
 	}
 END_LEXER:
-	if (type == ZTYPE_NEWLINE && blNewline) goto LEXER;
+	if (type == ZTYPE_NEWLINE && blNewline && !blEOF) goto LEXER;
 
 	blNewline = type == ZTYPE_NEWLINE;
 	_D(LOG_DEBUG_LEXER, "token -> #0x%-4X %s", type, token.c_str());
