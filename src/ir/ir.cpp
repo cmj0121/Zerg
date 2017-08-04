@@ -4,7 +4,7 @@
 #include "zerg.h"
 
 IR::IR(std::string dst, Args &args) : Zasm(dst, args) {
-	this->_param_nr_	= 0;
+	this->_syscall_nr_	= 0;
 	this->_lineno_		= 0;
 	this->_args_		= args;
 }
@@ -124,11 +124,14 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 			case IR_MEMORY_PUSH:
 				dst = localvar(_dst, size, idx);
 				(*this) += new Instruction("push", dst);
-				this->_param_nr_ ++;
+				this->_syscall_nr_ ++;
 				break;
 			case IR_MEMORY_POP:
-				this->_param_nr_ --;
+				this->_syscall_nr_ --;
 				(*this) += new Instruction("pop", dst);
+				break;
+			case IR_MEMORY_PARAM:
+				this->_params_.push_back(dst);
 				break;
 		/* arithmetic operation */
 			case IR_ARITHMETIC_ADD:
@@ -334,12 +337,9 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				ALERT(IR_TOKEN_UNKNOWN != token(_src));
 
 				/* FIXME - Should be more smart */
-				(*this) += new Instruction("push", "rcx");
-				(*this) += new Instruction("push", "rdx");
-				(*this) += new Instruction("push", "rbx");
-
 				(*this) += new Instruction("push", "rbp");
 				(*this) += new Instruction("mov", "rbp", "rsp");
+
 				if ("" != _dst) {
 					(*this) += new Instruction("sub", "rsp", _dst);
 				}
@@ -352,19 +352,15 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 					(*this) += new Instruction("add", "rsp", _dst);
 				}
 				(*this) += new Instruction("pop", "rbp");
-
-				/* FIXME - Should be more smart */
-				(*this) += new Instruction("pop", "rbx");
-				(*this) += new Instruction("pop", "rdx");
-				(*this) += new Instruction("pop", "rcx");
+				this->_params_.clear();
 				break;
 			case IR_INTERRUPT:
 				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) && IR_TOKEN_UNKNOWN == token(_src)));
-				ALERT(this->_param_nr_ > ARRAY_SIZE(sys_param));
+				ALERT(this->_syscall_nr_ > ARRAY_SIZE(sys_param));
 
-				while (0 < this->_param_nr_) {
+				while (0 < this->_syscall_nr_) {
 					/* save as the parameter */
-					(*this) += new Instruction("pop", sys_param[--this->_param_nr_]);
+					(*this) += new Instruction("pop", sys_param[--this->_syscall_nr_]);
 				}
 				(*this) += new Instruction("syscall");
 				break;
@@ -485,6 +481,10 @@ std::string IR::localvar(std::string _src, std::string size, std::string idx) {
 		/* find the local variable */
 		cnt = std::find(_locals_.begin(), _locals_.end(), src) - _locals_.begin();
 		snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1) * PARAM_SIZE);
+	} else if (_params_.end() != std::find(_params_.begin(), _params_.end(), src)) {
+		/* pass the parameter */
+		cnt = std::find(_params_.begin(), _params_.end(), src) - _params_.begin();
+		snprintf(buff, sizeof(buff), "[rbp+0x%lx]", (cnt+2) * PARAM_SIZE);
 	} else if ('.' != _src[0] && !('0' <= _src[0] && '9' >= _src[0])) {
 		/* new token, treated as local variable */
 		cnt = _locals_.size();
@@ -498,6 +498,7 @@ std::string IR::localvar(std::string _src, std::string size, std::string idx) {
 		snprintf(buff, sizeof(buff), "%s", src.c_str());
 	}
 
+	_D(LOG_DEBUG_IR, "local variable %s -> %s", src.c_str(), buff);
 	return buff;
 }
 void IR::localvar(std::string var) {

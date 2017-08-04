@@ -12,8 +12,7 @@
 #define __IR_REG_FMT__		".reg.%02d"
 #define __IR_LABEL_FMT__	".zerg.label.%d"
 #define __IR_SYSCALL_REG__	".reg.sys"
-#define __IR_FUNC_STACK__	".function.stack"
-#define __IR_DUMMY__		".dummy"
+#define __IR_FUNC_STACK__	".func.param.%d"
 
 /* Control-Flow */
 #define __IR_LABEL_IF__		".if.%04d"
@@ -38,6 +37,7 @@ typedef enum _tag_ir_ {
 	IR_MEMORY_XCHG,
 	IR_MEMORY_PUSH,
 	IR_MEMORY_POP,
+	IR_MEMORY_PARAM,
 
 	/* arithmetic */
 	IR_ARITHMETIC_ADD,
@@ -92,6 +92,7 @@ const std::vector<std::pair<std::string, IROP>> IROP_map = {
 	{"XCHG"		, IR_MEMORY_XCHG},
 	{"PUSH"		, IR_MEMORY_PUSH},
 	{"POP"		, IR_MEMORY_POP},
+	{"PARAM"	, IR_MEMORY_PARAM},
 	/* arithmetic operation */
 	{"ADD"		, IR_ARITHMETIC_ADD},
 	{"SUB"		, IR_ARITHMETIC_SUB},
@@ -150,12 +151,12 @@ class IR : public Zasm {
 		IRType token(std::string src);
 	private:
 		int _lineno_;
-		size_t _param_nr_;
+		size_t _syscall_nr_;
 		Args _args_;
 
 		std::vector<std::string> _alloc_regs_ = { USED_REGISTERS };
 		std::map<std::string, std::string> _alloc_regs_map_;
-		std::vector<std::string> _locals_;
+		std::vector<std::string> _locals_, _params_;
 };
 
 #endif /* __ZERG_IR_H__ */

@@ -20,46 +20,47 @@ Zerg 的 IR (Intermediate Representation, 中介語言) 在第一個版本只支
 	2. STORE DST SRC - 從暫存器 SRC 中寫入資料到記憶體 DST 中
 	3. XCHG  DST SRC - 交換 SRC/DST 中的資料
 	4. PUSH  DST     - 將 DST 儲存到暫存堆 (stack) 中
-	5. POP   DST     - 從暫存堆 (stack) 中拿取一個值並且入到 DST 中
+	5. POP   DST     - 從暫存堆 (stack) 中拿取一個值並寫入到 DST 中
+	6. PARAM DST     - DST 為 sub-routine 的參數
 
 ## 數值運算 ##
 在 IR 中提供多種基本的數學運算，包含了以下九種。需要注意所有運算都是有號 (sign) 運算：
-	6.  ADD DST SRC   - DST = DST + SRC
-	7.  SUB DST SRC   - DST = DST - SRC
-	8.  MUL DST SRC   - DST = DST * SRC
-	9.  DST DST SRC   - DST = DST / SRC
-	10. MOD DST SRC   - DST = DST % SRC
-	11. SHR DST SRC   - DST = DST >> SRC
-	12. SHL DST SRC   - DST = DST << SRC
-	13. INC DST       - DST = DST + 1
-	14. DEC DST       - DST = DST - 1
+	7.  ADD DST SRC   - DST = DST + SRC
+	8.  SUB DST SRC   - DST = DST - SRC
+	9.  MUL DST SRC   - DST = DST * SRC
+	10. DST DST SRC   - DST = DST / SRC
+	11. MOD DST SRC   - DST = DST % SRC
+	12. SHR DST SRC   - DST = DST >> SRC
+	13. SHL DST SRC   - DST = DST << SRC
+	14. INC DST       - DST = DST + 1
+	15. DEC DST       - DST = DST - 1
 
 ## 邏輯運算 ##
 邏輯運算表示用 IR 來處理各種邏輯判斷條件，相對於數值運算所有的邏輯運算都會被視為無號運算：
-	15. AND DST SRC   - DST = DST bitwise and SRC
-	16. OR  DST SRC   - DST = DST bitwise or  SRC
-	17. XOR DST SRC   - DST = DST bitwise xor SRC
-	18. NOT DST       - DST = negative DST with 1's complement
-	19. NEG DST       - DST = negative DST with 2's complement
-	20. EQ  DST SRC   - DST = 1 if DST equal than SRC else 0
-	21. LS  DST SRC   - DST = 1 if DST less  than SRC else 0
-	22. GT  DST SRC   - DST = 1 if DST large than SRC else 0
+	16. AND DST SRC   - DST = DST bitwise and SRC
+	17. OR  DST SRC   - DST = DST bitwise or  SRC
+	18. XOR DST SRC   - DST = DST bitwise xor SRC
+	19. NOT DST       - DST = negative DST with 1's complement
+	20. NEG DST       - DST = negative DST with 2's complement
+	21. EQ  DST SRC   - DST = 1 if DST equal than SRC else 0
+	22. LS  DST SRC   - DST = 1 if DST less  than SRC else 0
+	23. GT  DST SRC   - DST = 1 if DST large than SRC else 0
 
 ## 條件運算 ##
 條件運算是 IR 用來改變執行順序的運算子：
-	23. JMP    DST      - 跳轉到 DST 所表示的記憶體位址
-	24. JMPIFN DST SRC  - 當 SRC 為 0 時跳轉到 DST 所表示的記憶體位址
-	25. CALL   DST SRC  - 呼叫 SRC 所表示位址的子程序 (sub-routine) 並且將結果儲存到 DST 中
-	26. RET    DST      - 回傳 DST 並且回到上一個呼叫子程序的位址
+	24. JMP    DST      - 跳轉到 DST 所表示的記憶體位址
+	25. JMPIFN DST SRC  - 當 SRC 為 0 時跳轉到 DST 所表示的記憶體位址
+	26. CALL   DST SRC  - 呼叫 SRC 所表示位址的子程序 (sub-routine) 並且將結果儲存到 DST 中
+	27. RET    DST      - 回傳 DST 並且回到上一個呼叫子程序的位址
 
 ##  其他程式碼 ##
 以下20是額外的 IR 程式碼：所有不歸類在上述四種的 IR Code 都屬於這個類別：
-	27. NOP               - No Operation
-	28. PROLOGUE  DST     - 暫存目前所有狀態，用於子程序的開頭
-	29. EPILOGUE  DST     - 回覆之前暫存的狀態，當子程序結束時呼叫
-	30. INTERRUPT DST     - 系統中斷，使用所有 STACK 中的資料當作參數並將結果儲存到 DST
-	31. LABEL     DST     - 定位符號
-	32. DEFINE    DST SRC - 定義 DST 其內容為 SRC (字串)
-	33. INLINE    DST     - inline asm，其中 DST 必定是一個字串
+	28. NOP               - No Operation
+	29. PROLOGUE  DST     - 暫存目前所有狀態，用於子程序的開頭
+	30. EPILOGUE  DST     - 回覆之前暫存的狀態，當子程序結束時呼叫
+	31. INTERRUPT DST     - 系統中斷，使用所有 STACK 中的資料當作參數並將結果儲存到 DST
+	32. LABEL     DST     - 定位符號
+	33. DEFINE    DST SRC - 定義 DST 其內容為 SRC (字串)
+	34. INLINE    DST     - inline asm，其中 DST 必定是一個字串
 
 # vim: set ft=markdown:
