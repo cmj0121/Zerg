@@ -33,7 +33,7 @@ arithmetic.case: arithmetic.zg
 	test `./$@`                   == 7
 
 exit.case: exit.zg
-	@../zerg -o $@ $^
+	@../zerg --no-stdlib -o $@ $^
 	@./$@ || test "$$?"            == 4
 
 function.case: function.zg

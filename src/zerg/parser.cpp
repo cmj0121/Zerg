@@ -604,7 +604,7 @@ AST* Parser::term_expr(ZergToken token, ZergToken &next) {
 }
 AST* Parser::atom_expr(ZergToken token, ZergToken &next) {
 	bool blEOP = false;
-	AST *node = NULL, *sub = NULL, *cur = NULL;
+	AST *node = NULL, *sub = NULL, *cur = NULL, *tmp = NULL;
 
 	_D(LOG_DEBUG_PARSER, "atom on %s", token.first.c_str());
 	switch(token.second) {
@@ -690,7 +690,13 @@ AST* Parser::atom_expr(ZergToken token, ZergToken &next) {
 					case ZTYPE_PAIR_GROUP_CLOSE:
 						break;
 					default:
-						sub->insert(this->expression(token, next));
+						cur = this->expression(token, next);
+						if (ZTYPE_COMMA != cur->type()) {
+							tmp = new AST(",", ZTYPE_COMMA);
+							tmp->insert(cur);
+							cur = tmp;
+						}
+						sub->insert(cur);
 
 						token = next;				/* ')' */
 						next  = this->lexer();

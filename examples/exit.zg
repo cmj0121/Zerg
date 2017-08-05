@@ -3,5 +3,7 @@
 # Built-In Function - `exit`
 # Exit the process, clean-up all resources and reply the status code at the same time.
 
+func exit(code):
+	syscall(0x2000001, code)
 
 exit(0x04)

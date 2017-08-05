@@ -64,20 +64,20 @@ AST* Zerg::emitIR(AST *node) {
 					}
 				}
 				this->emit(IR_INTERRUPT);
-			} else {
+			} else {					/* general function call */
 				int cnt = 0;
 				char buff[BUFSIZ] = {0};
 
-				/* general function call */
+				/* parameter */
 				if (1 < node->length()) {
-					sub = node->child(1);
-					switch(sub->type()) {
-						case ZTYPE_COMMA:
-						default:
-							this->emitIR(sub);
-							this->emit(IR_MEMORY_PUSH, sub->data());
-							++cnt;
-							break;
+					_D(LOG_DEBUG, "function call %s with #%zd parameter",
+								node->child(0)->data().c_str(), node->child(1)->length());
+					for (int i = 0; i < node->child(1)->length(); ++i) {
+						sub = node->child(1)->child(i);
+
+						this->emitIR(sub);
+						this->emit(IR_MEMORY_PUSH, sub->data());
+						++cnt;
 					}
 				}
 
@@ -339,9 +339,11 @@ AST* Zerg::emitIR_subroutine(AST *node) {
 			z = node->child(2);
 
 			this->emit(IR_LABEL, x->raw());
-			for (int i = 0; NULL != y && i < y->length(); ++i) {
-				/* process the parameter */
-				this->emit(IR_MEMORY_PARAM, y->child(i)->raw());
+			if (NULL != y) {
+				for (int i = y->length()-1; i >= 0; --i) {
+					/* process the parameter */
+					this->emit(IR_MEMORY_PARAM, y->child(i)->raw());
+				}
 			}
 
 			this->emitIR(z);
