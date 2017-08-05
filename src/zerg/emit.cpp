@@ -102,6 +102,30 @@ AST* Zerg::emitIR(AST *node) {
 		case ZTYPE_CMD_FUNCTION: case ZTYPE_CMD_CLASS:
 			this->emitIR_subroutine(node);
 			break;
+		case ZTYPE_CMD_RETURN:
+			ALERT (1 < node->length());
+
+			for (sub = node->parent(); NULL != sub; sub = sub->parent()) {
+				switch(sub->type()) {
+					case ZTYPE_UNKNOWN:
+						/* valid */
+						break;
+					case ZTYPE_CMD_FUNCTION:
+						sub = sub->root();
+						break;
+					default:
+						_D(LOG_CRIT, "Syntax error - %s", node->raw().c_str());
+						break;
+				}
+			}
+
+			if (0 != node->length()) {
+				this->emitIR(node->child(0));
+				this->emit(IR_MEMORY_STORE, __IR_SYSCALL_REG__, node->child(0)->data());
+			}
+			this->emit(IR_EPILOGUE);
+			this->emit(IR_CONDITION_RET);
+			break;
 
 		case ZTYPE_CMD_NOP:
 			ALERT(0 != node->length());
@@ -176,6 +200,9 @@ AST* Zerg::emitIR_atom(AST *node) {
 			node->setSymb(symb.first);
 			break;
 		case ZTYPE_IDENTIFIER:
+			node->setReg(++ this->_regcnt_);
+			this->emit(IR_MEMORY_LOAD, node->data(), node->raw());
+			break;
 		default:
 			_D(LOG_CRIT, "Not implemented on %s #%d", node->raw().c_str(), node->type());
 			break;

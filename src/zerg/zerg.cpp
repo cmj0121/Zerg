@@ -187,11 +187,15 @@ void Zerg::emit(IROP opcode, STRING dst, STRING src, STRING size, STRING idx) {
 }
 void Zerg::flush(void) {
 	bool blFound = false;
+	char buff[BUFSIZ] = {0};
 
 	if (this->_ir_stack_.size()) {
 
+		snprintf(buff, sizeof(buff), "0x%lX", IR::localvar_len());
 		_D(LOG_DEBUG_IR, "flush #%lu IR", this->_ir_stack_.size());
 		for (auto ir : this->_ir_stack_) {
+			if (IR_EPILOGUE == ir.opcode && "" == ir.dst) ir.dst = buff;
+
 			if (this->_args_.only_ir) {
 				for (auto it : IROP_map) {
 					if (it.second == ir.opcode) {
