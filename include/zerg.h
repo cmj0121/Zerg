@@ -38,6 +38,7 @@ class Zerg : public IR, public Parser {
 		virtual AST* emitIR_arithmetic(AST *node);
 		virtual AST* emitIR_assignment(AST *node);
 		virtual AST* emitIR_subroutine(AST *node);
+		virtual AST* emitIR_stmt(AST *node, bool init=false);
 	private:
 		Args _args_;
 		int _regcnt_;

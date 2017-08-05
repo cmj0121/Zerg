@@ -2,6 +2,69 @@
 
 #include "zerg.h"
 
+AST *Zerg::parser(AST *node) {
+	int cnt = 0;
+	AST *cur = NULL, *sub = NULL;
+
+	if (NULL == node) return node;
+
+	_D(LOG_DEBUG, "parse AST node %s", node->raw().c_str());
+	/* Split into several CFG */
+	switch(node->type()) {
+		case ZTYPE_UNKNOWN:
+			while (cnt < node->length()) {
+				switch(node->child(cnt)->type()) {
+					case ZTYPE_CMD_FUNCTION:
+					case ZTYPE_CMD_CLASS:
+						cur = node->child(cnt);
+						this->parser(cur);
+						break;
+					case ZTYPE_CMD_IF:
+						/* remainder- part */
+						if (cnt+1 < node->length()) {
+							/* split the next CFG stage */
+							sub = node->split(cnt+1);
+						}
+						/* condition */
+						cur = node->child(cnt);
+						cur = this->parser(cur);
+						node->transfer(cur);
+						if (NULL != sub) {
+							sub = this->parser(sub);
+							node->transfer(sub);
+						}
+						break;
+					default:
+						++cnt;
+						break;
+				}
+			}
+			break;
+		case ZTYPE_CMD_IF:
+			node->remove();
+			cur = node->child(1);
+			sub = 3 == node->length() ? node->child(2) : NULL;
+
+			cur->remove();
+			if (NULL != sub) sub->remove();
+			cur = this->parser(cur);
+			sub = this->parser(sub);
+
+			node = node->branch(cur, sub);
+			break;
+		case ZTYPE_CMD_FUNCTION:
+		case ZTYPE_CMD_CLASS:
+			/* exactly sub-routine */
+			node->remove();
+			this->_subroutine_.push_back(node);
+			break;
+		default:
+			_D(LOG_CRIT, "Not Implemented #%d", node->type());
+			break;
+	}
+
+	return node;
+}
 AST* Zerg::emitIR(AST *node) {
 	std::string tmp;
 	AST *sub = NULL;
@@ -9,6 +72,7 @@ AST* Zerg::emitIR(AST *node) {
 	ALERT(NULL == node);
 
 	_D(LOG_DEBUG_IR, "emit IR on %s #%d", node->raw().c_str(), node->type());
+
 	switch(node->type()) {
 		case ZTYPE_UNKNOWN:
 			for (ssize_t i = 0; i < node->length(); ++i) {
@@ -142,6 +206,13 @@ AST* Zerg::emitIR(AST *node) {
 			break;
 	}
 
+	return node;
+}
+AST* Zerg::emitIR_stmt(AST *ast, bool init) {
+	/* parser the AST and emit the code  */
+	AST *node = this->parser(ast);
+
+	this->emit(node, init);
 	return node;
 }
 AST* Zerg::emitIR_atom(AST *node) {
@@ -388,7 +459,9 @@ AST* Zerg::emitIR_subroutine(AST *node) {
 				}
 			}
 
-			this->emitIR(z);
+			/* parser the scope */
+			z = this->parser(z);
+			this->emit(z);
 			break;
 		case ZTYPE_CMD_CLASS:
 			ALERT(3 != node->length());

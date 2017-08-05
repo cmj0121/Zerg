@@ -25,12 +25,11 @@ void Zerg::compile(std::string src) {
 
 	/* compile the AST-CFG */
 	node = Parser::parser(src);
-	node = this->parser(node);
-	this->emit(node, true);
+	this->emitIR_stmt(node, true);
 
 	for (auto it : this->_subroutine_) {
 		/* compile sub-routine */
-		this->emit(it, true);
+		this->emitIR_stmt(it, true);
 	}
 
 	/* dump all globals symbol */
@@ -42,69 +41,6 @@ void Zerg::compile(std::string src) {
 	this->flush();
 }
 
-AST *Zerg::parser(AST *node) {
-	int cnt = 0;
-	AST *cur = NULL, *sub = NULL;
-
-	if (NULL == node) return node;
-
-	_D(LOG_DEBUG, "parse AST node %s", node->raw().c_str());
-	/* Split into several CFG */
-	switch(node->type()) {
-		case ZTYPE_UNKNOWN:
-			while (cnt < node->length()) {
-				switch(node->child(cnt)->type()) {
-					case ZTYPE_CMD_FUNCTION:
-					case ZTYPE_CMD_CLASS:
-						cur = node->child(cnt);
-						this->parser(cur);
-						break;
-					case ZTYPE_CMD_IF:
-						/* remainder- part */
-						if (cnt+1 < node->length()) {
-							/* split the next CFG stage */
-							sub = node->split(cnt+1);
-						}
-						/* condition */
-						cur = node->child(cnt);
-						cur = this->parser(cur);
-						node->transfer(cur);
-						if (NULL != sub) {
-							sub = this->parser(sub);
-							node->transfer(sub);
-						}
-						break;
-					default:
-						++cnt;
-						break;
-				}
-			}
-			break;
-		case ZTYPE_CMD_IF:
-			node->remove();
-			cur = node->child(1);
-			sub = 3 == node->length() ? node->child(2) : NULL;
-
-			cur->remove();
-			if (NULL != sub) sub->remove();
-			cur = this->parser(cur);
-			sub = this->parser(sub);
-
-			node = node->branch(cur, sub);
-			break;
-		case ZTYPE_CMD_FUNCTION:
-		case ZTYPE_CMD_CLASS:
-			/* exactly sub-routine */
-			node->remove();
-			this->_subroutine_.push_back(node);
-			break;
-		default:
-			_D(LOG_CRIT, "Not Implemented #%d", node->type());
-			break;
-	}
-
-	return node;
-}
 void Zerg::emit(AST *node, bool init) {
 	if (init) {
 		switch(node->type()) {
