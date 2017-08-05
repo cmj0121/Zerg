@@ -279,8 +279,8 @@ AST* Zerg::emitIR_arithmetic(AST *node) {
 	return node;
 }
 AST* Zerg::emitIR_assignment(AST *node) {
-	std::string tmp;
-	AST *dst = NULL, *expr = NULL;
+	std::string tmp, index="", size=ZASM_MEM_QWORD;
+	AST *dst = NULL, *expr = NULL, *idx = NULL;
 
 	ALERT(2 != node->length());
 	_D(LOG_DEBUG_IR, "emit IR on assignment %s", node->raw().c_str());
@@ -298,27 +298,42 @@ AST* Zerg::emitIR_assignment(AST *node) {
 			break;
 	}
 
-	if (0 != dst->length()) {
-		_D(LOG_CRIT, "Not Implemented");
+	switch(dst->type()) {
+		case ZTYPE_IDENTIFIER:
+			/* general variable */
+			if (0 != dst->length()) _D(LOG_CRIT, "Not Implemented %s", dst->raw().c_str());
+			break;
+		case ZTYPE_GETTER:
+			ALERT(2 != dst->length());
+
+			idx = dst->child(1);
+			dst = dst->child(0);
+			this->emitIR(idx);
+			size  = ZASM_MEM_BYTE;
+			index = idx->data();
+			break;
+		default:
+			_D(LOG_CRIT, "Not Implemented for assign to object - %s", dst->raw().c_str());
+			break;
 	}
 
 	switch(expr->otype()) {
 		case OBJ_NONE:
-			this->emit(IR_MEMORY_STORE, dst->raw(), "0x0");
+			this->emit(IR_MEMORY_STORE, dst->raw(), "0x0", size, index);
 			break;
 		case OBJ_BOOLEAN:
 			tmp = ZTYPE_TRUE == expr->type() ? "0x1" : "0x0";
-			this->emit(IR_MEMORY_STORE, dst->raw(), tmp);
+			this->emit(IR_MEMORY_STORE, dst->raw(), tmp, size, index);
 			break;
 		case OBJ_STRING:
 			tmp = expr->data();
 			expr->setReg(++this->_regcnt_);
 
 			this->emit(IR_MEMORY_STORE, expr->data(), tmp);
-			this->emit(IR_MEMORY_STORE, dst->raw(), expr->data());
+			this->emit(IR_MEMORY_STORE, dst->raw(), expr->data(), size, index);
 			break;
 		default:
-			this->emit(IR_MEMORY_STORE, dst->raw(), expr->data());
+			this->emit(IR_MEMORY_STORE, dst->raw(), expr->data(), size, index);
 			break;
 	}
 

@@ -18,7 +18,7 @@
 
 typedef struct _struct_zerg_ir_ {
 	IROP opcode;
-	std::string dst, src, size;
+	std::string dst, src, size, index;
 } ZergIR;
 
 class Zerg : public IR, public Parser {
@@ -30,7 +30,7 @@ class Zerg : public IR, public Parser {
 		void compile(std::string src);
 		AST* parser(AST *node);
 		void emit(AST *node, bool init=false);
-		void emit(IROP op, std::string dst="", std::string src="", std::string size="");
+		void emit(IROP op, STRING dst="", STRING src="", STRING size="", STRING idx="");
 		void flush(void);
 
 		AST* emitIR(AST *node);

@@ -480,15 +480,27 @@ std::string IR::localvar(std::string _src, std::string size, std::string idx) {
 	if (_locals_.end() != std::find(_locals_.begin(), _locals_.end(), src)) {
 		/* find the local variable */
 		cnt = std::find(_locals_.begin(), _locals_.end(), src) - _locals_.begin();
-		snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1) * PARAM_SIZE);
+		if ("" == idx) {
+			snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1) * PARAM_SIZE);
+		} else {
+			snprintf(buff, sizeof(buff), "[rbp+%s-0x%lX]", idx.c_str(), (cnt+1) * PARAM_SIZE);
+		}
 	} else if (_params_.end() != std::find(_params_.begin(), _params_.end(), src)) {
 		/* pass the parameter */
 		cnt = std::find(_params_.begin(), _params_.end(), src) - _params_.begin();
-		snprintf(buff, sizeof(buff), "[rbp+0x%lx]", (cnt+2) * PARAM_SIZE);
+		if ("" == idx) {
+			snprintf(buff, sizeof(buff), "[rbp+0x%lx]", (cnt+2) * PARAM_SIZE);
+		} else {
+			snprintf(buff, sizeof(buff), "[rbp+%s+0x%lx]", idx.c_str(), (cnt+2) * PARAM_SIZE);
+		}
 	} else if ('.' != _src[0] && !('0' <= _src[0] && '9' >= _src[0])) {
 		/* new token, treated as local variable */
 		cnt = _locals_.size();
-		snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1) * PARAM_SIZE);
+		if ("" == idx) {
+			snprintf(buff, sizeof(buff), "[rbp-0x%lX]", (cnt+1) * PARAM_SIZE);
+		} else {
+			snprintf(buff, sizeof(buff), "[rbp+%s-0x%lX]", idx.c_str(), (cnt+1) * PARAM_SIZE);
+		}
 	} else if ("" != idx) {
 		/* index case */
 		src = IR::regalloc(src, ZASM_MEM_QWORD);

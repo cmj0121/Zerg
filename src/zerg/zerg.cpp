@@ -176,8 +176,8 @@ void Zerg::emit(AST *node, bool init) {
 		this->flush();
 	}
 }
-void Zerg::emit(IROP opcode, std::string dst, std::string src, std::string size) {
-	ZergIR ir = {opcode, dst, src, size};
+void Zerg::emit(IROP opcode, STRING dst, STRING src, STRING size, STRING idx) {
+	ZergIR ir = {opcode, dst, src, size, idx};
 
 	/* count the local variable */
 	if (opcode == IR_MEMORY_STORE && IR_TOKEN_VAR == IR::token(dst)) {
@@ -199,7 +199,8 @@ void Zerg::flush(void) {
 						std::cout << std::setw(14) << std::left << it.first
 									<< std::setw(11) << ir.dst
 									<< std::setw(11) << ir.src
-									<< std::setw(11) << ir.size << std::endl;
+									<< std::setw(11) << ir.size
+									<< std::setw(11) << ir.index << std::endl;
 
 						blFound = true;
 						break;
@@ -207,7 +208,7 @@ void Zerg::flush(void) {
 				}
 				if (!blFound) _D(LOG_CRIT, "Cannot found opcode #%d", ir.opcode);
 			} else {
-				IR::emit(ir.opcode, ir.dst, ir.src, ir.size);
+				IR::emit(ir.opcode, ir.dst, ir.src, ir.size, ir.index);
 			}
 		}
 
