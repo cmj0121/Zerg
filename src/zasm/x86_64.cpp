@@ -238,7 +238,7 @@ void Instruction::modRW(X86_64_INST &inst) {
 			|| (this->src.isMEM() && 5 == this->src.asInt() % 8)
 			|| (this->dst.isMEM() && 5 == this->dst.asInt() % 8)) {
 
-			if (0 == (~0x7F & this->offset())) {
+			if (0xFF < this->offset() && 0 == (~0x7F & this->offset())) {
 				_payload_[_length_++] = 0x0;
 				_D(LOG_ZASM_INFO, "Mod R/W       - %02X", _payload_[_length_-1]);
 			}
