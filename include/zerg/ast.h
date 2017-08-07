@@ -103,6 +103,7 @@ class AST : public Tree<AST> {
 		std::string raw(void) { return this->_node_.first; }
 		std::string data(void);
 		std::string label(bool condition=true);
+		off_t       asInt(void);
 		void setReg(int reg) { this->_reg_ = reg; }
 		int  getReg(void) { return this->_reg_; }
 

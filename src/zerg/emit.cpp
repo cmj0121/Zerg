@@ -379,6 +379,7 @@ AST* Zerg::emitIR_arithmetic(AST *node) {
 AST* Zerg::emitIR_assignment(AST *node) {
 	std::string tmp, index="", size=ZASM_MEM_QWORD;
 	AST *dst = NULL, *expr = NULL, *idx = NULL;
+	AST *x = NULL, *y = NULL;
 
 	ALERT(2 != node->length());
 	_D(LOG_DEBUG_IR, "emit IR on assignment %s", node->raw().c_str());
@@ -406,9 +407,42 @@ AST* Zerg::emitIR_assignment(AST *node) {
 
 			idx = dst->child(1);
 			dst = dst->child(0);
-			this->emitIR(idx);
-			size  = ZASM_MEM_BYTE;
-			index = idx->data();
+			switch(idx->type()) {
+				case ZTYPE_COLON:
+					ALERT(2 != idx->length());
+
+					x = idx->child(0);
+					y = idx->child(1);
+					if (ZTYPE_NUMBER != x->type() || ZTYPE_NUMBER != y->type()) {
+						_D(LOG_CRIT, "Not Implemented");
+					}
+
+					switch(y->asInt() - x->asInt()) {
+						case 1:
+							size = ZASM_MEM_BYTE;
+							break;
+						case 2:
+							size = ZASM_MEM_WORD;
+							break;
+						case 4:
+							size = ZASM_MEM_DWORD;
+							break;
+						case 8:
+							size = ZASM_MEM_QWORD;
+							break;
+						default:
+							_D(LOG_CRIT, "Not Implemented 0x%llX", y->asInt()-x->asInt());
+							break;
+					}
+					this->emitIR(x);
+					index = x->data();
+					break;
+				default:
+					this->emitIR(idx);
+					size  = ZASM_MEM_BYTE;
+					index = idx->data();
+					break;
+			}
 			break;
 		default:
 			_D(LOG_CRIT, "Not Implemented for assign to object - %s", dst->raw().c_str());

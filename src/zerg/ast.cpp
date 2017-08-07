@@ -1,6 +1,7 @@
 /* Copyright (C) 2017 cmj<cmj@cmj.tw>. All right reserved. */
 
 #include <string>
+#include <sstream>
 #include "zerg.h"
 
 AST::AST(AST *node, int lineno) : Tree<AST>(node->_node_.first), _node_(node->_node_) {
@@ -67,6 +68,21 @@ std::string AST::label(bool condition) {
 	}
 
 	return buff;
+}
+off_t AST::asInt(void) {
+	off_t cnt;
+	std::stringstream ss;
+
+	ALERT(ZTYPE_NUMBER != this->type());
+
+	if ("0x" == this->raw().substr(0, 2) || "0X" == this->raw().substr(0, 2)) {
+		ss << std::hex << this->raw();
+	} else {
+		ss << this->raw();
+	}
+
+	ss >> cnt;
+	return cnt;
 }
 
 AST* AST::transfer(AST *node) {

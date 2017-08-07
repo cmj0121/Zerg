@@ -713,22 +713,40 @@ AST* Parser::atom_expr(ZergToken token, ZergToken &next) {
 				sub   = new AST("getter", ZTYPE_GETTER);
 				sub->insert(cur);
 
+				cur   = sub;
+				do {
+					token = next;
+					next  = this->lexer();
+					tmp   = this->expression(token, next);
+
+					switch(next.second) {
+						case ZTYPE_PAIR_BRAKES_CLOSE:
+							cur->insert(tmp);
+							blEOP = true;
+							break;
+						case ZTYPE_COLON:
+							if (ZTYPE_COLON != cur->type()) {
+								ALERT(NULL == tmp);
+
+								cur = new AST(next);
+								cur->insert(tmp);
+								sub->insert(cur);
+							}
+							token = next;
+							next  = this->lexer();
+							break;
+						default:
+							_SYNTAX(next);
+							break;
+					}
+
+				} while (false == blEOP);
+				blEOP = false;
+
 				token = next;
 				next  = this->lexer();
-				switch(token.second) {
-					case ZTYPE_PAIR_BRAKES_CLOSE:
-						break;
-					default:
-						sub->insert(this->expression(token, next));
-
-						token = next;				/* ']' */
-						next  = this->lexer();
-						if (ZTYPE_PAIR_BRAKES_CLOSE != token.second) _SYNTAX(token);
-						break;
-				}
-
-				cur  = sub;
-				node = cur->root();
+				cur   = sub;
+				node  = cur->root();
 				break;
 			default:
 				blEOP = true;
