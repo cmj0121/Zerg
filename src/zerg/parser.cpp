@@ -178,7 +178,7 @@ AST* Parser::parse_if_stmt(ZergToken token, ZergToken &next) {
 }
 AST* Parser::parse_while_stmt(ZergToken token, ZergToken &next) {
 	/* while_stmt : 'while' test ':' scope */
-	AST *node = new AST(token);
+	AST *node = new AST(token, this->_lineno_);
 
 	_D(LOG_DEBUG_PARSER, "while statement on %s #%d", token.first.c_str(), token.second);
 	ALERT(ZTYPE_CMD_WHILE != token.second);

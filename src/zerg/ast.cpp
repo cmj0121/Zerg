@@ -57,9 +57,9 @@ std::string AST::label(bool condition) {
 	switch(this->_parent_->_ctype_) {
 		case CFG_BRANCH:
 			if (condition)
-				snprintf(buff, sizeof(buff), __IR_LABEL_IF__, this->_parent_->_lineno_);
+				snprintf(buff, sizeof(buff), __IR_BRANCH__, this->_parent_->_lineno_);
 			else
-				snprintf(buff, sizeof(buff), __IR_LABEL_IF_END__, this->_parent_->_lineno_);
+				snprintf(buff, sizeof(buff), __IR_BRANCH_END__, this->_parent_->_lineno_);
 			break;
 		case CFG_BLOCK:
 		default:
@@ -100,11 +100,12 @@ AST* AST::branch(AST *node, AST *sub) {
 	AST *cur = NULL;
 
 	ALERT(0 == this->length());
+
 	cur = this->child(0);
 
 	cur->_lineno_    = this->_lineno_;
 	cur->_branch_[0] = node;
-	cur->_branch_[1] = sub;
+	cur->_branch_[1] = this == sub ? cur : sub;
 	cur->_ctype_     = CFG_BRANCH;
 	node->_parent_   = cur;
 

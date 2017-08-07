@@ -75,6 +75,14 @@ void Zerg::emit(AST *node, bool init) {
 
 					this->emit(sub);
 					this->emit(IR_LABEL, sub->label());
+				} else if (cur == cur->branch(false)) {
+					label = __IR_REFERENCE__ + sub->label(false);
+					this->emit(IR_LABEL, sub->label());
+					this->emit(IR_CONDITION_JMPIFN, label, cur->data());
+
+					this->emit(sub);
+					this->emit(IR_CONDITION_JMP, __IR_REFERENCE__ + sub->label());
+					this->emit(IR_LABEL, sub->label(false));
 				} else {
 					label = __IR_REFERENCE__ + sub->label();
 					this->emit(IR_CONDITION_JMPIFN, label, cur->data());
@@ -137,10 +145,10 @@ void Zerg::flush(void) {
 					if (it.second == ir.opcode) {
 						if (it.second == IR_LABEL) std::cout << "\n";
 						std::cout << std::setw(14) << std::left << it.first
-									<< std::setw(11) << ir.dst
-									<< std::setw(11) << ir.src
-									<< std::setw(11) << ir.size
-									<< std::setw(11) << ir.index << std::endl;
+									<< std::setw(24) << ir.dst
+									<< std::setw(24) << ir.src
+									<< std::setw(24) << ir.size
+									<< std::setw(24) << ir.index << std::endl;
 
 						blFound = true;
 						break;

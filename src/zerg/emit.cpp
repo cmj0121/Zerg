@@ -1,5 +1,6 @@
 /* Copyright (C) 2014-2017 cmj. All right reserved. */
 
+#include <iostream>
 #include "zerg.h"
 
 AST *Zerg::parser(AST *node) {
@@ -9,6 +10,10 @@ AST *Zerg::parser(AST *node) {
 	if (NULL == node) return node;
 
 	_D(LOG_DEBUG, "parse AST node %s", node->raw().c_str());
+	#if defined(DEBUG_CFG) || defined(DEBUG)
+		std::cerr << "parse AST node - " << node->raw() << std::endl;
+		std::cerr << *node << std::endl;
+	#endif /* DEBUG_CFG */
 	/* Split into several CFG */
 	switch(node->type()) {
 		case ZTYPE_UNKNOWN:
@@ -20,6 +25,7 @@ AST *Zerg::parser(AST *node) {
 						this->parser(cur);
 						break;
 					case ZTYPE_CMD_IF:
+					case ZTYPE_CMD_WHILE:
 						/* remainder- part */
 						if (cnt+1 < node->length()) {
 							/* split the next CFG stage */
@@ -52,6 +58,16 @@ AST *Zerg::parser(AST *node) {
 
 			node = node->branch(cur, sub);
 			break;
+		case ZTYPE_CMD_WHILE:
+			node->remove();
+			cur = node->child(1);
+
+			cur->remove();
+			cur = this->parser(cur);
+			sub = this->parser(sub);
+
+			node = node->branch(cur, node);
+			break;
 		case ZTYPE_CMD_FUNCTION:
 		case ZTYPE_CMD_CLASS:
 			/* exactly sub-routine */
@@ -72,7 +88,6 @@ AST* Zerg::emitIR(AST *node) {
 	ALERT(NULL == node);
 
 	_D(LOG_DEBUG_IR, "emit IR on %s #%d", node->raw().c_str(), node->type());
-
 	switch(node->type()) {
 		case ZTYPE_UNKNOWN:
 			for (ssize_t i = 0; i < node->length(); ++i) {

@@ -15,9 +15,8 @@
 #define __IR_FUNC_STACK__	".func.param.%d"
 
 /* Control-Flow */
-#define __IR_LABEL_IF__		".if.%04d"
-#define __IR_LABEL_IF_END__	".if.%04d.end"
-#define __IR_LABEL_WHILE__	".while.%04d"
+#define __IR_BRANCH__		".branch.%04d"
+#define __IR_BRANCH_END__	".branch.%04d.end"
 
 /* Category of class property */
 #define __IR_CLS_NAME__		".name.%s"
