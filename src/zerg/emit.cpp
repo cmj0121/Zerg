@@ -119,6 +119,24 @@ AST* Zerg::emitIR(AST *node) {
 			this->emitIR_arithmetic(node);
 			break;
 
+		/* change control flow */
+		case ZTYPE_CMD_BREAK:
+			if (0 == _loop_label_.size()) {
+				_D(LOG_CRIT, "syntax error %s", node->data().c_str());
+			}
+
+			tmp = this->_loop_label_[this->_loop_label_.size()-1] + __IR_BRANCH_E__;
+			this->emit(IR_CONDITION_JMP, tmp);
+			break;
+		case ZTYPE_CMD_CONTINUE:
+			if (0 == _loop_label_.size()) {
+				_D(LOG_CRIT, "syntax error %s", node->data().c_str());
+			}
+
+			tmp = this->_loop_label_[this->_loop_label_.size()-1];
+			this->emit(IR_CONDITION_JMP, tmp);
+			break;
+
 		/* assignment */
 		case ZTYPE_LASSIGN: case ZTYPE_RASSIGN:
 			this->emitIR_assignment(node);

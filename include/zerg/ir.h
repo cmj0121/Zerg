@@ -16,7 +16,8 @@
 
 /* Control-Flow */
 #define __IR_BRANCH__		".branch.%04d"
-#define __IR_BRANCH_END__	".branch.%04d.end"
+#define __IR_BRANCH_E__		".end"
+#define __IR_BRANCH_END__	".branch.%04d" __IR_BRANCH_E__
 
 /* Category of class property */
 #define __IR_CLS_NAME__		".name.%s"

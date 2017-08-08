@@ -45,6 +45,7 @@ class Zerg : public IR, public Parser {
 		std::vector<ZergIR> _ir_stack_;
 		std::vector<std::pair<std::string, std::string>> globals_str;
 		std::vector<AST *> _subroutine_;
+		std::vector<std::string> _loop_label_;
 };
 
 #endif /* __ZERG_H__ */

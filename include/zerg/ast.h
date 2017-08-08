@@ -109,6 +109,7 @@ class AST : public Tree<AST> {
 
 		void setSymb(std::string src) { this->_symb_ = src; }
 
+		AST* prev(void)						{ return this->_parent_; }
 		AST* transfer(void)					{ return this->_transfer_; }
 		AST* transfer(AST *node);
 		AST* branch(bool condition=true)	{ return this->_branch_[condition ? 0 : 1]; }
