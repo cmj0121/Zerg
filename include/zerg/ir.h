@@ -140,6 +140,7 @@ class IR : public Zasm {
 		void emit(IROP op, STRING dst="", STRING src="", STRING size="",STRING idx="");
 		IROP opcode(std::string src);
 
+		std::string tmpreg(void);
 		std::string regalloc(std::string src, std::string size);
 		std::string localvar(std::string src, std::string size, std::string idx);
 		void   localvar(std::string var);
