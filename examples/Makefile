@@ -57,6 +57,8 @@ buffer.case: buffer.zg
 simple_ir.case: simple_ir.zgr
 	@../zgir -o $@ $^
 	@./$@ || test "$$?"            == 4
+	test "`./$@ 2>/dev/null`"     == 'Simple Zerg IR program'
+	test "`./$@ 2>&1 >/dev/null`" == 'string created from buffer'
 
 .PHONY: clean
 

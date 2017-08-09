@@ -45,19 +45,18 @@ PUSH		0xFFFFFFFF	# fd
 PUSH		0x00		# offset
 INTERRUPT
 
-STORE		x			.reg.sys
-LOAD		.reg.1		x
-STORE		.reg.1		0x69727473	 dword	  0x00
-STORE		.reg.1		0x6320676E	 dword	  0x04
-STORE		.reg.1		0x74616572	 dword	  0x08
-STORE		.reg.1		0x66206465	 dword	  0x0C
-STORE		.reg.1		0x206D6F72	 dword	  0x10
-STORE		.reg.1		0x66667562	 dword	  0x14
-STORE		.reg.1		0x000A7265	 dword	  0x18
+STORE		x		.reg.sys
+STORE		x		0x69727473	 dword	  0x00
+STORE		x		0x6320676E	 dword	  0x04
+STORE		x		0x74616572	 dword	  0x08
+STORE		x		0x66206465	 dword	  0x0C
+STORE		x		0x206D6F72	 dword	  0x10
+STORE		x		0x66667562	 dword	  0x14
+STORE		x		0x000A7265	 dword	  0x18
 
 PUSH		0x2000004	# sys_write
 PUSH		0x02		# fd
-PUSH		.reg.1		# buffer
+PUSH		x   		# buffer
 PUSH		0x1C		# len
 INTERRUPT
 
