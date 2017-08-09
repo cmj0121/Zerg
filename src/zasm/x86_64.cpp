@@ -16,6 +16,8 @@
  */
 
 void Instruction::legacyPrefix(X86_64_INST &inst) {
+	bool blDWORD = false;
+
 	/* NOTE - Legacy Prefix (0~4) */
 	if (0 != (inst.flags & INST_SINGLE_FP)) {
 		/* single float */
@@ -33,71 +35,72 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 		(this->dst.isMEM() && 2 == this->dst.size())) {
 		/* 16-bit memory access */
 		_payload_[_length_++] = 0x66;
-	} else if ((this->src.isMEM() && 3 == this->src.size()) ||
-				(this->dst.isMEM() && 3 == this->dst.size())) {
+		blDWORD = true;
+	} else if ((this->src.isMEM() && 3 == this->src.size() && !this->src.isEXT()) ||
+				(this->dst.isMEM() && 3 == this->dst.size() && !this->dst.isEXT())) {
 		/* 32-bit memory access */
 		return ;
-	} else {
-		if (4 == this->dst.size() || 4 == this->src.size() ||
-			this->src.isEXT() || this->dst.isEXT() ||
-			(this->src.isMEM2() && this->src.indexReg()->isEXT()) ||
-			(this->dst.isMEM2() && this->dst.indexReg()->isEXT())) {
-			int REX_B = 0, REX_X = 0, REX_R = 0, REX_W = 0;
+	}
 
-			/*
-				7             4               0
-				+-------------+---+---+---+---+
-				| 0  1  0  0  | W | R | X | B |
-				+-------------+---+---+---+---+
+	if (4 == this->dst.size() || 4 == this->src.size() ||
+		this->src.isEXT() || this->dst.isEXT() ||
+		(this->src.isMEM2() && this->src.indexReg()->isEXT()) ||
+		(this->dst.isMEM2() && this->dst.indexReg()->isEXT())) {
+		int REX_B = 0, REX_X = 0, REX_R = 0, REX_W = 0;
 
-				REX.B	Extension to the Mod R/W.rm field or the SIB.base field
-				REX.X	Extension to the SIB.index field
-				REX.R	Extension to the Mod R/W.reg field
-				REX.W	64-bit operand size is used.
-			 */
-			if (this->dst.isREG() && (this->src.isREG() || this->src.isIMM())) {
-				if (this->dst.isEXT())
-					REX_B = 1;
-			} else if (this->dst.isREG() && "" == this->src.raw()) {
-				if (this->dst.isEXT())
-					REX_B = 1;
-			} else if (this->dst.isMEM() && this->dst.isEXT()) {
+		/*
+			7             4               0
+			+-------------+---+---+---+---+
+			| 0  1  0  0  | W | R | X | B |
+			+-------------+---+---+---+---+
+
+			REX.B	Extension to the Mod R/W.rm field or the SIB.base field
+			REX.X	Extension to the SIB.index field
+			REX.R	Extension to the Mod R/W.reg field
+			REX.W	64-bit operand size is used.
+		 */
+		if (this->dst.isREG() && (this->src.isREG() || this->src.isIMM())) {
+			if (this->dst.isEXT())
 				REX_B = 1;
-			} else if (this->src.isMEM() && this->dst.isREG() &&this->src.isEXT()) {
+		} else if (this->dst.isREG() && "" == this->src.raw()) {
+			if (this->dst.isEXT())
 				REX_B = 1;
-			}
+		} else if (this->dst.isMEM() && this->dst.isEXT()) {
+			REX_B = 1;
+		} else if (this->src.isMEM() && this->dst.isREG() &&this->src.isEXT()) {
+			REX_B = 1;
+		}
 
-			if (this->src.isREG() && this->dst.isREG()) {
-				if (this->src.isEXT())
-					REX_R = 1;
-			} else if (this->src.isMEM() && this->dst.isEXT()) {
+		if (this->src.isREG() && this->dst.isREG()) {
+			if (this->src.isEXT())
 				REX_R = 1;
-			} else if (this->dst.isMEM() && this->src.isREG() && this->src.isEXT()) {
-				REX_R = 1;
-			}
+		} else if (this->src.isMEM() && this->dst.isEXT()) {
+			REX_R = 1;
+		} else if (this->dst.isMEM() && this->src.isREG() && this->src.isEXT()) {
+			REX_R = 1;
+		}
 
-			if (this->dst.isMEM2() && this->dst.indexReg()->isEXT()) {
-				REX_X = 1;
-			} else if (this->src.isMEM2() && this->src.indexReg()->isEXT()) {
-				REX_X = 1;
-			}
+		if (this->dst.isMEM2() && this->dst.indexReg()->isEXT()) {
+			REX_X = 1;
+		} else if (this->src.isMEM2() && this->src.indexReg()->isEXT()) {
+			REX_X = 1;
+		}
 
-			if (0 == (inst.flags & INST_SECONDARY)) {
-				REX_W = 1;
-			}
+		if (0 == (inst.flags & INST_SECONDARY) && false == blDWORD) {
+			REX_W = 1;
+		}
 
-			/* HACK - Do NOT know why, but multiple is strange in legacy  */
-			if (0 == strncmp("mul", inst.cmd, 3) && 0xAF == inst.opcode) {
-				REX_R = REX_R ^ REX_B;
-				REX_B = REX_R ^ REX_B;
-				REX_R = REX_R ^ REX_B;
-			}
+		/* HACK - Do NOT know why, but multiple is strange in legacy  */
+		if (0 == strncmp("mul", inst.cmd, 3) && 0xAF == inst.opcode) {
+			REX_R = REX_R ^ REX_B;
+			REX_B = REX_R ^ REX_B;
+			REX_R = REX_R ^ REX_B;
+		}
 
 
-			if (REX_B || REX_X || REX_R || REX_W) {
-				_payload_[_length_++] = 0x40 | (REX_W << 3) | (REX_R << 2) | (REX_X << 1) | REX_B;
-				_D(LOG_ZASM_INFO, "Legacy Prefix - %02X", _payload_[_length_-1]);
-			}
+		if (REX_B || REX_X || REX_R || REX_W) {
+			_payload_[_length_++] = 0x40 | (REX_W << 3) | (REX_R << 2) | (REX_X << 1) | REX_B;
+			_D(LOG_ZASM_INFO, "Legacy Prefix - %02X", _payload_[_length_-1]);
 		}
 	}
 }
@@ -238,7 +241,7 @@ void Instruction::modRW(X86_64_INST &inst) {
 			|| (this->src.isMEM() && 5 == this->src.asInt() % 8)
 			|| (this->dst.isMEM() && 5 == this->dst.asInt() % 8)) {
 
-			if (0 == (~0x7F & this->offset())) {
+			if (0xFF < this->offset() && 0 == (~0x7F & this->offset())) {
 				_payload_[_length_++] = 0x0;
 				_D(LOG_ZASM_INFO, "Mod R/W       - %02X", _payload_[_length_-1]);
 			}
