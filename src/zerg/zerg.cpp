@@ -62,6 +62,10 @@ void Zerg::emit(AST *node, bool init) {
 			std::cerr << *cur << std::endl;
 		#endif /* DEBUG_CFG */
 
+		if (CFG_BRANCH == cur->ctype() && cur == cur->branch(false)) {
+			sub = cur->branch(true);
+			this->emit(IR_LABEL, sub->label());
+		}
 		this->emitIR(cur);
 
 		switch(cur->ctype()) {
@@ -75,10 +79,10 @@ void Zerg::emit(AST *node, bool init) {
 
 					this->emit(sub);
 					this->emit(IR_LABEL, sub->label());
-				} else if (cur == cur->branch(false)) {
+				} else if (cur == cur->branch(false)) {     /* LOOP */
 					label = __IR_REFERENCE__ + sub->label(false);
-					this->emit(IR_LABEL, sub->label());
 					this->emit(IR_CONDITION_JMPIFN, label, cur->data());
+
 					this->_loop_label_.push_back(__IR_REFERENCE__ + sub->label());
 					this->emit(sub);
 					this->_loop_label_.pop_back();

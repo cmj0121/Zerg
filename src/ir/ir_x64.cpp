@@ -161,11 +161,11 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				}
 				break;
 			case IR_ARITHMETIC_INC:
-				ALERT(IR_TOKEN_REGISTER != token(_dst) || IR_TOKEN_REGISTER != token(_src));
+				ALERT(IR_TOKEN_REGISTER != token(_dst) || IR_TOKEN_UNKNOWN != token(_src));
 				(*this) += new Instruction("inc", dst);
 				break;
 			case IR_ARITHMETIC_DEC:
-				ALERT(IR_TOKEN_REGISTER != token(_dst) || IR_TOKEN_REGISTER != token(_src));
+				ALERT(IR_TOKEN_REGISTER != token(_dst) || IR_TOKEN_UNKNOWN != token(_src));
 				(*this) += new Instruction("inc", dst);
 				break;
 		/* logical operation */
@@ -192,14 +192,13 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 			case IR_LOGICAL_NEG:
 				ALERT(IR_TOKEN_REGISTER != token(_dst));
 				ALERT(IR_TOKEN_UNKNOWN != token(_src));
-				(*this) += new Instruction("neg", dst);
+				(*this) += new Instruction("neg", IR::regalloc(_dst, ZASM_MEM_QWORD));
 				break;
 			case IR_LOGICAL_EQ:
 				ALERT(IR_TOKEN_REGISTER != token(_dst));
 				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				ALERT("" == _dst && "" == _src);
 				(*this) += new Instruction("cmp", dst, src);
-				(*this) += new Instruction("xor", dst, dst);
 				(*this) += new Instruction("setz", this->regalloc(_dst, ZASM_MEM_BYTE));
 				break;
 			case IR_LOGICAL_LS:
