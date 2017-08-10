@@ -269,19 +269,21 @@ AST* Zerg::emitIR_atom(AST *node) {
 		case ZTYPE_LOG_NOT:
 			ALERT(1 != node->length());
 			x = this->emitIR(node->child(0));
-			this->emit(IR_LOGICAL_NEG, x->data());
+			this->emit(IR_LOGICAL_EQ, x->data(), "0x0");
 			node->setReg(x->getReg());
 			break;
 		case ZTYPE_INC:
 			ALERT(1 != node->length());
 			x = this->emitIR_atom(node->child(0));
 			this->emit(IR_ARITHMETIC_INC, x->data());
+            this->emit(IR_MEMORY_STORE, x->raw(), x->data());
 			node->setReg(x->getReg());
 			break;
 		case ZTYPE_DEC:
 			ALERT(1 != node->length());
 			x = this->emitIR_atom(node->child(0));
 			this->emit(IR_ARITHMETIC_DEC, x->data());
+            this->emit(IR_MEMORY_STORE, x->raw(), x->data());
 			node->setReg(x->getReg());
 			break;
 

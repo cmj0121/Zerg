@@ -113,6 +113,16 @@ AST* Parser::parse_simple_stmt(ZergToken token, ZergToken &next) {
 			next  = this->lexer();
 			node->insert(this->expression(token, next));
 			break;
+		case ZTYPE_INC: case ZTYPE_DEC:
+			node  = new AST(token);
+			token = next;
+			if (ZTYPE_IDENTIFIER != next.second) _SYNTAX(token);
+			next  = this->lexer();
+			if (ZTYPE_NEWLINE != next.second) _SYNTAX(token);
+
+			sub = new AST(token);
+			node->insert(sub);
+			break;
 		case ZTYPE_IDENTIFIER:		/* special statement : inc / dec */
 		default:
 			sub = this->expression(token, next);
@@ -588,7 +598,6 @@ AST* Parser::term_expr(ZergToken token, ZergToken &next) {
 
 	_D(LOG_DEBUG_PARSER, "term on %s #%d", token.first.c_str(), token.second);
 	switch(token.second) {
-		case ZTYPE_INC: case ZTYPE_DEC:
 		case ZTYPE_ADD: case ZTYPE_SUB: case ZTYPE_LIKE: case ZTYPE_LOG_NOT:	/* term */
 			node  = new AST(token);
 			token = next;

@@ -79,7 +79,6 @@ void Zerg::emit(AST *node, bool init) {
 					label = __IR_REFERENCE__ + sub->label(false);
 					this->emit(IR_LABEL, sub->label());
 					this->emit(IR_CONDITION_JMPIFN, label, cur->data());
-
 					this->_loop_label_.push_back(__IR_REFERENCE__ + sub->label());
 					this->emit(sub);
 					this->_loop_label_.pop_back();

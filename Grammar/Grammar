@@ -2,7 +2,7 @@
 
 ## All kinds of the valid statement
 stmt          : ( simple_stmt | compound_stmt | inline_asm ) NEWLINE
-simple_stmt   : 'nop' | 'continue' | 'break' | expression | assign | print_stmt
+simple_stmt   : 'nop' | 'continue' | 'break' | expression | assign | print_stmt | inc_dec
 compound_stmt : if_stmt | while_stmt | for_stmt | func_stmt | cls_stmt
 
 if_stmt       : 'if'    test ':'  scope ( 'elif' ':' scope )* [ 'else' ':' scope ]
@@ -19,6 +19,7 @@ varargs     : VAR ( ',' VAR )*
 kwargs      : VAR '=' test | kwargs ',' VAR '=' test
 parameter   : ( varargs | VAR '=' expression ) [ varargs ]
 argument    : ( expression | kwargs ) [ ',' kwargs ]
+inc_dec     : ( '++' | '--' ) VAR
 
 expression  : [ 'not' ] test | expression ',' test
 ## test expression, return true or false
@@ -38,7 +39,7 @@ factor_expr : pow_expr    | factor_expr ( '*' | '/' | '%' | '~' ) pow_expr
 pow_expr    : term        | term '**' pow_expr
 
 ## Should be the minimal element
-term        : atom | ( '++' | '--' | '+' | '-' | '~' | 'not' ) term
+term        : atom | ( '+' | '-' | '~' | 'not' ) term
 atom        : VAR  | NUMBER | pair_atom | atom '.' atom | funccall | getter
 funccall    : atom '(' expression ')'
 getter      : atom '[' expression ']'
