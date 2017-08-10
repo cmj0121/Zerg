@@ -100,6 +100,7 @@ AST* Zerg::emitIR(AST *node) {
 		case ZTYPE_NUMBER:
 		case ZTYPE_STRING:
 		case ZTYPE_IDENTIFIER:
+		case ZTYPE_GETTER:
 			this->emitIR_atom(node);
 			break;
 
@@ -188,7 +189,6 @@ AST* Zerg::emitIR(AST *node) {
 			}
 
 			break;
-		case ZTYPE_GETTER:
 		case ZTYPE_CMD_IN:
 
 		case ZTYPE_CMD_INCLUDE:
@@ -249,7 +249,7 @@ AST* Zerg::emitIR_stmt(AST *ast, bool init) {
 	return node;
 }
 AST* Zerg::emitIR_atom(AST *node) {
-	AST *x = NULL;
+	AST *x = NULL, *y = NULL;
 	std::pair<std::string, std::string> symb;
 
 	_D(LOG_DEBUG_IR, "emit IR on atom %s", node->raw().c_str());
@@ -268,7 +268,7 @@ AST* Zerg::emitIR_atom(AST *node) {
 			break;
 		case ZTYPE_LOG_NOT:
 			ALERT(1 != node->length());
-			x = this->emitIR_atom(node->child(0));
+			x = this->emitIR(node->child(0));
 			this->emit(IR_LOGICAL_NEG, x->data());
 			node->setReg(x->getReg());
 			break;
@@ -307,6 +307,17 @@ AST* Zerg::emitIR_atom(AST *node) {
 			node->setReg(++ this->_regcnt_);
 			this->emit(IR_MEMORY_LOAD, node->data(), node->raw());
 			break;
+
+        /* atom - getter */
+		case ZTYPE_GETTER:
+            ALERT(2 != node->length() || ZTYPE_IDENTIFIER != node->child(0)->type());
+
+            x = node->child(0);
+            y = node->child(1);
+            this->emitIR(y);
+            node->setReg(++this->_regcnt_);
+            this->emit(IR_MEMORY_LOAD, node->data(), x->data(), ZASM_MEM_QWORD, y->data());
+            break;
 		default:
 			_D(LOG_CRIT, "Not implemented on %s #%d", node->raw().c_str(), node->type());
 			break;

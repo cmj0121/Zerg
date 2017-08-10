@@ -142,6 +142,7 @@ class IR : public Zasm {
 
 		std::string tmpreg(void);
 		std::string regalloc(std::string src, std::string size);
+		void regfree(std::string src);
 		std::string localvar(std::string src, std::string size, std::string idx);
 		void   localvar(std::string var);
 		void   localvar_reset(void);

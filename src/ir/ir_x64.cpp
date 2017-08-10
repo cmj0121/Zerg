@@ -296,6 +296,8 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 															opcode);
 			break;
 	}
+
+	this->regfree(src);
 }
 std::string IR::regalloc(std::string src, std::string size) {
 	int cnt = 0;
@@ -337,10 +339,23 @@ std::string IR::regalloc(std::string src, std::string size) {
 		dst = tmp;
 		goto END;
 	}
-
-	_D(LOG_REGISTER_ALLOC, "register reallocate %8s -> %4s", src.c_str(), dst.c_str());
 END:
+	if (src != dst) {
+		_D(LOG_REGISTER_ALLOC, "register reallocate %8s -> %4s", src.c_str(), dst.c_str());
+	}
 	return dst;
+}
+void IR::regfree(std::string src) {
+	int cnt = 0;
+	std::vector<std::string> regs = { REGISTERS };
+
+	if (regs.end() != std::find(regs.begin(), regs.end(), src)) {
+		cnt = std::find(regs.begin(), regs.end(), src) - regs.begin();
+		cnt = cnt % 8;
+		this->_alloc_regs_.push_back(regs[cnt]);
+		/* restore the used register */
+		_D(LOG_REGISTER_ALLOC, "register reallocate <- %s", regs[cnt].c_str());
+	}
 }
 std::string IR::localvar(std::string _src, std::string size, std::string idx) {
 	size_t cnt = 0;
@@ -351,14 +366,14 @@ std::string IR::localvar(std::string _src, std::string size, std::string idx) {
 	size = "" == size ? ZASM_MEM_QWORD : size;
 	switch(IR::token(_src)) {
 		case IR_TOKEN_VAR:
-			if (_locals_.end() != std::find(_locals_.begin(), _locals_.end(), src)) {
-				cnt = std::find(_locals_.begin(), _locals_.end(), _src) - _locals_.begin();
-				cnt = cnt + 1;
-				fmt = "%s [rbp-0x%lX]";
-			} else if (_params_.end() != std::find(_params_.begin(), _params_.end(), src)) {
+			 if (_params_.end() != std::find(_params_.begin(), _params_.end(), _src)) {
 				cnt = std::find(_params_.begin(), _params_.end(), _src) - _params_.begin();
 				cnt = cnt + 2;
 				fmt = "%s [rbp+0x%lX]";
+			} else if (_locals_.end() != std::find(_locals_.begin(), _locals_.end(), _src)) {
+				cnt = std::find(_locals_.begin(), _locals_.end(), _src) - _locals_.begin();
+				cnt = cnt + 1;
+				fmt = "%s [rbp-0x%lX]";
 			} else {
 				IR::localvar(_src);
 				cnt = std::find(_locals_.begin(), _locals_.end(), _src) - _locals_.begin();
@@ -384,7 +399,7 @@ std::string IR::localvar(std::string _src, std::string size, std::string idx) {
 			break;
 	}
 
-	_D(LOG_DEBUG_IR, "local variable %s -> %s", src.c_str(), buff);
+	_D(LOG_DEBUG_IR, "local variable %s -> %s", _src.c_str(), buff);
 	return buff;
 }
 
