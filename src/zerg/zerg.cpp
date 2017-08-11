@@ -141,7 +141,7 @@ void Zerg::flush(void) {
 
 	if (this->_ir_stack_.size()) {
 
-		snprintf(buff, sizeof(buff), "0x%lX", IR::localvar_len());
+		snprintf(buff, sizeof(buff), "0x%lX", IR::localvar_len() * PARAM_SIZE);
 		_D(LOG_DEBUG_IR, "flush #%lu IR", this->_ir_stack_.size());
 		for (auto ir : this->_ir_stack_) {
 			if (IR_EPILOGUE == ir.opcode && "" == ir.dst) ir.dst = buff;

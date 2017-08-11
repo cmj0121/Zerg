@@ -13,6 +13,8 @@
 						this->_lineno_,				\
 						_token.first.c_str());		\
 	} while (0)
+#define _GRAMMAR(grammar, token)					\
+	_D(LOG_DEBUG_PARSER, "-> %-12s on %s #%d", grammar, token.first.c_str(), token.second)
 
 /* Parse the source file and generate the CFG by following steps
  *
@@ -54,7 +56,7 @@ AST* Parser::parser(std::string srcfile) {
 AST* Parser::parse_stmt(ZergToken token, ZergToken &next) {
 	AST *node = NULL;
 
-	_D(LOG_DEBUG_PARSER, "parse stmt on %s", token.first.c_str());
+	_GRAMMAR("stmt", token);
 	/* Construct the AST repeat */
 	switch(token.second) {
 		case ZTYPE_CMD_IF: 			/* if statement */
@@ -89,7 +91,7 @@ AST* Parser::parse_stmt(ZergToken token, ZergToken &next) {
 AST* Parser::parse_simple_stmt(ZergToken token, ZergToken &next) {
 	AST *node = NULL, *sub = NULL;
 
-	_D(LOG_DEBUG_PARSER, "simple statement on %s #%d", token.first.c_str(), token.second);
+	_GRAMMAR("simple_stmt", token);
 	switch(token.second) {
 		case ZTYPE_CMD_ASM:			/* inline asm */
 			if (ZTYPE_STRING != next.second) _SYNTAX(token);
@@ -150,8 +152,8 @@ AST* Parser::parse_if_stmt(ZergToken token, ZergToken &next) {
 	/* if_stmt : 'if' test_expr ':' scope [ 'else' ':' scope ] */
 	AST *node = new AST(token, this->_lineno_);
 
-	_D(LOG_DEBUG_PARSER, "if statement on %s #%d", token.first.c_str(), token.second);
 	ALERT(ZTYPE_CMD_IF != token.second && ZTYPE_CMD_ELIF != token.second);
+	_GRAMMAR("if_stmt", token);
 
 	/* get the test expression */
 	token = next;
@@ -190,8 +192,8 @@ AST* Parser::parse_while_stmt(ZergToken token, ZergToken &next) {
 	/* while_stmt : 'while' test ':' scope */
 	AST *node = new AST(token, this->_lineno_);
 
-	_D(LOG_DEBUG_PARSER, "while statement on %s #%d", token.first.c_str(), token.second);
 	ALERT(ZTYPE_CMD_WHILE != token.second);
+	_GRAMMAR("while_stmt", token);
 
 	/* get the test expression */
 	token = next;
@@ -214,7 +216,7 @@ AST* Parser::parse_for_stmt(ZergToken token, ZergToken &next) {
 
 	ALERT(ZTYPE_CMD_FOR != token.second);
 
-	_D(LOG_DEBUG_PARSER, "for statement on %s", token.first.c_str());
+	_GRAMMAR("for_stmt", token);
 	node  = new AST(token);
 	token = next;
 	next  = this->lexer();
@@ -241,8 +243,8 @@ AST* Parser::parse_func_stmt(ZergToken token, ZergToken &next) {
 	/* func_stmt : 'func' VAR '(' [ parameter ] ')' ':' scope */
 	AST *node = new AST(token), *sub = new AST("[PARAM]", ZTYPE_UNKNOWN);
 
-	_D(LOG_DEBUG_PARSER, "func statement on %s #%d", token.first.c_str(), token.second);
 	ALERT(ZTYPE_CMD_FUNCTION != token.second && ZTYPE_CMD_CLASS != token.second);
+	_GRAMMAR("func_stmt", token);
 
 	token = next;			/* VAR */
 	next  = this->lexer();
@@ -287,8 +289,8 @@ AST* Parser::parse_cls_stmt(ZergToken token, ZergToken &next) {
 	/* cls_stmt  : 'cls'  VAR '(' [ args ] ')' ':' scope */
 	AST *node = new AST(token), *sub = new AST("[PARAM]", ZTYPE_UNKNOWN);
 
-	_D(LOG_DEBUG_PARSER, "cls statement on %s #%d", token.first.c_str(), token.second);
 	ALERT(ZTYPE_CMD_FUNCTION != token.second && ZTYPE_CMD_CLASS != token.second);
+	_GRAMMAR("cls_stmt", token);
 
 	token = next;			/* VAR */
 	next  = this->lexer();
@@ -344,7 +346,7 @@ AST* Parser::scope(ZergToken token, ZergToken &next) {
 	next = this->lexer();
 
 	do {
-		_D(LOG_DEBUG_PARSER, "scope on %s #%d", token.first.c_str(), token.second);
+		_GRAMMAR("scope", token);
 		switch(token.second) {
 			case ZTYPE_NEWLINE:
 				token = next;
@@ -375,7 +377,7 @@ AST* Parser::varargs(ZergToken token, ZergToken &next) {
 	ALERT(ZTYPE_IDENTIFIER != token.second);
 
 	do {
-		_D(LOG_DEBUG_PARSER, "var args on %s", token.first.c_str());
+		_GRAMMAR("varargs", token);
 		switch(token.second) {
 			case ZTYPE_IDENTIFIER:
 				if (NULL != sub) _SYNTAX(token);
@@ -416,7 +418,7 @@ AST* Parser::expression(ZergToken token, ZergToken &next) {
 	AST *node = NULL, *sub = NULL;
 
 	do {
-		_D(LOG_DEBUG_PARSER, "expression %s #%d", token.first.c_str(), token.second);
+		_GRAMMAR("expression", token);
 		switch(token.second) {
 			case ZTYPE_COMMA:
 				if (NULL == node && NULL == sub) {
@@ -494,8 +496,7 @@ AST* Parser::test_expr(ZergToken token, ZergToken &next) {
 
 	/* save the expression as suffix in stack */
 	do {
-		_D(LOG_DEBUG_PARSER, "test expr on %s #%d", token.first.c_str(), token.second);
-
+		_GRAMMAR("test_expr", token);
 		switch(token.second) {
 			case ZTYPE_LOG_NOT:
 			case ZTYPE_LOG_OR:
@@ -596,7 +597,7 @@ AST* Parser::test_expr(ZergToken token, ZergToken &next) {
 AST* Parser::term_expr(ZergToken token, ZergToken &next) {
 	AST *node = NULL;
 
-	_D(LOG_DEBUG_PARSER, "term on %s #%d", token.first.c_str(), token.second);
+	_GRAMMAR("term", token);
 	switch(token.second) {
 		case ZTYPE_ADD: case ZTYPE_SUB: case ZTYPE_LIKE: case ZTYPE_LOG_NOT:	/* term */
 			node  = new AST(token);
@@ -615,7 +616,7 @@ AST* Parser::atom_expr(ZergToken token, ZergToken &next) {
 	bool blEOP = false;
 	AST *node = NULL, *sub = NULL, *cur = NULL, *tmp = NULL;
 
-	_D(LOG_DEBUG_PARSER, "atom on %s", token.first.c_str());
+	_GRAMMAR("atom", token);
 	switch(token.second) {
 		case ZTYPE_PAIR_GROUP_OPEN:
 			token = next;
@@ -724,9 +725,15 @@ AST* Parser::atom_expr(ZergToken token, ZergToken &next) {
 
 				cur   = sub;
 				do {
+					std::vector<AST *> stack_tmp;
+
 					token = next;
 					next  = this->lexer();
+
+					/* NOTE - save the current operation statck */
+					stack_tmp.swap(this->stack);
 					tmp   = this->expression(token, next);
+					stack_tmp.swap(this->stack);
 
 					switch(next.second) {
 						case ZTYPE_PAIR_BRAKES_CLOSE:
@@ -748,7 +755,6 @@ AST* Parser::atom_expr(ZergToken token, ZergToken &next) {
 							_SYNTAX(next);
 							break;
 					}
-
 				} while (false == blEOP);
 				blEOP = false;
 
@@ -759,6 +765,7 @@ AST* Parser::atom_expr(ZergToken token, ZergToken &next) {
 				break;
 			default:
 				blEOP = true;
+				_D(LOG_DEBUG_PARSER, "end special check %s", next.first.c_str());
 				break;
 		}
 	} while (false == blEOP);

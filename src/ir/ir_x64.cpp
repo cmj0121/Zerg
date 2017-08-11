@@ -247,6 +247,9 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) || IR_TOKEN_INT == token(_dst)));
 				ALERT(IR_TOKEN_UNKNOWN != token(_src));
 
+				/* reset all register */
+				this->_alloc_regs_ = { USED_REGISTERS };
+
 				/* FIXME - Should be more smart */
 				(*this) += new Instruction("push", "rbp");
 				(*this) += new Instruction("mov", "rbp", "rsp");
@@ -297,6 +300,7 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 	}
 
 	this->regfree(src);
+	this->regfree(idx);
 }
 std::string IR::regalloc(std::string src, std::string size) {
 	int cnt = 0;
@@ -339,21 +343,28 @@ std::string IR::regalloc(std::string src, std::string size) {
 		goto END;
 	}
 END:
-	if (src != dst) {
-		_D(LOG_REGISTER_ALLOC, "register reallocate %8s -> %4s", src.c_str(), dst.c_str());
-	}
+	#if defined(DEBUG_REGISTER_ALLOC) || defined(DEBUG)
+	if (src != dst)
+		_D(LOG_ERROR, "register reallocate %8s -> %4s", src.c_str(), dst.c_str());
+	#endif /* DEBUG_REGISTER_ALLOC*/
 	return dst;
 }
 void IR::regfree(std::string src) {
 	int cnt = 0;
 	std::vector<std::string> regs = { REGISTERS };
+	std::vector<std::string> used = { USED_REGISTERS };
 
 	if (regs.end() != std::find(regs.begin(), regs.end(), src)) {
 		cnt = std::find(regs.begin(), regs.end(), src) - regs.begin();
-		cnt = cnt % 8;
-		this->_alloc_regs_.push_back(regs[cnt]);
-		/* restore the used register */
-		_D(LOG_REGISTER_ALLOC, "register reallocate <- %s", regs[cnt].c_str());
+		cnt = cnt % 8 + (cnt & 0xE0);
+
+		if (used.end() != std::find(used.begin(), used.end(), regs[cnt])) {
+			this->_alloc_regs_.push_back(regs[cnt]);
+			/* restore the used register */
+			#if defined(DEBUG_REGISTER_ALLOC) || defined(DEBUG)
+			_D(LOG_ERROR, "register reallocate <- %s", regs[cnt].c_str());
+			#endif /* DEBUG_REGISTER_ALLOC */
+		}
 	}
 }
 std::string IR::localvar(std::string _src, std::string size, std::string idx) {
