@@ -10,10 +10,6 @@ AST *Zerg::parser(AST *node) {
 	if (NULL == node) return node;
 
 	_D(LOG_DEBUG, "parse AST node %s", node->raw().c_str());
-	#if defined(DEBUG_CFG) || defined(DEBUG)
-		std::cerr << "parse AST node - " << node->raw() << std::endl;
-		std::cerr << *node << std::endl;
-	#endif /* DEBUG_CFG */
 	/* Split into several CFG */
 	switch(node->type()) {
 		case ZTYPE_UNKNOWN:
@@ -22,7 +18,8 @@ AST *Zerg::parser(AST *node) {
 					case ZTYPE_CMD_FUNCTION:
 					case ZTYPE_CMD_CLASS:
 						cur = node->child(cnt);
-						this->parser(cur);
+						cur->remove();
+						this->_subroutine_.push_back(cur);
 						break;
 					case ZTYPE_CMD_IF:
 					case ZTYPE_CMD_WHILE:
@@ -70,15 +67,17 @@ AST *Zerg::parser(AST *node) {
 			break;
 		case ZTYPE_CMD_FUNCTION:
 		case ZTYPE_CMD_CLASS:
-			/* exactly sub-routine */
-			node->remove();
-			this->_subroutine_.push_back(node);
+			/* NOP */
 			break;
 		default:
-			_D(LOG_CRIT, "Not Implemented #%d", node->type());
+			_D(LOG_CRIT, "Not Implemented %s #%d", node->raw().c_str(), node->type());
 			break;
 	}
 
+	#if defined(DEBUG_CFG) || defined(DEBUG)
+		std::cerr << "parse AST node - " << node->raw() << std::endl;
+		std::cerr << *node << std::endl;
+	#endif /* DEBUG_CFG */
 	return node;
 }
 AST* Zerg::emitIR(AST *node) {

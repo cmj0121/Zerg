@@ -615,6 +615,8 @@ AST* Parser::term_expr(ZergToken token, ZergToken &next) {
 AST* Parser::atom_expr(ZergToken token, ZergToken &next) {
 	bool blEOP = false;
 	AST *node = NULL, *sub = NULL, *cur = NULL, *tmp = NULL;
+	std::vector<AST *> stack_tmp;
+
 
 	_GRAMMAR("atom", token);
 	switch(token.second) {
@@ -700,7 +702,10 @@ AST* Parser::atom_expr(ZergToken token, ZergToken &next) {
 					case ZTYPE_PAIR_GROUP_CLOSE:
 						break;
 					default:
+						stack_tmp.swap(this->stack);
 						cur = this->expression(token, next);
+						stack_tmp.swap(this->stack);
+
 						if (ZTYPE_COMMA != cur->type()) {
 							tmp = new AST(",", ZTYPE_COMMA);
 							tmp->insert(cur);
@@ -725,8 +730,6 @@ AST* Parser::atom_expr(ZergToken token, ZergToken &next) {
 
 				cur   = sub;
 				do {
-					std::vector<AST *> stack_tmp;
-
 					token = next;
 					next  = this->lexer();
 

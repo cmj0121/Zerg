@@ -105,7 +105,7 @@ class AST : public Tree<AST> {
 		std::string label(bool condition=true);
 		off_t       asInt(void);
 		void setReg(int reg) { this->_reg_ = reg; }
-		int  getReg(void) { return this->_reg_; }
+		int  getReg(void) { return ZTYPE_FUNCCALL == this->type() ? -1 : this->_reg_; }
 
 		void setSymb(std::string src) { this->_symb_ = src; }
 

@@ -10,6 +10,8 @@
 
 void Zerg::compile(std::string src) {
 	AST *node = NULL;
+
+	_D(LOG_INFO, "compile zerg with dummy loader");
 	/* Set the entry point of the program */
 	this->emit(IR_LABEL, ZASM_ENTRY_POINT);
 	this->emit(IR_CONDITION_CALL, __IR_REFERENCE__ ZASM_MAIN_FUNCTION);
@@ -17,28 +19,28 @@ void Zerg::compile(std::string src) {
 	this->emit(IR_INTERRUPT);
 	this->flush();
 
-	/* load the built-in library if possible */
-	if (0 == access(BUILTIN_LIBRARY, F_OK) && false == this->_args_.no_stdlib) {
-		_D(LOG_INFO, "Load the built-in library `%s`", BUILTIN_LIBRARY);
-		//this->parser(BUILTIN_LIBRARY);
-	}
 
 	/* compile the AST-CFG */
+	_D(LOG_INFO, "compile source code and parse as - AST %s", src.c_str());
 	node = Parser::parser(src);
 	this->emitIR_stmt(node, true);
 
+	_D(LOG_INFO, "compile sub-routine #%lu", this->_subroutine_.size());
 	for (auto it : this->_subroutine_) {
 		/* compile sub-routine */
 		this->emitIR_stmt(it, true);
 	}
 
 	/* dump all globals symbol */
+	_D(LOG_INFO, "dump all global symbol");
 	this->emit(IR_LABEL, "__GLOBALS__");
 	for (auto it : this->globals_str) {
 		/* FIXME - Should we need globals defined? of just set in local part */
 		this->emit(IR_DEFINE, it.first, it.second);
 	}
 	this->flush();
+
+	_D(LOG_INFO, "end compile %s", src.c_str());
 }
 
 void Zerg::emit(AST *node, bool init) {
@@ -140,7 +142,6 @@ void Zerg::flush(void) {
 	char buff[BUFSIZ] = {0};
 
 	if (this->_ir_stack_.size()) {
-
 		snprintf(buff, sizeof(buff), "0x%lX", IR::localvar_len() * PARAM_SIZE);
 		_D(LOG_DEBUG_IR, "flush #%lu IR", this->_ir_stack_.size());
 		for (auto ir : this->_ir_stack_) {
@@ -150,11 +151,12 @@ void Zerg::flush(void) {
 				for (auto it : IROP_map) {
 					if (it.second == ir.opcode) {
 						if (it.second == IR_LABEL) std::cout << "\n";
-						std::cout << std::setw(14) << std::left << it.first
-									<< std::setw(24) << ir.dst
-									<< std::setw(24) << ir.src
-									<< std::setw(24) << ir.size
-									<< std::setw(24) << ir.index << std::endl;
+						std::cout << std::setw(14) << std::left << it.first;
+						if ("" != ir.dst)	std::cout << std::setw(24) << ir.dst;
+						if ("" != ir.src)	std::cout << std::setw(24) << ir.src;
+						if ("" != ir.size)	std::cout << std::setw(24) << ir.size;
+						if ("" != ir.index) std::cout << std::setw(24) << ir.index;
+						std::cout << std::endl;
 
 						blFound = true;
 						break;

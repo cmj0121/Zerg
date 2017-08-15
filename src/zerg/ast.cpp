@@ -38,9 +38,9 @@ AST::AST(ZergToken &token, int lineno) : Tree<AST>(token.first), _node_(token) {
 std::string AST::data(void) {
 	char buff[BUFSIZ] = {0};
 
-	if (0 != this->_reg_) {
+	if (0 < this->_reg_) {
 		snprintf(buff, sizeof(buff), __IR_REG_FMT__, this->_reg_);
-	} else if (ZTYPE_FUNCCALL == this->type()) {
+	} else if (ZTYPE_FUNCCALL == this->type() || -1 == this->_reg_) {
 		snprintf(buff, sizeof(buff), "%s", __IR_SYSCALL_REG__);
 	} else if ("" != this->_symb_) {
 		snprintf(buff, sizeof(buff), "%s%s", __IR_REFERENCE__, this->_symb_.c_str());
