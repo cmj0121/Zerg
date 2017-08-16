@@ -169,6 +169,5 @@ void Zerg::flush(void) {
 		}
 
 		this->_ir_stack_.clear();
-		IR::localvar_reset();
 	}
 }

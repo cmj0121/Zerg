@@ -26,7 +26,7 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 					(*this) += new Instruction("lea", dst, src);
 				} else if (dst != src) {
 					/* simple register movement */
-					dst = localvar(_dst, size, idx);
+					dst = localvar(_dst, size, idx, true);
 					(*this) += new Instruction("mov", dst, src);
 				}
 				break;
@@ -166,7 +166,7 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				break;
 			case IR_ARITHMETIC_DEC:
 				ALERT(IR_TOKEN_REGISTER != token(_dst) || IR_TOKEN_UNKNOWN != token(_src));
-				(*this) += new Instruction("inc", dst);
+				(*this) += new Instruction("dec", dst);
 				break;
 		/* logical operation */
 			case IR_LOGICAL_AND:
@@ -206,7 +206,6 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				ALERT("" == _dst && "" == _src);
 				(*this) += new Instruction("cmp", dst, src);
-				(*this) += new Instruction("xor", dst, dst);
 				(*this) += new Instruction("setl", this->regalloc(_dst, ZASM_MEM_BYTE));
 				break;
 			case IR_LOGICAL_GT:
@@ -214,7 +213,6 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				ALERT(!(IR_TOKEN_REGISTER == token(_src) || IR_TOKEN_INT == token(_src)));
 				ALERT("" == _dst && "" == _src);
 				(*this) += new Instruction("cmp", dst, src);
-				(*this) += new Instruction("xor", dst, dst);
 				(*this) += new Instruction("setg", this->regalloc(_dst, ZASM_MEM_BYTE));
 				break;
 		/* condition / control flow */
@@ -267,6 +265,7 @@ void IR::emit(IROP opcode, STRING _dst, STRING _src, STRING size, STRING index) 
 				}
 				(*this) += new Instruction("pop", "rbp");
 				this->_params_.clear();
+				this->localvar_reset();
 				break;
 			case IR_INTERRUPT:
 				ALERT(!(IR_TOKEN_UNKNOWN == token(_dst) && IR_TOKEN_UNKNOWN == token(_src)));
@@ -367,7 +366,7 @@ void IR::regfree(std::string src) {
 		}
 	}
 }
-std::string IR::localvar(std::string _src, std::string size, std::string idx) {
+STRING IR::localvar(STRING _src, STRING size, STRING idx, bool save) {
 	size_t cnt = 0;
 	char buff[BUFSIZ] = {0};
 	const char *fmt = NULL;
@@ -384,11 +383,13 @@ std::string IR::localvar(std::string _src, std::string size, std::string idx) {
 				cnt = std::find(_locals_.begin(), _locals_.end(), _src) - _locals_.begin();
 				cnt = cnt + 1;
 				fmt = "%s [rbp-0x%lX]";
-			} else {
+			} else if (save) {
 				IR::localvar(_src);
 				cnt = std::find(_locals_.begin(), _locals_.end(), _src) - _locals_.begin();
 				cnt = cnt + 1;
 				fmt = "%s [rbp-0x%lX]";
+			} else {
+				_D(LOG_CRIT, "variable `%s` not define", _src.c_str());
 			}
 
 			if ("" == idx) {

@@ -299,10 +299,12 @@ AST* Zerg::emitIR_atom(AST *node) {
 			this->emit(IR_MEMORY_STORE, node->data(), node->raw());
 			break;
 		case ZTYPE_STRING:
-			node->otype(OBJ_STRING);
-			symb = std::make_pair(randstr(8), node->raw());
-			globals_str.push_back(symb);
-			node->setSymb(symb.first);
+			if (NULL != node->parent() && ZTYPE_UNKNOWN != node->parent()->type()) {
+				node->otype(OBJ_STRING);
+				symb = std::make_pair(randstr(8), node->raw());
+				globals_str.push_back(symb);
+				node->setSymb(symb.first);
+			}
 			break;
 		case ZTYPE_IDENTIFIER:
 			node->setReg(++ this->_regcnt_);
