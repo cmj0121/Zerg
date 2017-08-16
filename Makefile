@@ -2,7 +2,7 @@ include Makefile.in
 
 SUBDIR=src
 
-VIMRC=$(wildcard *.vim)
+VIMRC=$(wildcard conf/*.vim)
 BIN=zasm zerg
 
 

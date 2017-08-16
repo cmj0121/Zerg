@@ -10,7 +10,7 @@ GRAMMAR=Grammar/Grammar
 
 BIN=zasm.inst zerg.inst
 
-CXXFLAGS:=$(CXXFLAGS) -I../include
+CXXFLAGS:=$(CXXFLAGS) -Iinclude
 
 .PHONY: all clean install
 
