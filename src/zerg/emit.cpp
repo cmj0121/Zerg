@@ -81,6 +81,8 @@ AST *Zerg::parser(AST *node) {
 	return node;
 }
 AST* Zerg::emitIR(AST *node) {
+	int cnt = 0;
+	char buff[BUFSIZ] = {0};
 	std::string tmp;
 	AST *sub = NULL;
 
@@ -143,48 +145,62 @@ AST* Zerg::emitIR(AST *node) {
 			break;
 
 		case ZTYPE_FUNCCALL:
-			if (ZTYPE_BUILTIN_SYSCALL == node->child(0)->type()) {
-				ALERT(2 != node->length() || 0 == node->child(1)->length());
+			ALERT (2 < node->length());
 
-				for (int i = 0; i < node->child(1)->length(); ++i) {
-					sub = node->child(1)->child(i);
+			switch(node->child(0)->type()) {
+				case ZTYPE_BUILTIN_SYSCALL:
+					ALERT(2 != node->length() || 0 == node->child(1)->length());
 
-					switch(sub->type()) {
-						case ZTYPE_NUMBER:
-						case ZTYPE_IDENTIFIER:
-							this->emit(IR_MEMORY_PUSH, sub->raw());
-							break;
-						default:
-							this->emitIR(sub);
-							this->emit(IR_MEMORY_PUSH, sub->data());
-							break;
-					}
-				}
-				this->emit(IR_INTERRUPT);
-			} else {					/* general function call */
-				int cnt = 0;
-				char buff[BUFSIZ] = {0};
-
-				/* parameter */
-				if (1 < node->length()) {
-					_D(LOG_DEBUG, "function call %s with #%zd parameter",
-								node->child(0)->data().c_str(), node->child(1)->length());
 					for (int i = 0; i < node->child(1)->length(); ++i) {
 						sub = node->child(1)->child(i);
 
-						this->emitIR(sub);
-						this->emit(IR_MEMORY_PUSH, sub->data());
-						++cnt;
+						switch(sub->type()) {
+							case ZTYPE_NUMBER:
+							case ZTYPE_IDENTIFIER:
+								this->emit(IR_MEMORY_PUSH, sub->raw());
+								break;
+							default:
+								this->emitIR(sub);
+								this->emit(IR_MEMORY_PUSH, sub->data());
+								break;
+						}
 					}
-				}
+					this->emit(IR_INTERRUPT);
+					break;
+				case ZTYPE_BUILTIN_EXIT:
+					ALERT(2 != node->length() || 1 != (sub = node->child(1))->length());
+					sub = sub->child(0);
+					#if __APPLE__ && __x86_64__
+					this->emit(IR_MEMORY_PUSH, "0x2000001");
+					#else
+					# error "Not Implemented"
+					#endif /**/
+					this->emitIR(sub);
+					this->emit(IR_MEMORY_PUSH, sub->data());
+					this->emit(IR_INTERRUPT);
+					break;
+				default:
+					/* parameter */
+					if (1 < node->length()) {
+						_D(LOG_DEBUG, "function call %s with #%zd parameter",
+									node->child(0)->data().c_str(), node->child(1)->length());
+						for (int i = 0; i < node->child(1)->length(); ++i) {
+							sub = node->child(1)->child(i);
 
-				sub = node->child(0);
-				this->emit(IR_CONDITION_CALL, __IR_REFERENCE__ + sub->data());
-				snprintf(buff, sizeof(buff), __IR_REG_FMT__, ++this->_regcnt_);
-				while (0 < cnt) {
-					this->emit(IR_MEMORY_POP, buff);
-					--cnt;
-				}
+							this->emitIR(sub);
+							this->emit(IR_MEMORY_PUSH, sub->data());
+							++cnt;
+						}
+					}
+
+					sub = node->child(0);
+					this->emit(IR_CONDITION_CALL, __IR_REFERENCE__ + sub->data());
+					snprintf(buff, sizeof(buff), __IR_REG_FMT__, ++this->_regcnt_);
+					while (0 < cnt) {
+						this->emit(IR_MEMORY_POP, buff);
+						--cnt;
+					}
+					break;
 			}
 
 			break;
