@@ -406,7 +406,15 @@ STRING IR::localvar(STRING _src, STRING size, STRING idx, bool save) {
 		default:
 			/* others */
 			src = IR::regalloc(_src, ZASM_MEM_QWORD);
-			snprintf(buff, sizeof(buff), "%s", src.c_str());
+			if ("" != idx) {
+				reg = IR::tmpreg();
+
+				(*this) += new Instruction("mov", reg, src);
+				fmt = "%s [%s+%s]";
+				snprintf(buff, sizeof(buff), fmt, size.c_str(), reg.c_str(), idx.c_str());
+			} else {
+				snprintf(buff, sizeof(buff), "%s", src.c_str());
+			}
 			break;
 	}
 
