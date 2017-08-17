@@ -115,6 +115,14 @@ AST* Parser::parse_simple_stmt(ZergToken token, ZergToken &next) {
 			next  = this->lexer();
 			node->insert(this->expression(token, next));
 			break;
+		case ZTYPE_CMD_DELETE:		/* delete statement */
+			node  = new AST(token);
+			token = next;
+			if (ZTYPE_IDENTIFIER != token.second) _SYNTAX(token);
+
+			next  = this->lexer();
+			node->insert(this->expression(token, next));
+			break;
 		case ZTYPE_INC: case ZTYPE_DEC:
 			node  = new AST(token);
 			token = next;

@@ -2,6 +2,8 @@
 #ifndef __ZERG_H__
 #  define __ZERG_H__
 
+#include <map>
+
 #include "utils.h"
 #include "zerg/tree.h"
 #include "zerg/ir.h"
@@ -44,6 +46,7 @@ class Zerg : public IR, public Parser {
 		virtual AST *builtin_syscall(AST *node);
 		virtual AST *builtin_exit(AST *node);
 		virtual AST *builtin_buffer(AST *node);
+		virtual AST *builtin_delete(AST *node);
 	private:
 		Args _args_;
 		int _regcnt_;
@@ -51,6 +54,7 @@ class Zerg : public IR, public Parser {
 		std::vector<std::pair<std::string, std::string>> globals_str;
 		std::vector<AST *> _subroutine_;
 		std::vector<std::string> _loop_label_;
+		std::map<std::string, OBJType> _obj_type_map_;
 };
 
 #endif /* __ZERG_H__ */

@@ -259,6 +259,7 @@ LEXER:
 
 				     if (token == "include")		{ type = ZTYPE_CMD_INCLUDE;   }
 				else if (token == "print")			{ type = ZTYPE_CMD_PRINT;     }
+				else if (token == "del")			{ type = ZTYPE_CMD_DELETE;    }
 				else if (token == "func")			{ type = ZTYPE_CMD_FUNCTION;  }
 				else if (token == "cls")			{ type = ZTYPE_CMD_CLASS;     }
 				else if (token == "while")			{ type = ZTYPE_CMD_WHILE;     }

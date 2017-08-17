@@ -58,6 +58,7 @@ typedef enum _tag_token_type_ {
 
 	ZTYPE_CMD_INCLUDE,			/* include  */
 	ZTYPE_CMD_PRINT,			/* print    */
+	ZTYPE_CMD_DELETE,			/* del      */
 	ZTYPE_CMD_FUNCTION,			/* func     */
 	ZTYPE_CMD_CLASS,			/* class    */
 	ZTYPE_CMD_WHILE,			/* while    */
@@ -88,6 +89,7 @@ typedef enum _tag_object_type_ {
 	OBJ_INT,
 	OBJ_FLOAT,
 	OBJ_STRING,
+	OBJ_BUFFER,
 	OBJ_OBJECT,
 } OBJType;
 

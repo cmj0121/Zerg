@@ -2,7 +2,8 @@
 
 ## All kinds of the valid statement
 stmt          : ( simple_stmt | compound_stmt | inline_asm ) NEWLINE
-simple_stmt   : 'nop' | 'continue' | 'break' | expression | assign | print_stmt | inc_dec
+simple_stmt   : oneword_stmt | expression | assign | print_stmt | inc_dec | del_stmt
+oneword_stmt  : 'nop' | 'continue' | 'break'
 compound_stmt : if_stmt | while_stmt | for_stmt | func_stmt | cls_stmt
 
 if_stmt       : 'if'    test ':'  scope ( 'elif' ':' scope )* [ 'else' ':' scope ]
@@ -11,6 +12,7 @@ for_stmt      : 'for' varargs 'in' expression  ':' scope
 func_stmt     : 'func'  VAR  '('  [ parameter ] ')' ':' scope
 cls_stmt      : 'cls'   VAR  '('  [ varargs ]      ')' ':' scope
 print_stmt    : 'print' expression
+del_stmt      : 'del' VAR
 inline_asm    : 'asm' STRING
 scope         : NEWLINE INDENT stmt+ DEDENT
 

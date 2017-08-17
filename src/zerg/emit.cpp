@@ -147,7 +147,8 @@ AST* Zerg::emitIR(AST *node) {
 		case ZTYPE_FUNCCALL:
 			ALERT (2 < node->length());
 
-			switch(node->child(0)->type()) {
+			sub = node->child(0);
+			switch(sub->type()) {
 				case ZTYPE_BUILTIN_SYSCALL:
 					this->builtin_syscall(node);
 					break;
@@ -225,6 +226,16 @@ AST* Zerg::emitIR(AST *node) {
 			sub = node->child(0);
 			ALERT(ZTYPE_STRING != sub->type() || 0 != sub->length());
 			this->emit(IR_INLINE_ASM, sub->raw(), "", "");
+			break;
+
+		case ZTYPE_CMD_DELETE:
+			ALERT(1 != node->length() || 0 != (sub = node->child(0))->length());
+
+			if (_obj_type_map_.end() == _obj_type_map_.find(sub->raw())) {
+				_D(LOG_CRIT, "Variable %s not define", sub->raw().c_str());
+			}
+
+			this->builtin_delete(sub);
 			break;
 
 		default:
@@ -510,7 +521,12 @@ AST* Zerg::emitIR_assignment(AST *node) {
 			break;
 	}
 
-	node->otype(expr->otype());
+	if (NULL == dst->parent() || ZTYPE_GETTER != dst->parent()->type()) {
+		node->otype(expr->otype());
+		this->_obj_type_map_[dst->raw()] = node->otype();
+		_D(LOG_ERROR, "%s -> #%d", dst->raw().c_str(), node->otype());
+	}
+
 	_D(LOG_DEBUG, "set object type %s -> 0x%X", node->raw().c_str(), node->otype());
 	return node;
 }
