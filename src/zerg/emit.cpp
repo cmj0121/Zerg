@@ -186,9 +186,15 @@ AST* Zerg::emitIR(AST *node) {
 		case ZTYPE_CMD_IN:
 
 		case ZTYPE_CMD_INCLUDE:
-		case ZTYPE_CMD_PRINT:
 			_D(LOG_CRIT, "Not implemented on %s #%d", node->raw().c_str(), node->type());
 			break;
+		case ZTYPE_CMD_PRINT:
+			ALERT(1 != node->length());
+
+			sub = node->child(0);
+			this->builtin_print(sub);
+			break;
+
 		/* sub-routine */
 		case ZTYPE_CMD_FUNCTION: case ZTYPE_CMD_CLASS:
 			this->emitIR_subroutine(node);
@@ -524,7 +530,6 @@ AST* Zerg::emitIR_assignment(AST *node) {
 	if (NULL == dst->parent() || ZTYPE_GETTER != dst->parent()->type()) {
 		node->otype(expr->otype());
 		this->_obj_type_map_[dst->raw()] = node->otype();
-		_D(LOG_ERROR, "%s -> #%d", dst->raw().c_str(), node->otype());
 	}
 
 	_D(LOG_DEBUG, "set object type %s -> 0x%X", node->raw().c_str(), node->otype());

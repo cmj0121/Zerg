@@ -15,6 +15,9 @@
 #define LEXER_INDENT		"\t"
 #define LEXER_DEDENT		"\b"
 
+#define ZERG_TRUE			"True"
+#define ZERG_FALSE			"False"
+
 #include <string>
 #include <map>
 
@@ -47,6 +50,7 @@ class Zerg : public IR, public Parser {
 		virtual AST *builtin_exit(AST *node);
 		virtual AST *builtin_buffer(AST *node);
 		virtual AST *builtin_delete(AST *node);
+		virtual AST *builtin_print(AST *node);
 	private:
 		Args _args_;
 		int _regcnt_;

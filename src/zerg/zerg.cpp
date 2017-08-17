@@ -34,6 +34,8 @@ void Zerg::compile(std::string src) {
 	/* dump all globals symbol */
 	_D(LOG_INFO, "dump all global symbol");
 	this->emit(IR_LABEL, "__GLOBALS__");
+	this->globals_str.push_back(std::make_pair(ZERG_TRUE,  "\"" ZERG_TRUE "\""));
+	this->globals_str.push_back(std::make_pair(ZERG_FALSE, "\"" ZERG_FALSE "\""));
 	for (auto it : this->globals_str) {
 		/* FIXME - Should we need globals defined? of just set in local part */
 		this->emit(IR_DEFINE, it.first, it.second);

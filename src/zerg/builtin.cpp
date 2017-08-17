@@ -75,7 +75,6 @@ AST* Zerg::builtin_buffer(AST *node) {
 }
 
 AST* Zerg::builtin_delete(AST *node) {
-
 	switch(_obj_type_map_[node->raw()]) {
 		case OBJ_BUFFER:
 			node->setReg(++ this->_regcnt_);
@@ -94,6 +93,49 @@ AST* Zerg::builtin_delete(AST *node) {
 		default:
 			_D(LOG_CRIT, "Not Implemented delete %s #%d",
 								node->raw().c_str(), _obj_type_map_[node->raw()]);
+			break;
+	}
+
+	return node;
+}
+
+AST* Zerg::builtin_print(AST *node) {
+	switch(node->type()) {
+		case ZTYPE_TRUE:
+			node->setReg(++ this->_regcnt_);
+			this->emit(IR_MEMORY_PUSH, "0x2000004");
+			this->emit(IR_MEMORY_PUSH, "0x01");
+			this->emit(IR_MEMORY_STORE, node->data(), __IR_REFERENCE__ ZERG_TRUE);
+			this->emit(IR_MEMORY_PUSH, node->data());
+			this->emit(IR_MEMORY_PUSH, "0x04");
+			this->emit(IR_INTERRUPT);
+			break;
+		case ZTYPE_FALSE:
+			node->setReg(++ this->_regcnt_);
+			this->emit(IR_MEMORY_PUSH, "0x2000004");
+			this->emit(IR_MEMORY_PUSH, "0x01");
+			this->emit(IR_MEMORY_STORE, node->data(), __IR_REFERENCE__ ZERG_FALSE);
+			this->emit(IR_MEMORY_PUSH, node->data());
+			this->emit(IR_MEMORY_PUSH, "0x05");
+			this->emit(IR_INTERRUPT);
+			break;
+		case ZTYPE_IDENTIFIER:
+			switch(_obj_type_map_[node->raw()]) {
+				case OBJ_BUFFER:
+					this->emit(IR_MEMORY_PUSH, "0x2000004");
+					this->emit(IR_MEMORY_PUSH, "0x01");
+					this->emit(IR_MEMORY_PUSH, node->data());
+					this->emit(IR_MEMORY_PUSH, "0x05");	/* FIXME - call strlen */
+					this->emit(IR_INTERRUPT);
+			break;
+				default:
+					_D(LOG_CRIT, "Not Implemented %s #%d", node->raw().c_str(),
+															_obj_type_map_[node->raw()]);
+					break;
+			}
+			break;
+		default:
+			_D(LOG_CRIT, "Not Implemented %s #%d", node->raw().c_str(), node->type());
 			break;
 	}
 
