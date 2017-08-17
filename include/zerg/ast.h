@@ -73,8 +73,9 @@ typedef enum _tag_token_type_ {
 	ZTYPE_CMD_ASM,				/* asm      */
 
 	/* built-in function */
-	ZTYPE_BUILTIN_EXIT,			/* exit     */
 	ZTYPE_BUILTIN_SYSCALL,		/* syscall  */
+	ZTYPE_BUILTIN_EXIT,			/* exit     */
+	ZTYPE_BUILTIN_BUFFER,		/* buffer   */
 
 	ZTYPE_MAX
 } ZType;

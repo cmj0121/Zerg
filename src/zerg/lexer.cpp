@@ -281,8 +281,9 @@ LEXER:
 				else if (token == "eq")				{ type = ZTYPE_CMP_EQ;        }
 				else if (token == "return")			{ type = ZTYPE_CMD_RETURN;    }
 
-				else if (token == "exit")			{ type = ZTYPE_BUILTIN_EXIT;   }
 				else if (token == "syscall")		{ type = ZTYPE_BUILTIN_SYSCALL;}
+				else if (token == "exit")			{ type = ZTYPE_BUILTIN_EXIT;   }
+				else if (token == "buffer")			{ type = ZTYPE_BUILTIN_BUFFER; }
 
 				goto END_LEXER;
 				break;

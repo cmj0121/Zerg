@@ -665,8 +665,9 @@ AST* Parser::atom_expr(ZergToken token, ZergToken &next) {
 			node->otype(OBJ_STRING);
 			break;
 		case ZTYPE_IDENTIFIER: /* atom */
-		case ZTYPE_BUILTIN_EXIT:
 		case ZTYPE_BUILTIN_SYSCALL:
+		case ZTYPE_BUILTIN_EXIT:
+		case ZTYPE_BUILTIN_BUFFER:
 			node = new AST(token);
 			break;
 		default:

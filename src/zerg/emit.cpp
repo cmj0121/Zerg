@@ -149,35 +149,13 @@ AST* Zerg::emitIR(AST *node) {
 
 			switch(node->child(0)->type()) {
 				case ZTYPE_BUILTIN_SYSCALL:
-					ALERT(2 != node->length() || 0 == node->child(1)->length());
-
-					for (int i = 0; i < node->child(1)->length(); ++i) {
-						sub = node->child(1)->child(i);
-
-						switch(sub->type()) {
-							case ZTYPE_NUMBER:
-							case ZTYPE_IDENTIFIER:
-								this->emit(IR_MEMORY_PUSH, sub->raw());
-								break;
-							default:
-								this->emitIR(sub);
-								this->emit(IR_MEMORY_PUSH, sub->data());
-								break;
-						}
-					}
-					this->emit(IR_INTERRUPT);
+					this->builtin_syscall(node);
 					break;
 				case ZTYPE_BUILTIN_EXIT:
-					ALERT(2 != node->length() || 1 != (sub = node->child(1))->length());
-					sub = sub->child(0);
-					#if __APPLE__ && __x86_64__
-					this->emit(IR_MEMORY_PUSH, "0x2000001");
-					#else
-					# error "Not Implemented"
-					#endif /**/
-					this->emitIR(sub);
-					this->emit(IR_MEMORY_PUSH, sub->data());
-					this->emit(IR_INTERRUPT);
+					this->builtin_exit(node);
+					break;
+				case ZTYPE_BUILTIN_BUFFER:
+					this->builtin_buffer(node);
 					break;
 				default:
 					/* parameter */

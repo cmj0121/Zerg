@@ -39,6 +39,11 @@ class Zerg : public IR, public Parser {
 		virtual AST* emitIR_assignment(AST *node);
 		virtual AST* emitIR_subroutine(AST *node);
 		virtual AST* emitIR_stmt(AST *node, bool init=false);
+
+		/* built-in function */
+		virtual AST *builtin_syscall(AST *node);
+		virtual AST *builtin_exit(AST *node);
+		virtual AST *builtin_buffer(AST *node);
 	private:
 		Args _args_;
 		int _regcnt_;
