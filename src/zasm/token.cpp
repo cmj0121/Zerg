@@ -9,6 +9,10 @@
 #   error "You need define REGISTERS first"
 #endif /* REGISTERS */
 
+bool InstToken::isNULL(void) {
+	return "" == this->_src_;
+}
+
 bool InstToken::isREG(void) {
 	const std::vector<std::string> regs = { REGISTERS };
 	unsigned int idx = std::find(regs.begin(), regs.end(), this->_src_) - regs.begin();
@@ -254,7 +258,7 @@ int InstToken::size(void) {
 		} else if (regs16.end() != std::find(regs16.begin(), regs16.end(), this->_src_)) {
 			size = 2;
 		} else if (regs32.end() != std::find(regs32.begin(), regs32.end(), this->_src_)) {
-			size = 3;
+			size = 4;
 		} else if (regs64.end() != std::find(regs64.begin(), regs64.end(), this->_src_)) {
 			size = 4;
 		}

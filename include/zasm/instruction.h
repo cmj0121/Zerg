@@ -13,6 +13,7 @@ class InstToken {
 	public:
 		InstToken(std::string src="") : _src_(src) {};
 
+		bool isNULL(void);			/* is NULL or empty */
 		bool isREG(void);			/* register */
 		bool isPosREG(void);		/* special register - position-related */
 		bool isMEM(void);			/* memory */
@@ -63,7 +64,6 @@ class Instruction {
 		unsigned char _payload_[MAX_INSTRUCTION_LEN];
 		std::string _label_;
 		InstToken cmd, dst, src;
-
 
 	#ifdef __x86_64__
 		void legacyPrefix(X86_64_INST &inst);

@@ -31,8 +31,7 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 		_payload_[_length_++] = 0x48;
 	}
 
-	if ((this->src.isMEM() && 2 == this->src.size()) ||
-		(this->dst.isMEM() && 2 == this->dst.size())) {
+	if (2 == this->src.size() || 2 == this->dst.size()) {
 		/* 16-bit memory access */
 		_payload_[_length_++] = 0x66;
 		blDWORD = true;
@@ -281,18 +280,10 @@ void Instruction::immediate(X86_64_INST &inst) {
 		ret = this->setIMM(-1, size);
 		_D(LOG_ZASM_INFO, "Immediate     - reference");
 	} else if (this->dst.isIMM() || this->src.isIMM()) {
-		InstToken token = this->dst.isIMM() ? this->dst : this->src;
-
-		size = token.size();
-		{	/* FIXME - Need to be more logical */
-			size = size == 2 ? 4 : size;
-			if (0xB8 == inst.opcode && 1 == size) size = 4;
-			if (0xF7 == inst.opcode && 1 == size) size = 4;
-			if (this->dst.isMEM() && 1 == size && INST_SIZE8 != (inst.op2 & INST_SIZE_ALL)) size = 4;
-			if (this->dst.isIMM() && 1 == size) size = 4;
-		}
-		ret  = this->setIMM(token.asInt(), size);
-		_D(LOG_ZASM_INFO, "Immediate     - " OFF_T, ret);
+		size = this->src.isNULL() ? 4 : this->dst.size();
+		ret  = this->src.isNULL() ? this->dst.asInt() : this->src.asInt();
+		ret  = this->setIMM(ret, size);
+		_D(LOG_ZASM_INFO, "Immediate (%d) - " OFF_T, size, ret);
 	}
 }
 #endif /* __x86_64__ */
