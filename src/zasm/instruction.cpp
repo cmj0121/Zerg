@@ -51,13 +51,8 @@ std::string Instruction::label(void) {
 std::string Instruction::refer(void) {
 	std::string ref;
 
-	if (this->dst.isREF()) {
-		ref = this->dst.raw();
-	} else if (this->src.isREF()) {
-		ref = this->src.raw();
-	}
-
-	return "" == ref ? "" : ref.substr(1);
+	ref = this->dst.isREF() ? this->dst.raw() : this->src.raw();
+	return 0 < ref.size() && ZASM_REFERENCE == ref[0] ? ref.substr(1) : ref;
 }
 bool Instruction::readdressable(void) {
 	/* Reply this instruction is need to readdress or not */

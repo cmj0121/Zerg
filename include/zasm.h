@@ -10,6 +10,10 @@
 #define ZASM_DEFINE			"define"
 #define ZASM_INCLUDE		"include"
 
+#define ZASM_REFERENCE		'&'
+#define ZASM_CURRENT_POS	"$"
+#define ZASM_SESSION_POS	"$$"
+
 #define ZASM_MEM_BYTE		"byte"
 #define ZASM_MEM_WORD		"word"
 #define ZASM_MEM_DWORD		"dword"

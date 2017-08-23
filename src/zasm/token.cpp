@@ -26,7 +26,7 @@ bool InstToken::isMEM(void) {
 	bool blRet = false;
 
 	if (true == (blRet = this->isREF())) {
-		_D(LOG_ZASM_INFO, "treat reference as memory space");
+		_D(LOG_ZASM_DEBUG, "treat reference as memory space");
 		goto END;
 	} else if ("" != this->_src_ && '[' == this->_src_[0]) {
 		_D(LOG_ZASM_DEBUG, "simple memory space without size specified");
@@ -97,7 +97,8 @@ bool InstToken::isEXT(void) {
 }
 bool InstToken::isREF(void) {
 	/* Check is reference or not */
-	return '&' == this->_src_[0];
+	return ZASM_REFERENCE == this->_src_[0] || ZASM_CURRENT_POS == this->_src_ ||
+		 ZASM_SESSION_POS == this->_src_;
 }
 bool InstToken::isSSE(void) {
 	/* Streaming SIMD Extensions Register */
@@ -106,7 +107,7 @@ bool InstToken::isSSE(void) {
 }
 
 off_t InstToken::asInt(void) {
-	if ('&' == this->_src_[0]) {
+	if (0 < this->_src_.size() && this->isREF()) {
 		return (off_t)-1;
 	} else if (this->isSSE()) {
 		std::string off = this->_src_.substr(3);
@@ -262,7 +263,7 @@ int InstToken::size(void) {
 		} else if (regs64.end() != std::find(regs64.begin(), regs64.end(), this->_src_)) {
 			size = 4;
 		}
-	} else if (this->isMEM() && ('&' == this->_src_[0] || '[' == this->_src_[0])) {
+	} else if (this->isMEM() && this->isREF()) {
 		size = 4;
 	} else if (this->isMEM()) {
 		if (0 == this->_src_.find(ZASM_MEM_BYTE)) {
