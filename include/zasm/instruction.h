@@ -2,6 +2,12 @@
 #ifndef __ZASM_INSTRUCTION_H__
 #  define __ZASM_INSTRUCTION_H__
 
+#define CPU_UNKNOWN	0
+#define CPU_8BIT	1
+#define CPU_16BIT	2
+#define CPU_32BIT	4
+#define CPU_64BIT	8
+
 #ifdef __x86_64__
 #  define MAX_INSTRUCTION_LEN	16
 #  include "zasm/x86_64_inst.h"

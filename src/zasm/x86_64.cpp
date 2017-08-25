@@ -31,17 +31,17 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 		_payload_[_length_++] = 0x48;
 	}
 
-	if (2 == this->src.size() || 2 == this->dst.size()) {
+	if (CPU_16BIT == this->src.size() || CPU_16BIT == this->dst.size()) {
 		/* 16-bit memory access */
 		_payload_[_length_++] = 0x66;
 		blDWORD = true;
-	} else if ((this->src.isMEM() && 3 == this->src.size() && !this->src.isEXT()) ||
-				(this->dst.isMEM() && 3 == this->dst.size() && !this->dst.isEXT())) {
+	} else if ((this->src.isMEM() && CPU_32BIT == this->src.size() && !this->src.isEXT()) ||
+			(this->dst.isMEM() && CPU_32BIT == this->dst.size() && !this->dst.isEXT())) {
 		/* 32-bit memory access */
 		return ;
 	}
 
-	if (4 == this->dst.size() || 4 == this->src.size() ||
+	if (CPU_64BIT == this->dst.size() || CPU_64BIT == this->src.size() ||
 		this->src.isEXT() || this->dst.isEXT() ||
 		(this->src.isMEM2() && this->src.indexReg()->isEXT()) ||
 		(this->dst.isMEM2() && this->dst.indexReg()->isEXT())) {
@@ -227,9 +227,9 @@ void Instruction::modRW(X86_64_INST &inst) {
 			rm = this->dst.isMEM() ? this->dst.asInt() : this->src.asInt();
 		}
 
-		if (this->dst.isREG() && 1 == this->dst.size() && 'h' == this->dst.raw()[1]) {
+		if (this->dst.isREG() && CPU_8BIT == this->dst.size() && 'h' == this->dst.raw()[1]) {
 			reg |= 0x04;
-		} else if (this->src.isREG() && 1 == this->src.size() && 'h' == this->src.raw()[1]) {
+		} else if (this->src.isREG() && CPU_8BIT == this->src.size() && 'h' == this->src.raw()[1]) {
 			reg |= 0x04;
 		}
 
@@ -279,8 +279,23 @@ void Instruction::immediate(X86_64_INST &inst) {
 	if (this->src.isREF()) {
 		ret = this->setIMM(-1, size);
 		_D(LOG_ZASM_INFO, "Immediate     - reference");
-	} else if (this->dst.isIMM() || this->src.isIMM()) {
-		size = this->src.isNULL() ? 4 : this->dst.size();
+	} else if (this->src.isIMM()) {
+		switch(inst.opcode) {
+			case 0xB8:
+			case 0xF7:
+				size = this->src.size();
+				size = 1 == size ? CPU_32BIT : size;
+				break;
+			default:
+				size = this->src.size();
+				break;
+		}
+		ret  = this->src.asInt();
+		ret  = this->setIMM(ret, size);
+		_D(LOG_ZASM_INFO, "Immediate (%d) - " OFF_T, size, ret);
+	} else if (this->dst.isIMM()) {
+		size = this->dst.size();
+		size = CPU_64BIT == size ? CPU_32BIT : size;
 		ret  = this->src.isNULL() ? this->dst.asInt() : this->src.asInt();
 		ret  = this->setIMM(ret, size);
 		_D(LOG_ZASM_INFO, "Immediate (%d) - " OFF_T, size, ret);
