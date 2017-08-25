@@ -11,6 +11,7 @@
 #define ZASM_INCLUDE		"include"
 
 #define ZASM_REFERENCE		'&'
+#define ZASM_DECORATOR		'@'
 #define ZASM_CURRENT_POS	"$"
 #define ZASM_SESSION_POS	"$$"
 

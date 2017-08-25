@@ -28,6 +28,7 @@ class InstToken {
 		bool isEXT(void);			/* extension in 64-bit mode */
 		bool isREF(void);			/* referenced symbol */
 		bool isSSE(void);			/* streaming SIMD extensions */
+		bool isDecorator(void);		/* decorator */
 
 		InstToken* asReg(void);		/* treated as register */
 		InstToken* indexReg(void);	/* index register of memory */
@@ -63,6 +64,7 @@ class Instruction {
 		std::string refer(void);						/* referenced symbol */
 
 		virtual void assemble(void);
+		virtual void decorator(InstToken& src);
 
 		Instruction& operator << (std::fstream &dst);
 	private:

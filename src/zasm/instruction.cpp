@@ -26,8 +26,10 @@ Instruction::Instruction(std::string cmd, std::string op1, std::string op2) {
 	this->src = InstToken(op2);
 	this->_length_    = 0;
 
-	if (':' == cmd[cmd.size()-1] && "" == op1 && "" == op2) {
+	if (':' == cmd[cmd.size()-1]) {
 		/* NOTE - cannot directly modified the string */
+
+		if (this->dst.isDecorator()) this->decorator(this->dst);
 		this->_label_ = cmd.substr(0, cmd.size()-1);
 	} else if (ZASM_DEFINE == cmd) {
 		this->_label_ = op1;

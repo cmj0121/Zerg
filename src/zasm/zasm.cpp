@@ -80,7 +80,7 @@ void Zasm::assembleF(std::string srcfile) {
 	std::fstream src(srcfile, std::fstream::in);
 	std::string line;
 
-	_D(LOG_ZASM_INFO, "assemble zasm source `%s`", srcfile.c_str());
+	_D(LOG_ZASM_LEXER, "assemble zasm source `%s`", srcfile.c_str());
 	while (std::getline(src, line)) {
 		Zasm::assembleL(line);
 	}
@@ -140,7 +140,7 @@ void Zasm::assembleL(std::string line) {
 			std::string prev = 0 == inst.size() ? "" : inst[inst.size()-1];
 
 			/* show the zasm token */
-			_D(LOG_DEBUG_LEXER, "zasm token `%s`", tmp.c_str());
+			_D(LOG_ZASM_DEBUG, "zasm token `%s`", tmp.c_str());
 
 			if (ZASM_MEM_BYTE  == prev || ZASM_MEM_WORD  == prev||
 				ZASM_MEM_DWORD == prev || ZASM_MEM_QWORD == prev) {
@@ -207,6 +207,7 @@ void Zasm::assembleL(std::string line) {
 		}
 	}
 
+	_D(LOG_ZASM_LEXER, "assemble `%s` - #%zu", line.c_str(), inst.size());
 	/* tear-down */
 	inst.clear();
 }

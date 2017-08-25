@@ -307,4 +307,9 @@ void Instruction::immediate(X86_64_INST &inst) {
 		_D(LOG_ZASM_INFO, "Immediate (%d) - " OFF_T, size, ret);
 	}
 }
+void Instruction::decorator(InstToken& src) {
+	_D(LOG_CRIT, "Not implemented decorator in x86-64");
+}
+
+
 #endif /* __x86_64__ */
