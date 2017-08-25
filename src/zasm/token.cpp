@@ -9,6 +9,10 @@
 #   error "You need define REGISTERS first"
 #endif /* REGISTERS */
 
+bool InstToken::isNULL(void) {
+	return "" == this->_src_;
+}
+
 bool InstToken::isREG(void) {
 	const std::vector<std::string> regs = { REGISTERS };
 	unsigned int idx = std::find(regs.begin(), regs.end(), this->_src_) - regs.begin();
@@ -22,7 +26,7 @@ bool InstToken::isMEM(void) {
 	bool blRet = false;
 
 	if (true == (blRet = this->isREF())) {
-		_D(LOG_ZASM_INFO, "treat reference as memory space");
+		_D(LOG_ZASM_DEBUG, "treat reference as memory space");
 		goto END;
 	} else if ("" != this->_src_ && '[' == this->_src_[0]) {
 		_D(LOG_ZASM_DEBUG, "simple memory space without size specified");
@@ -93,7 +97,8 @@ bool InstToken::isEXT(void) {
 }
 bool InstToken::isREF(void) {
 	/* Check is reference or not */
-	return '&' == this->_src_[0];
+	return ZASM_REFERENCE == this->_src_[0] || ZASM_CURRENT_POS == this->_src_ ||
+		 ZASM_SESSION_POS == this->_src_;
 }
 bool InstToken::isSSE(void) {
 	/* Streaming SIMD Extensions Register */
@@ -102,7 +107,7 @@ bool InstToken::isSSE(void) {
 }
 
 off_t InstToken::asInt(void) {
-	if ('&' == this->_src_[0]) {
+	if (0 < this->_src_.size() && this->isREF()) {
 		return (off_t)-1;
 	} else if (this->isSSE()) {
 		std::string off = this->_src_.substr(3);
@@ -242,7 +247,7 @@ off_t InstToken::offset(void) {
 }
 
 int InstToken::size(void) {
-	int size = 0;
+	int size = CPU_UNKNOWN;
 	if (this->isREG()) {
 		const std::vector<std::string> regs8  = { REG_GENERAL_8,  REG_EXTENSION_8 };
 		const std::vector<std::string> regs16 = { REG_GENERAL_16, REG_EXTENSION_16 };
@@ -250,39 +255,39 @@ int InstToken::size(void) {
 		const std::vector<std::string> regs64 = { REG_GENERAL_64, REG_EXTENSION_64 };
 
 		if (regs8.end() != std::find(regs8.begin(), regs8.end(), this->_src_))  {
-			size = 1;
+			size = CPU_8BIT;
 		} else if (regs16.end() != std::find(regs16.begin(), regs16.end(), this->_src_)) {
-			size = 2;
+			size = CPU_16BIT;
 		} else if (regs32.end() != std::find(regs32.begin(), regs32.end(), this->_src_)) {
-			size = 3;
+			size = CPU_32BIT;
 		} else if (regs64.end() != std::find(regs64.begin(), regs64.end(), this->_src_)) {
-			size = 4;
+			size = CPU_64BIT;
 		}
-	} else if (this->isMEM() && ('&' == this->_src_[0] || '[' == this->_src_[0])) {
-		size = 4;
+	} else if (this->isREF()) {
+		size = CPU_64BIT;
 	} else if (this->isMEM()) {
 		if (0 == this->_src_.find(ZASM_MEM_BYTE)) {
-			size = 1;
+			size = CPU_8BIT;
 		} else if (0 == this->_src_.find(ZASM_MEM_WORD)) {
-			size = 2;
+			size = CPU_16BIT;
 		} else if (0 == this->_src_.find(ZASM_MEM_DWORD)) {
-			size = 3;
+			size = CPU_32BIT;
 		} else if (0 == this->_src_.find(ZASM_MEM_QWORD)) {
-			size = 4;
+			size = CPU_64BIT;
 		} else {
-			_D(LOG_CRIT, "Not Implemented `%s`", this->_src_.c_str());
+			size = CPU_64BIT;
 		}
 	} else if (this->isIMM()) {
 		off_t len = this->asInt();
 
 		if (0 == (len & ~0x7F)) {
-			size = 1;
+			size = CPU_8BIT;
 		} else if (0 == (len & ~0x7FFF)) {
-			size = 2;
+			size = CPU_16BIT;
 		} else if (0 == (len & ~0xFFFFFFFF)) {
-			size = 4;
+			size = CPU_32BIT;
 		} else {
-			size = 8;
+			size = CPU_64BIT;
 		}
 	}
 

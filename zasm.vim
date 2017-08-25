@@ -37,6 +37,7 @@ syn region  ZASMString        start=+\z(['"]\)+ end="\z1" skip="\\\z1" contains=
 syn match   ZASMEscape        contained +\\[abfnrtv'"\\]+
 syn match   ZASMEscape        contained +\\x\x\{2}+
 syn keyword ZASMStructure     byte word dword qword
+syn match   ZASMPosition      "\$\{1,2}"
 
 
 " ZASM highlight syntax definition
@@ -53,6 +54,7 @@ hi def link ZASMString          String
 hi def link ZASMEscape          Special
 hi def link ZASMStructure       Structure
 hi def link ZASMInclude         Include
+hi def link ZASMPosition        Structure
 
 let &cpo = s:cpo_save
 unlet s:cpo_save
