@@ -9,11 +9,29 @@ Zasm::~Zasm(void) {
 	}
 }
 void Zasm::reallocreg(void) {
+	_D(LOG_ZASM_DEBUG, "re-allocate register");
 	for (unsigned int idx = 0; idx < _inst_.size(); ++idx) {
 		off_t offset = 0;
 
 		if (!_inst_[idx]->readdressable()) {
 			continue;
+		}
+
+		if (ZASM_CURRENT_POS == _inst_[idx]->refer()) {
+			offset = -1 * _inst_[idx]->length();
+			goto END;
+		} else if (ZASM_SESSION_POS == _inst_[idx]->refer()) {
+			for(int pos = idx-1; pos >= 0; --pos) {
+				if ("" != _inst_[pos]->label()) {
+					/* HACK - Fix the compiler warning sign-compare */
+					while (pos < (int)idx) {
+						offset -= _inst_[pos+1]->length();
+						pos ++;
+					}
+					goto END;
+				}
+			}
+			_D(LOG_CRIT, "No symbol defined");
 		}
 
 		for(unsigned int pos = idx+1; pos < _inst_.size(); ++pos) {
