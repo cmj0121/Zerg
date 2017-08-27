@@ -26,6 +26,9 @@
 #define SYSCALL_PARAM		"rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"
 #define SYSCALL_REG			"rax"
 
+#define X86_REAL_MODE	1
+#define X86_PROTECTED_MODE	2
+
 typedef struct _x86_64_inst_tag_ {
 	char cmd[MAX_CMD_LEN];
 	unsigned char opcode;

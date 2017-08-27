@@ -28,6 +28,7 @@ class InstToken {
 		bool isEXT(void);			/* extension in 64-bit mode */
 		bool isREF(void);			/* referenced symbol */
 		bool isSSE(void);			/* streaming SIMD extensions */
+		bool isDecorator(void);		/* decorator */
 
 		InstToken* asReg(void);		/* treated as register */
 		InstToken* indexReg(void);	/* index register of memory */
@@ -50,7 +51,7 @@ class InstToken {
 #include <fstream>
 class Instruction {
 	public:
-		Instruction(std::string cmd, std::string op1="", std::string op2="");
+		Instruction(STRING cmd, STRING op1="", STRING op2="", int mode=0);
 		virtual ~Instruction() {};
 
 		bool readdressable(void);
@@ -62,7 +63,7 @@ class Instruction {
 		std::string label(void);						/* symbol */
 		std::string refer(void);						/* referenced symbol */
 
-		virtual void assemble(void);
+		virtual void assemble(int mode = 0);
 
 		Instruction& operator << (std::fstream &dst);
 	private:
@@ -72,11 +73,11 @@ class Instruction {
 		InstToken cmd, dst, src;
 
 	#ifdef __x86_64__
-		void legacyPrefix(X86_64_INST &inst);
-		void opcode(X86_64_INST &inst);
-		void modRW(X86_64_INST &inst);
-		void displacement(X86_64_INST &inst);
-		void immediate(X86_64_INST &inst);
+		void legacyPrefix(X86_64_INST &inst, int mode);
+		void opcode(X86_64_INST &inst, int mode);
+		void modRW(X86_64_INST &inst, int mode);
+		void displacement(X86_64_INST &inst, int mode);
+		void immediate(X86_64_INST &inst, int mode);
 	#endif /* __x86_64__ */
 };
 

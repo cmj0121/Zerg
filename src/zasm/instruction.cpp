@@ -20,20 +20,25 @@ static X86_64_INST InstructionSets[] = {
 };
 
 
-Instruction::Instruction(std::string cmd, std::string op1, std::string op2) {
+Instruction::Instruction(STRING cmd, STRING op1, STRING op2, int mode) {
 	this->cmd = InstToken(cmd);
 	this->dst = InstToken(op1);
 	this->src = InstToken(op2);
 	this->_length_    = 0;
 
-	if (':' == cmd[cmd.size()-1] && "" == op1 && "" == op2) {
+	#ifdef __x86_64__
+	mode = 0 == mode ? X86_PROTECTED_MODE : mode;
+	#endif /* __x86_64__ */
+
+	if (':' == cmd[cmd.size()-1]) {
 		/* NOTE - cannot directly modified the string */
+
 		this->_label_ = cmd.substr(0, cmd.size()-1);
 	} else if (ZASM_DEFINE == cmd) {
 		this->_label_ = op1;
 	} else {
 		/* assemble the machine code by each platform */
-		this->assemble();
+		this->assemble(mode);
 	}
 }
 
@@ -118,7 +123,7 @@ off_t Instruction::setIMM(off_t imm, int size, bool reset) {
 	return imm;
 }
 
-void Instruction::assemble(void) {
+void Instruction::assemble(int mode) {
 	unsigned int idx = 0;
 	X86_64_INST inst;
 
@@ -134,24 +139,25 @@ void Instruction::assemble(void) {
 							this->src.match(inst.op2));
 			continue;
 		}
-		_D(LOG_ZASM_DEBUG, "%s 0x%02X match %d %d",
+		_D(LOG_ZASM_INFO, "%s 0x%02X match %d %d",
 						inst.cmd, inst.opcode,
 						this->dst.match(inst.op1),
 						this->src.match(inst.op2));
 
 		#ifdef __x86_64__
-			legacyPrefix(inst);
-			opcode(inst);
-			modRW(inst);
-			displacement(inst);
-			immediate(inst);
+			legacyPrefix(inst, mode);
+			opcode(inst, mode);
+			modRW(inst, mode);
+			displacement(inst, mode);
+			immediate(inst, mode);
 		#endif /* __x86_64__ */
-		break;
+
+		goto END;
 	}
 
-	if (idx == ARRAY_SIZE(InstructionSets)) {
-		_D(LOG_CRIT, "Not Implemented `%s` `%s` `%s`",
-			this->cmd.raw().c_str(), this->dst.raw().c_str(), this->src.raw().c_str());
-		exit(-1);
-	}
+	_D(LOG_CRIT, "Not Implemented `%s` `%s` `%s`",
+		this->cmd.raw().c_str(), this->dst.raw().c_str(), this->src.raw().c_str());
+	exit(-1);
+END:
+	return;
 }

@@ -7,8 +7,7 @@
 
 #include "macho64_inc.hpp"
 
-
-void Zasm::dump(off_t entry, bool showSymb) {
+void Zasm::dump_macho64(off_t entry, bool showSymb) {
 	off_t header_offset = 0;
 	std::fstream fp;
 	std::vector<std::string> symbs;

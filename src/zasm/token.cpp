@@ -105,6 +105,10 @@ bool InstToken::isSSE(void) {
 
 	return 0 == this->_src_.find("xmm");
 }
+bool InstToken::isDecorator(void) {
+	/* return the is decorator or NOT */
+	return ZASM_DECORATOR == this->_src_[0];
+}
 
 off_t InstToken::asInt(void) {
 	if (0 < this->_src_.size() && this->isREF()) {

@@ -38,7 +38,7 @@ syn match   ZASMEscape        contained +\\[abfnrtv'"\\]+
 syn match   ZASMEscape        contained +\\x\x\{2}+
 syn keyword ZASMStructure     byte word dword qword
 syn match   ZASMPosition      "\$\{1,2}"
-
+syn match   ZASMDecorator     "@\w\+\>"
 
 " ZASM highlight syntax definition
 "
@@ -55,6 +55,7 @@ hi def link ZASMEscape          Special
 hi def link ZASMStructure       Structure
 hi def link ZASMInclude         Include
 hi def link ZASMPosition        Structure
+hi def link ZASMDecorator       Special
 
 let &cpo = s:cpo_save
 unlet s:cpo_save
