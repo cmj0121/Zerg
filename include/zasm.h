@@ -29,7 +29,13 @@ class Zasm {
 		Zasm(std::string dst, Args &args) : _args_(args), _linono_(0), _dst_(dst) {};
 		virtual ~Zasm(void);
 
-		void dump(off_t entry = 0x1000, bool symb=false);	/* Binary-Specified */
+		void dump(Args &args);
+		void dump_bin(off_t entry, bool symb);
+		#if defined(__APPLE__) && defined(__x86_64__)
+		void dump_macho64(off_t entry, bool symb);	/* Binary-Specified */
+		#elif defined(__linux__) && defined(__x86_64__)
+		void dump_elf64(off_t entry, bool symb);
+		#endif /* __x86_64__ */
 
 		void assembleF(std::string srcfile);
 		void assembleL(std::string line);
@@ -37,7 +43,7 @@ class Zasm {
 		Zasm& operator+= (Instruction *inst);
 	private:
 		Args _args_;
-		int _linono_;
+		int _linono_, _mode_;
 		std::string _dst_;
 		std::vector<Instruction *> _inst_;
 		std::map<std::string, std::string> _map_;

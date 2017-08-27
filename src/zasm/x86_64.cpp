@@ -15,7 +15,7 @@
  *   Legacy Prefix   OpCode   Mod   SIB   Displacement / Immediate
  */
 
-void Instruction::legacyPrefix(X86_64_INST &inst) {
+void Instruction::legacyPrefix(X86_64_INST &inst, int mode) {
 	bool blDWORD = false;
 
 	/* NOTE - Legacy Prefix (0~4) */
@@ -31,8 +31,8 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 		_payload_[_length_++] = 0x48;
 	}
 
-	if (CPU_16BIT == this->src.size() ||
-		(CPU_16BIT == this->dst.size() && !this->src.isNULL())) {
+	if (X86_REAL_MODE != mode && (CPU_16BIT == this->src.size() ||
+		(CPU_16BIT == this->dst.size() && !this->src.isNULL()))) {
 		/* 16-bit memory access */
 		_payload_[_length_++] = 0x66;
 		blDWORD = true;
@@ -104,7 +104,7 @@ void Instruction::legacyPrefix(X86_64_INST &inst) {
 		}
 	}
 }
-void Instruction::opcode(X86_64_INST &inst) {
+void Instruction::opcode(X86_64_INST &inst, int mode) {
 	/* NOTE  - Opcode        (1~2) */
 	if (INST_TWO_BYTE & inst.flags) {
 		_D(LOG_ZASM_INFO, "Two Byte      - 0F");
@@ -144,7 +144,7 @@ void Instruction::opcode(X86_64_INST &inst) {
 		_D(LOG_ZASM_INFO, "Opcode Ext    - %02X", _payload_[_length_-1]);
 	}
 }
-void Instruction::modRW(X86_64_INST &inst) {
+void Instruction::modRW(X86_64_INST &inst, int mode) {
 	/* 7     5         2        0
 	 * |-----|---------|--------|
 	 * | mod |   reg   |   rm   |
@@ -252,7 +252,7 @@ void Instruction::modRW(X86_64_INST &inst) {
 		}
 	}
 }
-void Instruction::displacement(X86_64_INST &inst) {
+void Instruction::displacement(X86_64_INST &inst, int mode) {
 	off_t ret;
 	InstToken token;
 
@@ -273,7 +273,7 @@ void Instruction::displacement(X86_64_INST &inst) {
 	ret = this->setIMM(token.offset(), 0 == (~0x7F & ret) ? 1 : 4);
 	if (ret) _D(LOG_ZASM_INFO, "Displacement  - " OFF_T, ret);
 }
-void Instruction::immediate(X86_64_INST &inst) {
+void Instruction::immediate(X86_64_INST &inst, int mode) {
 	off_t ret = 0;
 	int size = 4;
 
@@ -285,7 +285,7 @@ void Instruction::immediate(X86_64_INST &inst) {
 			case 0xB8:
 			case 0xF7:
 				size = this->src.size();
-				size = 1 == size ? CPU_32BIT : size;
+				size = 1 == size ? (X86_REAL_MODE == mode ? CPU_16BIT : CPU_32BIT) : size;
 				break;
 			default:
 				size = this->dst.isIMM() ? this->dst.size() : this->src.size();
@@ -304,12 +304,13 @@ void Instruction::immediate(X86_64_INST &inst) {
 
 		ret  = this->dst.isIMM() ? this->dst.asInt() : this->src.asInt();
 		ret  = this->setIMM(ret, size);
+
+		/* check the immediate size in real mode */
+		if (size > CPU_16BIT && X86_REAL_MODE == mode) {
+			_D(LOG_CRIT, "in real mode, immediate too long " OFF_T, ret);
+		}
 		_D(LOG_ZASM_INFO, "Immediate (%d) - " OFF_T, size, ret);
 	}
 }
-void Instruction::decorator(InstToken& src) {
-	_D(LOG_CRIT, "Not implemented decorator in x86-64");
-}
-
 
 #endif /* __x86_64__ */

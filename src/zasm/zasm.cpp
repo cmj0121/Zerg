@@ -188,18 +188,31 @@ void Zasm::assembleL(std::string line) {
 			(*this) += new Instruction(inst[0], inst[1], inst[2]);
 		}
 	} else {
+		/* process the decorator */
+		if (1 < inst.size() && ZASM_DECORATOR == inst[1][0]) {
+			#ifdef __x86_64__
+			if ("@real" == inst[1] || "@16bits" == inst[1]) {
+				_mode_ = X86_REAL_MODE;
+			} else if ("@pmode" == inst[1] || "@protected" == inst[1]) {
+				_mode_ = X86_PROTECTED_MODE;
+			} else {
+				_D(LOG_CRIT, "Not implemented decorator %s", inst[1].c_str());
+			}
+			#endif /* __x86_64__ */
+		}
+
 		switch(inst.size()) {
 			case 0:
 				/* NOP*/
 				break;
 			case 1:
-				(*this) += new Instruction(inst[0]);
+				(*this) += new Instruction(inst[0], "", "", _mode_);
 				break;
 			case 2:
-				(*this) += new Instruction(inst[0], inst[1]);
+				(*this) += new Instruction(inst[0], inst[1], "", _mode_);
 				break;
 			case 3:
-				(*this) += new Instruction(inst[0], inst[1], inst[2]);
+				(*this) += new Instruction(inst[0], inst[1], inst[2], _mode_);
 				break;
 			default:
 				_D(LOG_CRIT, "Not Support instruction - `%s`", line.c_str());
@@ -210,4 +223,22 @@ void Zasm::assembleL(std::string line) {
 	_D(LOG_ZASM_LEXER, "assemble `%s` - #%zu", line.c_str(), inst.size());
 	/* tear-down */
 	inst.clear();
+}
+void Zasm::dump(Args &args) {
+	if ("bin" == args.fmt) {
+		/* raw binary format */
+		dump_bin(args.entry, args.symbol);
+	#if defined(__APPLE__) && defined(__x86_64__)
+	} else if ("macho64" == args.fmt) {
+		/* Mach-O 64 platform */
+		dump_macho64(args.entry, args.symbol);
+	#endif	/* __APPLE__ */
+	#if defined(__linux__) && defined(__x86_64__)
+	} else if ("macho64" == args.fmt) {
+		/* ELF-64 platform */
+		dump_elf64(args.entry, args.symbol);
+	#endif	/* __APPLE__ */
+	} else {
+		_D(LOG_CRIT, "Not implemented %s", args.fmt.c_str());
+	}
 }

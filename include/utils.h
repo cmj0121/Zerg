@@ -15,6 +15,9 @@
 #define FREE(ctx)			{ if (NULL != ctx) free(ctx); (ctx) = NULL; }
 
 #include <string>
+typedef std::string STRING;
+
+#include <string>
 #include <vector>
 inline static std::string strip(std::string src) {
 	if (' ' != src[0] && ' ' != src[src.size()-1]) {
@@ -73,6 +76,7 @@ typedef struct _tag_args_ {
 	bool	only_ir;
 	bool	compile_ir;
 	bool	no_stdlib;
+	STRING	fmt;
 } Args;
 
 #include <stdio.h>
