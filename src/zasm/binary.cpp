@@ -10,7 +10,7 @@ void Zasm::dump_bin(off_t entry, bool showSymb) {
 	fp.open(this->_dst_, std::fstream::out | std::fstream::binary | std::fstream::trunc);
 
 	/* Write machine code */
-	for (int idx = 0; idx < _inst_.size(); ++idx) {
+	for (size_t idx = 0; idx < _inst_.size(); ++idx) {
 		(*_inst_[idx]) << fp;
 	}
 
