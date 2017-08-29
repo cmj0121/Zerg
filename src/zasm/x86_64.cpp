@@ -31,8 +31,9 @@ void Instruction::legacyPrefix(X86_64_INST &inst, int mode) {
 		_payload_[_length_++] = 0x48;
 	}
 
-	if (X86_REAL_MODE != mode && (CPU_16BIT == this->src.size() ||
-		(CPU_16BIT == this->dst.size() && !this->src.isNULL()))) {
+	if (X86_REAL_MODE != mode &&
+			(CPU_16BIT == this->src.size() ||
+			(CPU_16BIT == this->dst.size() && !this->src.isNULL()))) {
 		/* 16-bit memory access */
 		_payload_[_length_++] = 0x66;
 		blDWORD = true;
@@ -204,7 +205,7 @@ void Instruction::modRW(X86_64_INST &inst, int mode) {
 		_D(LOG_ZASM_INFO, "SIB           - %02X", _payload_[_length_-1]);
 		delete token;
 	} else if ((this->dst.isMEM() || this->src.isMEM()) || (inst.flags & INST_REG_OPERANDS)) {
-		reg = this->dst.isREG() ? this->dst.asInt() :
+		reg = (this->dst.isREG() || this->dst.isSegREG()) ? this->dst.asInt() :
 					(this->src.isREF() ? 0 : this->src.asInt());
 		if (this->src.isIMM() && ! this->src.isREF()) reg = 0;
 
