@@ -22,6 +22,7 @@ class InstToken {
 		bool isNULL(void);			/* is NULL or empty */
 		bool isREG(void);			/* register */
 		bool isSegREG(void);		/* Memory-Segment register */
+		bool isLowerByteReg(void);	/* lower 8-bit register */
 		bool isPosREG(void);		/* special register - position-related */
 		bool isMEM(void);			/* memory */
 		bool isMEM2(void);			/* memory with two registers */

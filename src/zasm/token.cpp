@@ -25,6 +25,12 @@ bool InstToken::isSegREG(void) {
 
 	return idx != regs.size();
 }
+bool InstToken::isLowerByteReg(void) {
+	const std::vector<std::string> regs = { REG_GENERAL_8 };
+	unsigned int idx = std::find(regs.begin(), regs.end(), this->_src_) - regs.begin();
+
+	return idx != regs.size() && idx < 8;
+}
 bool InstToken::isPosREG(void) {
 	return this->isREG() && (4 == this->asInt() % 8 || 5 == this->asInt() % 8);
 }

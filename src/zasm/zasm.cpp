@@ -60,7 +60,11 @@ void Zasm::reallocreg(void) {
 		exit(-1);
 
 		END:
-		_inst_[idx]->setIMM(offset, 4, true);
+		#ifdef __x86_64__
+			_inst_[idx]->setIMM(offset, X86_REAL_MODE == _mode_ ? CPU_16BIT : CPU_32BIT, true);
+		#else
+			_inst_[idx]->setIMM(offset, CPU_32BIT, true);
+		#endif /* __x86_64__ */
 	}
 }
 Zasm& Zasm::operator+= (Instruction *inst) {

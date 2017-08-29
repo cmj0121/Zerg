@@ -41,6 +41,9 @@ void Instruction::legacyPrefix(X86_64_INST &inst, int mode) {
 			(this->dst.isMEM() && CPU_32BIT == this->dst.size() && !this->dst.isEXT())) {
 		/* 32-bit memory access */
 		return ;
+	} else if (X86_REAL_MODE == mode && this->dst.isIMM()) {
+		/* read-mode need NOT legacy prefix when dst -> immediate */
+		return;
 	}
 
 	if (CPU_64BIT == this->dst.size() || CPU_64BIT == this->src.size() ||
@@ -115,6 +118,14 @@ void Instruction::opcode(X86_64_INST &inst, int mode) {
 
 	if (inst.flags & INST_SECONDARY && this->dst) {
 		_payload_[_length_-1] |= this->dst.asInt();
+		/* case of mov (0xB0) */
+		switch(inst.opcode) {
+			case 0xB0:
+				_payload_[_length_-1] |= (this->dst.isLowerByteReg() ? 1 : 0) << 2;
+				break;
+			default:
+				break;
+		}
 	}
 	_D(LOG_ZASM_INFO, "Opcode        - %02X", inst.opcode);
 
@@ -303,12 +314,17 @@ void Instruction::immediate(X86_64_INST &inst, int mode) {
 				break;
 		}
 
+		if (X86_REAL_MODE == mode && this->dst.isREF()) {
+			_D(LOG_ZASM_DEBUG, "reset immediate to CPU_16BIT");
+			size = size > CPU_16BIT ? CPU_16BIT : size;
+		}
+
 		ret  = this->dst.isIMM() ? this->dst.asInt() : this->src.asInt();
 		ret  = this->setIMM(ret, size);
 
 		/* check the immediate size in real mode */
 		if (size > CPU_16BIT && X86_REAL_MODE == mode) {
-			_D(LOG_CRIT, "in real mode, immediate too long " OFF_T, ret);
+			_D(LOG_CRIT, "in real mode, immediate too long " OFF_T " (%d)", ret, size);
 		}
 		_D(LOG_ZASM_INFO, "Immediate (%d) - " OFF_T, size, ret);
 	}
