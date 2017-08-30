@@ -69,6 +69,8 @@ bool InstToken::isIMM(void) {
 
 	if (*this == "") {
 		goto END;
+	} else if (this->isIMMRange()) {
+		blRet = true;
 	} else if ("0x" == this->_src_.substr(0, 2) || "0X" == this->_src_.substr(0, 2)) {
 		for (unsigned int idx = 2; idx < this->_src_.size(); ++idx) {
 			if ('0' <= this->_src_[idx] && this->_src_[idx] <= '9') {
@@ -91,6 +93,9 @@ bool InstToken::isIMM(void) {
 	blRet = true;
 END:
 	return blRet;
+}
+bool InstToken::isIMMRange(void) {
+	return this->_src_.end() != std::find(this->_src_.begin(), this->_src_.end(), ZASM_RANGE);
 }
 bool InstToken::isEXT(void) {
 	if (this->isREF()) {
@@ -142,13 +147,18 @@ off_t InstToken::asInt(void) {
 		idx = (std::find(regs.begin(), regs.end(), this->asReg()->raw()) - regs.begin()) % 8;
 		return idx;
 	} else if (this->isIMM()) {
+		std::string src = this->_src_;
 		std::stringstream ss;
 		off_t ret;
 
-		if ("0x" == _src_.substr(0, 2) || "0X" == _src_.substr(0, 2)) {
-			ss << std::hex << this->_src_;
+		if (this->isIMMRange()) {
+			src = src.substr(1);
+		}
+
+		if ("0x" == src.substr(0, 2) || "0X" == src.substr(0, 2)) {
+			ss << std::hex << src;
 		} else {
-			ss << this->_src_;
+			ss << src;
 		}
 		ss >> ret;
 		return ret;
@@ -324,7 +334,8 @@ std::string InstToken::unescape(void) {
 	std::string dst = "";
 	char tmp = 0x0;
 
-	ALERT('"' != this->_src_[0] || '"' != this->_src_[this->_src_.size()-1]);
+	ALERT(('"' != this->_src_[0] && '\'' != this->_src_[0]) ||
+			this->_src_[0] != this->_src_[this->_src_.size()-1]);
 	for (unsigned int i = 1; i < this->_src_.size()-1; ++i) {
 		if ('\\' == this->_src_[i]) {
 			switch (this->_src_[++i]) {

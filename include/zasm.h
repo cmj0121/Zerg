@@ -9,9 +9,11 @@
 
 #define ZASM_DEFINE			"define"
 #define ZASM_INCLUDE		"include"
+#define ZASM_REPEAT			"repeat"
 
 #define ZASM_REFERENCE		'&'
 #define ZASM_DECORATOR		'@'
+#define ZASM_RANGE			'~'
 #define ZASM_CURRENT_POS	"$"
 #define ZASM_SESSION_POS	"$$"
 
