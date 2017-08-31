@@ -46,10 +46,12 @@ void Instruction::legacyPrefix(X86_64_INST &inst, int mode) {
 		return;
 	}
 
-	if (CPU_64BIT == this->dst.size() || CPU_64BIT == this->src.size() ||
-		this->src.isEXT() || this->dst.isEXT() ||
-		(this->src.isMEM2() && this->src.indexReg()->isEXT()) ||
-		(this->dst.isMEM2() && this->dst.indexReg()->isEXT())) {
+	if (X86_REAL_MODE == mode) {
+		;;
+	} else if (CPU_64BIT == this->dst.size() || CPU_64BIT == this->src.size() ||
+				this->src.isEXT() || this->dst.isEXT() ||
+				(this->src.isMEM2() && this->src.indexReg()->isEXT()) ||
+				(this->dst.isMEM2() && this->dst.indexReg()->isEXT())) {
 		int REX_B = 0, REX_X = 0, REX_R = 0, REX_W = 0;
 
 		/*
@@ -121,7 +123,7 @@ void Instruction::opcode(X86_64_INST &inst, int mode) {
 		/* case of mov (0xB0) */
 		switch(inst.opcode) {
 			case 0xB0:
-				_payload_[_length_-1] |= (this->dst.isLowerByteReg() ? 1 : 0) << 2;
+				_payload_[_length_-1] |= (this->dst.isLowerByteReg() ? 0 : 1) << 2;
 				break;
 			default:
 				break;
@@ -174,6 +176,8 @@ void Instruction::modRW(X86_64_INST &inst, int mode) {
 	int mod = 0x0, reg = 0x0, rm = 0x0;
 
 	if (! this->dst || ! this->src || (INST_REG_SPECIFY & inst.op2)) {
+		return ;
+	} else if (X86_REAL_MODE == mode && this->src.isREF()) {
 		return ;
 	} else if (this->dst.isREG() && this->src.isREG()) {
 		mod = 0x03;
@@ -290,7 +294,7 @@ void Instruction::immediate(X86_64_INST &inst, int mode) {
 	int size = 4;
 
 	if (this->src.isREF()) {
-		ret = this->setIMM(-1, size);
+		ret = this->setIMM(-1, X86_REAL_MODE == mode ? CPU_16BIT : CPU_32BIT);
 		_D(LOG_ZASM_INFO, "Immediate     - reference");
 	} else if (this->dst.isIMM() || this->src.isIMM()) {
 		switch(inst.opcode) {

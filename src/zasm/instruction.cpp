@@ -186,7 +186,12 @@ void Instruction::assemble(int mode) {
 							this->dst.match(inst.op1),
 							this->src.match(inst.op2));
 			continue;
+		#if __x86_64__
+		} else if (X86_REAL_MODE == mode && 0x8B == inst.opcode) {
+			continue;
+		#endif /* __x86_64__ */
 		}
+
 		_D(LOG_ZASM_INFO, "%s 0x%02X match %d %d",
 						inst.cmd, inst.opcode,
 						this->dst.match(inst.op1),

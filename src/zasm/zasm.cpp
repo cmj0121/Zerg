@@ -65,6 +65,10 @@ void Zasm::reallocreg(void) {
 					offset += _inst_[pos]->length();
 					pos --;
 				}
+
+			#if __x86_64__
+				if (X86_REAL_MODE == this->_mode_) offset += _inst_[idx]->length();
+			#endif /* __x86_64__ */
 				goto END;
 			}
 		}
