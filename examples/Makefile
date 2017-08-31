@@ -25,6 +25,9 @@ helloWorld.case: helloWorld.zs
 	test "`./$@ 2>&1 >/dev/null`" == 'Welcome to ZASM - A prototype for a simple assembler'
 	test "`./$@ 2>/dev/null`"     == 'Hello World - Zasm'
 
+simpleos.case: simpleos.zs
+	@../zasm -fbin -o $@ $^
+
 arithmetic.case: arithmetic.zg
 	@../zerg -o $@ $^
 	test `./$@`                   == 7
