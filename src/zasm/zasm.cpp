@@ -56,33 +56,38 @@ void Zasm::reallocreg(void) {
 				}
 			}
 			_D(LOG_CRIT, "No symbol defined");
-		}
+		} else if (_inst_[idx]->isABSAddress()) {	/* absolute address */
+			for (unsigned int pos = 0; pos < _inst_.size(); ++pos) {
+				if (_inst_[pos]->label() == _inst_[idx]->refer()) break;
+				offset += _inst_[pos]->length();
+			}
 
-		for(unsigned int pos = idx+1; pos < _inst_.size(); ++pos) {
-			if (_inst_[pos]->label() == _inst_[idx]->refer()) {
-				pos --;
-				while (pos > idx) {
-					offset += _inst_[pos]->length();
+			goto END;
+		} else {									/* related address */
+			for(unsigned int pos = idx+1; pos < _inst_.size(); ++pos) {
+				if (_inst_[pos]->label() == _inst_[idx]->refer()) {
 					pos --;
-				}
+					while (pos > idx) {
+						offset += _inst_[pos]->length();
+						pos --;
+					}
 
-			#if __x86_64__
-				if (X86_REAL_MODE == this->_mode_) offset += _inst_[idx]->length();
-			#endif /* __x86_64__ */
-				goto END;
+					goto END;
+				}
+			}
+
+			for(int pos = idx-1; pos >= 0; --pos) {
+				if (_inst_[pos]->label() == _inst_[idx]->refer()) {
+					/* HACK - Fix the compiler warning sign-compare */
+					while (pos < (int)idx) {
+						offset -= _inst_[pos+1]->length();
+						pos ++;
+					}
+					goto END;
+				}
 			}
 		}
 
-		for(int pos = idx-1; pos >= 0; --pos) {
-			if (_inst_[pos]->label() == _inst_[idx]->refer()) {
-				/* HACK - Fix the compiler warning sign-compare */
-				while (pos < (int)idx) {
-					offset -= _inst_[pos+1]->length();
-					pos ++;
-				}
-				goto END;
-			}
-		}
 
 		_D(LOG_CRIT, "Not found the symbol [%s]", _inst_[idx]->refer().c_str());
 		exit(-1);
