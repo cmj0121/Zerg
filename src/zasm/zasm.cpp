@@ -17,7 +17,31 @@ void Zasm::reallocreg(void) {
 			continue;
 		}
 
-		if (ZASM_CURRENT_POS == _inst_[idx]->refer()) {
+		if (_inst_[idx]->isIMMRange()) {
+			off_t size = 0;
+			InstToken tmp;
+
+			if ("" == _inst_[idx]->rangeFrom()) {
+				size = 0;
+			} else if (ZASM_CURRENT_POS == _inst_[idx]->rangeFrom()) {
+				for (int pos = idx-1; pos >= 0 ; --pos) {
+					size -= _inst_[pos]->length();
+				}
+			} else if (ZASM_SESSION_POS == _inst_[idx]->rangeFrom()) {
+				for (int pos = idx-1; pos >= 0 ; --pos) {
+					size -= _inst_[pos]->length();
+					if ("" != _inst_[pos]->label()) break;
+				}
+			} else {
+				tmp = InstToken(_inst_[idx]->rangeFrom());
+				size = -1 * tmp.asInt();
+			}
+
+			tmp = InstToken(_inst_[idx]->rangeTo());
+			size += tmp.asInt();
+			_inst_[idx]->setRepeat(size);
+			goto END;
+		} else if (ZASM_CURRENT_POS == _inst_[idx]->refer()) {
 			offset = -1 * _inst_[idx]->length();
 			goto END;
 		} else if (ZASM_SESSION_POS == _inst_[idx]->refer()) {
@@ -41,6 +65,10 @@ void Zasm::reallocreg(void) {
 					offset += _inst_[pos]->length();
 					pos --;
 				}
+
+			#if __x86_64__
+				if (X86_REAL_MODE == this->_mode_) offset += _inst_[idx]->length();
+			#endif /* __x86_64__ */
 				goto END;
 			}
 		}
@@ -60,7 +88,11 @@ void Zasm::reallocreg(void) {
 		exit(-1);
 
 		END:
-		_inst_[idx]->setIMM(offset, 4, true);
+		#ifdef __x86_64__
+			_inst_[idx]->setIMM(offset, X86_REAL_MODE == _mode_ ? CPU_16BIT : CPU_32BIT, true);
+		#else
+			_inst_[idx]->setIMM(offset, CPU_32BIT, true);
+		#endif /* __x86_64__ */
 	}
 }
 Zasm& Zasm::operator+= (Instruction *inst) {
@@ -172,7 +204,7 @@ void Zasm::assembleL(std::string line) {
 			_D(LOG_CRIT, "syntax error `include [source file]` #%zu", inst.size());
 		}
 		Zasm::assembleF(inst[1]);
-	} else if (ZASM_DEFINE == inst[0]) {
+	} else if (ZASM_DEFINE  == inst[0]) {
 		if (3 != inst.size()) {
 			/* syntax error */
 			_D(LOG_CRIT, "syntax error `define [key] [value]`");
@@ -187,6 +219,12 @@ void Zasm::assembleL(std::string line) {
 		} else {
 			(*this) += new Instruction(inst[0], inst[1], inst[2]);
 		}
+	} else if (ZASM_REPEAT  == inst[0]) {
+		if (3 > inst.size()) _D(LOG_CRIT, "syntax error - repeat data times");
+
+		/* FIXME */
+		_D(LOG_ZASM_INFO, "repeat %s %s", inst[1].c_str(), inst[2].c_str());
+		(*this) += new Instruction(inst[0], inst[1], inst[2]);
 	} else {
 		/* process the decorator */
 		if (1 < inst.size() && ZASM_DECORATOR == inst[1][0]) {

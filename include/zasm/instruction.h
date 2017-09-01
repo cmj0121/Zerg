@@ -21,10 +21,13 @@ class InstToken {
 
 		bool isNULL(void);			/* is NULL or empty */
 		bool isREG(void);			/* register */
+		bool isSegREG(void);		/* Memory-Segment register */
+		bool isLowerByteReg(void);	/* lower 8-bit register */
 		bool isPosREG(void);		/* special register - position-related */
 		bool isMEM(void);			/* memory */
 		bool isMEM2(void);			/* memory with two registers */
 		bool isIMM(void);			/* immediate */
+		bool isIMMRange(void);		/* immediate with range */
 		bool isEXT(void);			/* extension in 64-bit mode */
 		bool isREF(void);			/* referenced symbol */
 		bool isSSE(void);			/* streaming SIMD extensions */
@@ -56,18 +59,22 @@ class Instruction {
 
 		bool readdressable(void);
 		bool isShowLabel(void);							/* show the symbol or not */
+		bool isIMMRange(void);							/* range immediate */
 		off_t setIMM(off_t imm, int size, bool reset=false);
+		off_t setRepeat(off_t imm);
 		off_t length(void);								/* length of this instruction */
 		off_t offset(void);								/* memory offset */
 
 		std::string label(void);						/* symbol */
 		std::string refer(void);						/* referenced symbol */
+		std::string rangeFrom(void);
+		std::string rangeTo(void);
 
 		virtual void assemble(int mode = 0);
 
 		Instruction& operator << (std::fstream &dst);
 	private:
-		off_t _length_;
+		off_t _length_, _repeat_;
 		unsigned char _payload_[MAX_INSTRUCTION_LEN];
 		std::string _label_;
 		InstToken cmd, dst, src;

@@ -22,7 +22,7 @@ let zerg_asm_highlight=1
 "
 syn match   ZASMComment       "#.*$" contains=ZASMToDo,@Spell
 syn keyword ZASMToDo          contained XXX TODO FIXME NOTE HACK
-syn keyword ZASMReserved      define
+syn keyword ZASMReserved      define repeat
 syn keyword ZASMInclude       include
 syn match   ZASMNumber        "\<\d\+\>"
 syn match   ZASMNumber        "\<0[oO]\=\o\+[Ll]\=\>"
@@ -39,6 +39,7 @@ syn match   ZASMEscape        contained +\\x\x\{2}+
 syn keyword ZASMStructure     byte word dword qword
 syn match   ZASMPosition      "\$\{1,2}"
 syn match   ZASMDecorator     "@\w\+\>"
+syn match   ZASMRange         "\%(\d\+\|$\{1,2}\)\=\~\d\+\>" contains=ZASMPosition
 
 " ZASM highlight syntax definition
 "
@@ -56,6 +57,7 @@ hi def link ZASMStructure       Structure
 hi def link ZASMInclude         Include
 hi def link ZASMPosition        Structure
 hi def link ZASMDecorator       Special
+hi def link ZASMRange           Delimiter
 
 let &cpo = s:cpo_save
 unlet s:cpo_save
