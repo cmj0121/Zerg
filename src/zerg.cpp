@@ -45,6 +45,11 @@ int main(int argc, char *argv[]) {
 		.only_ir		= false,
 		.compile_ir		= false,
 		.no_stdlib		= false,
+		#if defined(__APPLE__) && defined(__x86_64__)
+		.fmt	= "macho64",
+		#elif defined(__linux__) && defined(__x86_64__)
+		.fmt	= "elf64",
+		#endif /* __x86_64__ */
 	};
 
 
