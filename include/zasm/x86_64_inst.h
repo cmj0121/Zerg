@@ -20,11 +20,22 @@
 #define REG_EXTENSION_8		"r8b", "r9b", "r10b", "r11b", "r12b", "r13b", "r14b", "r15b"
 #define REG_EXTENSION		REG_EXTENSION_64, REG_EXTENSION_32, REG_EXTENSION_16, REG_EXTENSION_8
 
+#define SEGMENT_ES		"es"	/* destination segment */
+#define SEGMENT_CS		"cs"	/* code segment - IP   */
+#define SEGMENT_SS		"ss"	/* stack segment       */
+#define SEGMENT_DS		"ds"	/* data segment        */
+#define SEGMENT_FS		"fs"
+#define SEGMENT_GS		"gs"
+#define SEGMENT_REG		SEGMENT_ES, SEGMENT_CS, SEGMENT_SS, SEGMENT_DS, SEGMENT_FS, SEGMENT_GS
+
 #define REGISTERS			REG_EXTENSION, REG_GENERAL
 #define USED_REGISTERS		"rcx", "rbx", "r8", "r9", "r10", "r11", 
 
 #define SYSCALL_PARAM		"rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"
 #define SYSCALL_REG			"rax"
+
+#define X86_REAL_MODE	1
+#define X86_PROTECTED_MODE	2
 
 typedef struct _x86_64_inst_tag_ {
 	char cmd[MAX_CMD_LEN];
@@ -89,6 +100,7 @@ enum _x86_64_inst_type_ {
 	INST_EXTENSION_64	= 0x40000,
 	INST_SINGLE_FP		= 0x80000,
 	INST_DOUBLE_FP		= 0x100000,
+	INST_REG_SEGMEM		= 0x200000,
 
 	INST_REG_RAX		= 0x1000000,
 	INST_REG_AH			= 0x1000001,

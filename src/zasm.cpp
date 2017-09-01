@@ -17,6 +17,10 @@ void help(void) {
 	fprintf(stderr, "Usage - zasm [option] src\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Option\n");
+	fprintf(stderr, "    -f, --format           Output format -");
+	#ifdef __x86_64__
+		fprintf(stderr, " (x64)\n");
+	#endif /* __x86_64__ */
 	fprintf(stderr, "    -v, --verbose          Show the verbose message\n");
 	fprintf(stderr, "    -o, --output <file>    Write output to <file>\n");
 	fprintf(stderr, "        --pie              PIE - Position-Independent Executables\n");
@@ -25,23 +29,36 @@ void help(void) {
 }
 int main(int argc, char *argv[]) {
 	int optIdx = -1;
-	char ch, opts[] = "vo:";
+	char ch, opts[] = "f:vo:";
 	std::string dst = "a.out";
 	struct option options[] = {
 		{"output",  optional_argument,	0, 'o'},
 		{"pie",		no_argument,		0, 'p'},
 		{"symbol",	optional_argument,	0, 'S'},
 		{"verbose",	optional_argument,	0, 'v'},
+		{"format",	optional_argument,  0, 'f'},
 		{NULL, 0, 0, 0}
 	};
 	Args args = {
-		.pie	= false,
-		.symbol	= false,
-		.entry	= 0x100000,
+		.pie		= false,
+		.symbol		= false,
+		.entry		= 0x100000,
+		.only_ir	= false,
+		.compile_ir	= false,
+		.no_stdlib	= false,
+		#if defined(__APPLE__) && defined(__x86_64__)
+		.fmt	= "macho64",
+		#elif defined(__linux__) && defined(__x86_64__)
+		.fmt	= "elf64",
+		#endif /* __x86_64__ */
 	};
+
 
 	while (-1 != (ch = getopt_long(argc, argv, opts, options, &optIdx))) {
 		switch(ch) {
+			case 'f':
+				args.fmt = optarg;
+				break;
 			case 'o':
 				dst = optarg;
 				break;
@@ -79,7 +96,8 @@ int main(int argc, char *argv[]) {
 	} else {
 		Zasm *bin = new Zasm(dst, args);
 		bin->assembleF(argv[0]);
-		bin->dump(args.entry, args.symbol);
+
+		bin->dump(args);
 		delete bin;
 	}
 

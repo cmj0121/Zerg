@@ -17,7 +17,31 @@ void Zasm::reallocreg(void) {
 			continue;
 		}
 
-		if (ZASM_CURRENT_POS == _inst_[idx]->refer()) {
+		if (_inst_[idx]->isIMMRange()) {
+			off_t size = 0;
+			InstToken tmp;
+
+			if ("" == _inst_[idx]->rangeFrom()) {
+				size = 0;
+			} else if (ZASM_CURRENT_POS == _inst_[idx]->rangeFrom()) {
+				for (int pos = idx-1; pos >= 0 ; --pos) {
+					size -= _inst_[pos]->length();
+				}
+			} else if (ZASM_SESSION_POS == _inst_[idx]->rangeFrom()) {
+				for (int pos = idx-1; pos >= 0 ; --pos) {
+					size -= _inst_[pos]->length();
+					if ("" != _inst_[pos]->label()) break;
+				}
+			} else {
+				tmp = InstToken(_inst_[idx]->rangeFrom());
+				size = -1 * tmp.asInt();
+			}
+
+			tmp = InstToken(_inst_[idx]->rangeTo());
+			size += tmp.asInt();
+			_inst_[idx]->setRepeat(size);
+			goto END;
+		} else if (ZASM_CURRENT_POS == _inst_[idx]->refer()) {
 			offset = -1 * _inst_[idx]->length();
 			goto END;
 		} else if (ZASM_SESSION_POS == _inst_[idx]->refer()) {
@@ -41,6 +65,10 @@ void Zasm::reallocreg(void) {
 					offset += _inst_[pos]->length();
 					pos --;
 				}
+
+			#if __x86_64__
+				if (X86_REAL_MODE == this->_mode_) offset += _inst_[idx]->length();
+			#endif /* __x86_64__ */
 				goto END;
 			}
 		}
@@ -60,7 +88,11 @@ void Zasm::reallocreg(void) {
 		exit(-1);
 
 		END:
-		_inst_[idx]->setIMM(offset, 4, true);
+		#ifdef __x86_64__
+			_inst_[idx]->setIMM(offset, X86_REAL_MODE == _mode_ ? CPU_16BIT : CPU_32BIT, true);
+		#else
+			_inst_[idx]->setIMM(offset, CPU_32BIT, true);
+		#endif /* __x86_64__ */
 	}
 }
 Zasm& Zasm::operator+= (Instruction *inst) {
@@ -80,7 +112,7 @@ void Zasm::assembleF(std::string srcfile) {
 	std::fstream src(srcfile, std::fstream::in);
 	std::string line;
 
-	_D(LOG_ZASM_INFO, "assemble zasm source `%s`", srcfile.c_str());
+	_D(LOG_ZASM_LEXER, "assemble zasm source `%s`", srcfile.c_str());
 	while (std::getline(src, line)) {
 		Zasm::assembleL(line);
 	}
@@ -140,7 +172,7 @@ void Zasm::assembleL(std::string line) {
 			std::string prev = 0 == inst.size() ? "" : inst[inst.size()-1];
 
 			/* show the zasm token */
-			_D(LOG_DEBUG_LEXER, "zasm token `%s`", tmp.c_str());
+			_D(LOG_ZASM_DEBUG, "zasm token `%s`", tmp.c_str());
 
 			if (ZASM_MEM_BYTE  == prev || ZASM_MEM_WORD  == prev||
 				ZASM_MEM_DWORD == prev || ZASM_MEM_QWORD == prev) {
@@ -172,7 +204,7 @@ void Zasm::assembleL(std::string line) {
 			_D(LOG_CRIT, "syntax error `include [source file]` #%zu", inst.size());
 		}
 		Zasm::assembleF(inst[1]);
-	} else if (ZASM_DEFINE == inst[0]) {
+	} else if (ZASM_DEFINE  == inst[0]) {
 		if (3 != inst.size()) {
 			/* syntax error */
 			_D(LOG_CRIT, "syntax error `define [key] [value]`");
@@ -187,19 +219,38 @@ void Zasm::assembleL(std::string line) {
 		} else {
 			(*this) += new Instruction(inst[0], inst[1], inst[2]);
 		}
+	} else if (ZASM_REPEAT  == inst[0]) {
+		if (3 > inst.size()) _D(LOG_CRIT, "syntax error - repeat data times");
+
+		/* FIXME */
+		_D(LOG_ZASM_INFO, "repeat %s %s", inst[1].c_str(), inst[2].c_str());
+		(*this) += new Instruction(inst[0], inst[1], inst[2]);
 	} else {
+		/* process the decorator */
+		if (1 < inst.size() && ZASM_DECORATOR == inst[1][0]) {
+			#ifdef __x86_64__
+			if ("@real" == inst[1] || "@16bits" == inst[1]) {
+				_mode_ = X86_REAL_MODE;
+			} else if ("@pmode" == inst[1] || "@protected" == inst[1]) {
+				_mode_ = X86_PROTECTED_MODE;
+			} else {
+				_D(LOG_CRIT, "Not implemented decorator %s", inst[1].c_str());
+			}
+			#endif /* __x86_64__ */
+		}
+
 		switch(inst.size()) {
 			case 0:
 				/* NOP*/
 				break;
 			case 1:
-				(*this) += new Instruction(inst[0]);
+				(*this) += new Instruction(inst[0], "", "", _mode_);
 				break;
 			case 2:
-				(*this) += new Instruction(inst[0], inst[1]);
+				(*this) += new Instruction(inst[0], inst[1], "", _mode_);
 				break;
 			case 3:
-				(*this) += new Instruction(inst[0], inst[1], inst[2]);
+				(*this) += new Instruction(inst[0], inst[1], inst[2], _mode_);
 				break;
 			default:
 				_D(LOG_CRIT, "Not Support instruction - `%s`", line.c_str());
@@ -207,6 +258,25 @@ void Zasm::assembleL(std::string line) {
 		}
 	}
 
+	_D(LOG_ZASM_LEXER, "assemble `%s` - #%zu", line.c_str(), inst.size());
 	/* tear-down */
 	inst.clear();
+}
+void Zasm::dump(Args &args) {
+	if ("bin" == args.fmt) {
+		/* raw binary format */
+		dump_bin(args.entry, args.symbol);
+	#if defined(__APPLE__) && defined(__x86_64__)
+	} else if ("macho64" == args.fmt) {
+		/* Mach-O 64 platform */
+		dump_macho64(args.entry, args.symbol);
+	#endif	/* __APPLE__ */
+	#if defined(__linux__) && defined(__x86_64__)
+	} else if ("macho64" == args.fmt) {
+		/* ELF-64 platform */
+		dump_elf64(args.entry, args.symbol);
+	#endif	/* __APPLE__ */
+	} else {
+		_D(LOG_CRIT, "Not implemented %s", args.fmt.c_str());
+	}
 }

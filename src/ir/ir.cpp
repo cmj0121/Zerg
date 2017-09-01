@@ -10,7 +10,7 @@ IR::IR(std::string dst, Args &args) : Zasm(dst, args) {
 }
 IR::~IR(void) {
 	if (!this->_args_.only_ir) {
-		Zasm::dump(this->_args_.entry, this->_args_.symbol);
+		Zasm::dump(this->_args_);
 	}
 }
 

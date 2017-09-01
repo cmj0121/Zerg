@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include "zasm.h"
 
-void Zasm::dump(off_t entry, bool symb) {
+void Zasm::dump_elf64(off_t entry, bool symb) {
 	Elf64_Ehdr header = {0};
 	Elf64_Phdr segment = {0};
 	std::fstream fp;

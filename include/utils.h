@@ -25,6 +25,9 @@
 typedef std::string STRING;
 
 #include <string>
+typedef std::string STRING;
+
+#include <string>
 #include <vector>
 inline static std::string strip(std::string src) {
 	if (' ' != src[0] && ' ' != src[src.size()-1]) {
@@ -70,6 +73,7 @@ enum ZergLogLevel {
 	LOG_DEBUG_LEXER,	/* debug lexer 							*/
 	LOG_DEBUG_IR,		/* debug IR                             */
 
+	LOG_ZASM_LEXER,		/* assembly lexer information */
 	LOG_ZASM_INFO,		/* assembler information */
 	LOG_ZASM_DEBUG,		/* assembler debug message */
 
@@ -83,6 +87,7 @@ typedef struct _tag_args_ {
 	bool	only_ir;
 	bool	compile_ir;
 	bool	no_stdlib;
+	STRING	fmt;
 } Args;
 
 #include <stdio.h>
