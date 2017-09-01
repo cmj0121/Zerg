@@ -39,7 +39,6 @@ Instruction::Instruction(STRING cmd, STRING op1, STRING op2, int mode) {
 	} else if (ZASM_DEFINE == cmd) {
 		this->_label_ = op1;
 	} else if (ZASM_REPEAT == cmd) {
-
 		if (!this->src.isIMM())			_D(LOG_CRIT, "Not Implemented");
 		if (!this->src.isIMMRange())	this->setRepeat(this->src.asInt());
 	} else {

@@ -2,10 +2,9 @@
 #
 # Simple OS designed by Zasm
 
-__boot_loader__:	@real
-	mov	ax	0x07C0	# set data segment
-	mov	ds	ax
+ENTRY	0x07C00
 
+__boot_loader__:	@real
 	mov	si	&BANNER
 
 	mov	ah	0x0E	# teletype Output

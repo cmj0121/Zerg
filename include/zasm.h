@@ -10,6 +10,7 @@
 #define ZASM_DEFINE			"define"
 #define ZASM_INCLUDE		"include"
 #define ZASM_REPEAT			"repeat"
+#define ZASM_ENTRY_ADDR		"ENTRY"
 
 #define ZASM_REFERENCE		'&'
 #define ZASM_DECORATOR		'@'
@@ -31,7 +32,7 @@ class Zasm {
 		Zasm(std::string dst, Args &args) : _args_(args), _linono_(0), _dst_(dst) {};
 		virtual ~Zasm(void);
 
-		void dump(Args &args);
+		void dump();
 		void dump_bin(off_t entry, bool symb);
 		#if defined(__APPLE__) && defined(__x86_64__)
 		void dump_macho64(off_t entry, bool symb);	/* Binary-Specified */

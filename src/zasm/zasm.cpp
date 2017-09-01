@@ -57,6 +57,8 @@ void Zasm::reallocreg(void) {
 			}
 			_D(LOG_CRIT, "No symbol defined");
 		} else if (_inst_[idx]->isABSAddress()) {	/* absolute address */
+			offset = this->_args_.entry;
+
 			for (unsigned int pos = 0; pos < _inst_.size(); ++pos) {
 				if (_inst_[pos]->label() == _inst_[idx]->refer()) break;
 				offset += _inst_[pos]->length();
@@ -203,13 +205,20 @@ void Zasm::assembleL(std::string line) {
 
 	if (0 == inst.size()) {
 		/* NOP */
-	} else if (ZASM_INCLUDE == inst[0]) {
+	} else if (ZASM_ENTRY_ADDR == inst[0]) {
+		if (2 != inst.size() || !InstToken(inst[1]).isIMM()) {
+			_D(LOG_CRIT, "syntax error - %s [imm]", ZASM_ENTRY_ADDR);
+		}
+
+		this->_args_.entry = InstToken(inst[1]).asInt();
+		_D(LOG_ZASM_INFO, "reset entry address 0x" OFF_T, this->_args_.entry);
+	} else if (ZASM_INCLUDE    == inst[0]) {
 		if (2 != inst.size()) {
 			/* syntax error */
 			_D(LOG_CRIT, "syntax error `include [source file]` #%zu", inst.size());
 		}
 		Zasm::assembleF(inst[1]);
-	} else if (ZASM_DEFINE  == inst[0]) {
+	} else if (ZASM_DEFINE     == inst[0]) {
 		if (3 != inst.size()) {
 			/* syntax error */
 			_D(LOG_CRIT, "syntax error `define [key] [value]`");
@@ -224,7 +233,7 @@ void Zasm::assembleL(std::string line) {
 		} else {
 			(*this) += new Instruction(inst[0], inst[1], inst[2]);
 		}
-	} else if (ZASM_REPEAT  == inst[0]) {
+	} else if (ZASM_REPEAT     == inst[0]) {
 		if (3 > inst.size()) _D(LOG_CRIT, "syntax error - repeat data times");
 
 		/* FIXME */
@@ -267,21 +276,21 @@ void Zasm::assembleL(std::string line) {
 	/* tear-down */
 	inst.clear();
 }
-void Zasm::dump(Args &args) {
-	if ("bin" == args.fmt) {
+void Zasm::dump(void) {
+	if ("bin" == this->_args_.fmt) {
 		/* raw binary format */
-		dump_bin(args.entry, args.symbol);
+		dump_bin(this->_args_.entry, this->_args_.symbol);
 	#if defined(__APPLE__) && defined(__x86_64__)
-	} else if ("macho64" == args.fmt) {
+	} else if ("macho64" == this->_args_.fmt) {
 		/* Mach-O 64 platform */
-		dump_macho64(args.entry, args.symbol);
+		dump_macho64(this->_args_.entry, this->_args_.symbol);
 	#endif	/* __APPLE__ */
 	#if defined(__linux__) && defined(__x86_64__)
-	} else if ("macho64" == args.fmt) {
+	} else if ("macho64" == this->_args_.fmt) {
 		/* ELF-64 platform */
-		dump_elf64(args.entry, args.symbol);
+		dump_elf64(this->_args_.entry, this->_args_.symbol);
 	#endif	/* __APPLE__ */
 	} else {
-		_D(LOG_CRIT, "Not implemented %s", args.fmt.c_str());
+		_D(LOG_CRIT, "Not implemented %s", this->_args_.fmt.c_str());
 	}
 }
