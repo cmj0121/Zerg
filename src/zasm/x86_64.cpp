@@ -33,7 +33,7 @@ void Instruction::legacyPrefix(X86_64_INST &inst, int mode) {
 
 	if (X86_REAL_MODE != mode &&
 			(CPU_16BIT == this->src.size() ||
-			(CPU_16BIT == this->dst.size() && !this->src.isNULL()))) {
+			(CPU_16BIT == this->dst.size() && !this->dst.isIMM()))) {
 		/* 16-bit memory access */
 		_payload_[_length_++] = 0x66;
 		blDWORD = true;
@@ -311,6 +311,9 @@ void Instruction::immediate(X86_64_INST &inst, int mode) {
 		switch((this->dst.isIMM() ? inst.op1 : inst.op2) & INST_SIZE_ALL) {
 			case INST_SIZE8:
 				size = CPU_8BIT;
+				break;
+			case INST_SIZE16:
+				size = CPU_16BIT;
 				break;
 			default:
 				size = (CPU_8BIT == size || CPU_64BIT == size) ? CPU_32BIT : size;
