@@ -191,7 +191,6 @@ void Zerg::flush(void) {
 	bool blFound = false;
 
 	if (this->_ir_stack_.size()) {
-
 		_D(LOG_DEBUG_IR, "flush #%lu IR", this->_ir_stack_.size());
 		for (auto ir : this->_ir_stack_) {
 			if (this->_args_.only_ir) {
