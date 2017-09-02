@@ -100,6 +100,9 @@ AST* Zerg::builtin_delete(AST *node) {
 }
 
 AST* Zerg::builtin_print(AST *node) {
+	char buff[BUFSIZ] = {0};
+	std::string label;
+
 	switch(node->type()) {
 		case ZTYPE_TRUE:
 			node->setReg(++ this->_regcnt_);
@@ -127,12 +130,25 @@ AST* Zerg::builtin_print(AST *node) {
 					this->emit(IR_MEMORY_PUSH, node->data());
 					this->emit(IR_MEMORY_PUSH, "0x05");	/* FIXME - call strlen */
 					this->emit(IR_INTERRUPT);
-			break;
+					break;
 				default:
 					_D(LOG_CRIT, "Not Implemented %s #%d", node->raw().c_str(),
 															_obj_type_map_[node->raw()]);
 					break;
 			}
+			break;
+		case ZTYPE_STRING:
+			label = IR::randstr(16, "_str_");
+			snprintf(buff, sizeof(buff), "0x%zX", node->raw().size()-2);
+
+			node->setReg(++ this->_regcnt_);
+			this->globals_str.push_back(std::make_pair(label, node->raw()));
+			this->emit(IR_MEMORY_PUSH, "0x2000004");
+			this->emit(IR_MEMORY_PUSH, "0x01");
+			this->emit(IR_MEMORY_STORE, node->data(), __IR_REFERENCE__ + label);
+			this->emit(IR_MEMORY_PUSH, node->data());
+			this->emit(IR_MEMORY_PUSH, buff);
+			this->emit(IR_INTERRUPT);
 			break;
 		default:
 			_D(LOG_CRIT, "Not Implemented %s #%d", node->raw().c_str(), node->type());
