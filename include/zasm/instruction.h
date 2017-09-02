@@ -58,6 +58,7 @@ class Instruction {
 		virtual ~Instruction() {};
 
 		bool readdressable(void);
+		bool isABSAddress(void);
 		bool isShowLabel(void);							/* show the symbol or not */
 		bool isIMMRange(void);							/* range immediate */
 		off_t setIMM(off_t imm, int size, bool reset=false);
@@ -74,6 +75,7 @@ class Instruction {
 
 		Instruction& operator << (std::fstream &dst);
 	private:
+		bool _absaddr_;
 		off_t _length_, _repeat_;
 		unsigned char _payload_[MAX_INSTRUCTION_LEN];
 		std::string _label_;

@@ -1,7 +1,12 @@
 # ROADMAP #
 
-[2017.03.29]
+[2017.09.02]
+	1. 修改 IR register re-allocation 邏輯
+		1.1 Zerg 負責產生 IR
+		1.2 在 IR 階段決定記憶體分配
+		1.3 IR 有機會做最佳化處理
 
+[2017.03.29]
 	1. Git branch 切割為若干開發 branch，且 master 為主要穩定版本
 	1.1 (zasm)       開發 zasm 直譯器
 	1.2 (IR)         開發中介語言與編譯器 (IR to zasm)
