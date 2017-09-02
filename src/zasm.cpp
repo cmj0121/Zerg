@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
 		Zasm *bin = new Zasm(dst, args);
 		bin->assembleF(argv[0]);
 
-		bin->dump(args);
+		bin->dump();
 		delete bin;
 	}
 

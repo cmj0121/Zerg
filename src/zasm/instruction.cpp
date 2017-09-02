@@ -26,6 +26,7 @@ Instruction::Instruction(STRING cmd, STRING op1, STRING op2, int mode) {
 	this->src = InstToken(op2);
 	this->_length_    = 0;
 	this->_repeat_    = 0;
+	this->_absaddr_   = false;
 
 	#ifdef __x86_64__
 	mode = 0 == mode ? X86_PROTECTED_MODE : mode;
@@ -38,7 +39,6 @@ Instruction::Instruction(STRING cmd, STRING op1, STRING op2, int mode) {
 	} else if (ZASM_DEFINE == cmd) {
 		this->_label_ = op1;
 	} else if (ZASM_REPEAT == cmd) {
-
 		if (!this->src.isIMM())			_D(LOG_CRIT, "Not Implemented");
 		if (!this->src.isIMMRange())	this->setRepeat(this->src.asInt());
 	} else {
@@ -82,6 +82,9 @@ std::string Instruction::rangeTo(void) {
 bool Instruction::readdressable(void) {
 	/* Reply this instruction is need to readdress or not */
 	return this->dst.isREF() || this->src.isREF() || this->src.isIMMRange();
+}
+bool Instruction::isABSAddress(void) {
+	return this->_absaddr_;
 }
 bool Instruction::isShowLabel(void) {
 	std::string symb = this->label();
@@ -192,6 +195,8 @@ void Instruction::assemble(int mode) {
 			continue;
 		#endif /* __x86_64__ */
 		}
+
+		this->_absaddr_ = 0 == (INST_IMM & inst.op2) ? false : true;
 
 		_D(LOG_ZASM_INFO, "%s 0x%02X match %d %d",
 						inst.cmd, inst.opcode,
