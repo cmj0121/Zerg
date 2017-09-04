@@ -26,9 +26,10 @@
 #define __IR_CLS_OBJ__		".obj.%s.%s"
 
 #include <vector>
+#include <map>
 #include <string>
 
-typedef enum _tag_ir_ {
+typedef enum _tag_ir_opcode_ {
 	IR_UNKNOWN = 0,	/* unknown IR op */
 
 	/* data-related */
@@ -76,89 +77,33 @@ typedef enum _tag_ir_ {
 	IR_INLINE_ASM,
 } IROP;
 
-typedef enum _tag_ir_type_ {
-	IR_TOKEN_UNKNOWN	= 0,
-	IR_TOKEN_INT,
-	IR_TOKEN_REGISTER,
-	IR_TOKEN_VAR,
-	IR_TOKEN_REF,
-	IR_TOKEN_STRING,
-} IRType;
-
-const std::vector<std::pair<std::string, IROP>> IROP_map = {
-	/* memory access*/
-	{"STORE"	, IR_MEMORY_STORE},
-	{"LOAD"		, IR_MEMORY_LOAD},
-	{"XCHG"		, IR_MEMORY_XCHG},
-	{"PUSH"		, IR_MEMORY_PUSH},
-	{"POP"		, IR_MEMORY_POP},
-	{"PARAM"	, IR_MEMORY_PARAM},
-	/* arithmetic operation */
-	{"ADD"		, IR_ARITHMETIC_ADD},
-	{"SUB"		, IR_ARITHMETIC_SUB},
-	{"MUL"		, IR_ARITHMETIC_MUL},
-	{"DIV"		, IR_ARITHMETIC_DIV},
-	{"MOD"		, IR_ARITHMETIC_MOD},
-	{"SHR"		, IR_ARITHMETIC_SHR},
-	{"SHL"		, IR_ARITHMETIC_SHL},
-	{"INC"		, IR_ARITHMETIC_INC},
-	{"DEC"		, IR_ARITHMETIC_DEC},
-	/* logical operation */
-	{"AND"		, IR_LOGICAL_AND},
-	{"OR"		, IR_LOGICAL_OR},
-	{"XOR"		, IR_LOGICAL_XOR},
-	{"NOT"		, IR_LOGICAL_NOT},
-	{"NEG"		, IR_LOGICAL_NEG},
-	{"EQ"		, IR_LOGICAL_EQ},
-	{"LS"		, IR_LOGICAL_LS},
-	{"GT"		, IR_LOGICAL_GT},
-	/* condition / control flow */
-	{"JMP"		, IR_CONDITION_JMP},
-	{"JMPIFN"	, IR_CONDITION_JMPIFN},
-	{"CALL"		, IR_CONDITION_CALL},
-	{"RET"		, IR_CONDITION_RET},
-	/* extra */
-	{"NOP"		, IR_NOP},
-	{"PROLOGUE"	, IR_PROLOGUE},
-	{"EPILOGUE"	, IR_EPILOGUE},
-	{"INTERRUPT", IR_INTERRUPT},
-	{"LABEL"	, IR_LABEL},
-	{"DEFINE"	, IR_DEFINE},
-	{"INLINE"	, IR_INLINE_ASM},
-};
+typedef struct _tag_ir_inst_ {
+	IROP opcode;
+	std::string dst, src, size, index;
+	int lineno;
+} IRInstruction;
+typedef std::vector<IRInstruction>::iterator IRInstIter;
 
 class IR : public Zasm {
 	public:
 		IR(std::string dst, Args &args);
-		virtual ~IR(void);
+		virtual ~IR(void) {};
 
 		/* compile the IR from source code */
 		void compile(std::string src);
-
-		/* emit from IR to machine code */
-		void emit(STRING op, STRING dst, STRING src, STRING size, STRING index);
-		void emit(IROP op, STRING dst="", STRING src="", STRING size="",STRING idx="");
-		IROP opcode(std::string src);
-
-		std::string tmpreg(void);
-		std::string regalloc(std::string src, std::string size);
-		void regfree(std::string src);
-		STRING localvar(STRING src, STRING size, STRING idx, bool save=false);
-		void   localvar(std::string var);
-		void   localvar_reset(void);
-		size_t localvar_len(void);
-	protected:
-		std::string randstr(unsigned int size=24, std::string prefix=".");
-		std::vector<std::string> _repeate_label_;
-		IRType token(std::string src);
+		void compileL(std::string src);
+		void emit(IROP opcode, STRING dst, STRING src, STRING size, STRING index);
 	private:
-		int _lineno_;
-		size_t _syscall_nr_;
+		int _lineno_, _syscall_nr_;
 		Args _args_;
 
+		std::vector<IRInstruction> _irs_;
 		std::vector<std::string> _alloc_regs_ = { USED_REGISTERS };
 		std::map<std::string, std::string> _alloc_regs_map_;
 		std::vector<std::string> _locals_, _params_;
+
+		void regalloc(void);
+		std::string regalloc(int irpos, std::string src);
 };
 
 #endif /* __ZERG_IR_H__ */

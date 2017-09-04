@@ -9,7 +9,7 @@ ZGIR_OBJ=$(subst .cpp,.o,$(ZGIR_SRC))
 ZERG_SRC=$(wildcard zerg/*.cpp)
 ZERG_OBJ=$(subst .cpp,.o,$(ZERG_SRC))
 
-BIN=zasm.inst zgir.inst zerg.inst
+BIN=zasm.inst zgir.inst
 
 CXXFLAGS:=$(CXXFLAGS) -I../include
 
