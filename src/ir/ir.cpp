@@ -54,7 +54,8 @@ IR::IR(std::string dst, Args &args) : Zasm(dst, args) {
 }
 
 void IR::compile(std::string src) {
-	std::string line;
+	char buff[BUFSIZ] = {0};
+	std::string line, size;
 	std::fstream fs(src);
 
 	if (!fs.is_open()) {
@@ -69,29 +70,60 @@ void IR::compile(std::string src) {
 
 	/* compile the IR to Zasm */
 	_D(LOG_DEBUG_LEXER, "Total #%zu IR", this->_irs_.size());
-	if (this->_args_.only_ir || true) {
-		#if defined(DEBUG_REGISTER_ALLOC)
-			/* allocate registers */
-			regalloc();
-		#endif /* DEBUG_REGISTER_ALLOC */
-		/* show the IR */
-		for (auto ir : this->_irs_) {
+	for (size_t i = 0; i < _irs_.size(); ++i) {
+		switch(_irs_[i].opcode) {
+			case IR_MEMORY_PARAM:
+				_params_.push_back(_irs_[i].dst);
+				_D(LOG_INFO, "param %6s  #%zu", _irs_[i].dst.c_str(), _params_.size());
+				break;
+			case IR_MEMORY_STORE:
+			case IR_MEMORY_LOAD:
+				size = "" == _irs_[i].index ? _irs_[i].size : ZASM_MEM_QWORD;
+				_irs_[i].dst = this->regalloc(i, _irs_[i].dst, size);
+				_irs_[i].src = this->regalloc(i, _irs_[i].src, _irs_[i].size);
+				_irs_[i].index = this->regalloc(i, _irs_[i].index, ZASM_MEM_QWORD);
+				break;
+			case IR_PROLOGUE:
+				/* calculate the number of local variable */
+				_locals_.clear();
+				for (size_t j = i+1; j < _irs_.size(); ++j) {
+					if (IR_MEMORY_STORE == _irs_[j].opcode && "" == _irs_[j].index) {
+						if (!is_register(_irs_[j].dst)) _locals_.push_back(_irs_[j].dst);
+					} else if (IR_PROLOGUE == _irs_[j].opcode) break;
+				}
+			case IR_EPILOGUE:
+				snprintf(buff, sizeof(buff), "0x%zX", _locals_.size() * PARAM_SIZE);
+				_irs_[i].dst = buff;
+				break;
+			default:
+				_irs_[i].dst = this->regalloc(i, _irs_[i].dst);
+				_irs_[i].src = this->regalloc(i, _irs_[i].src);
+				break;
+		}
+
+		if (this->_args_.only_ir) {
+			/* show the IR */
 			for (auto it : IROP_map) {
-				if (it.second == ir.opcode) {
+				if (it.second == _irs_[i].opcode) {
 					if (it.second == IR_LABEL) std::cout << "\n";
 					std::cout << std::setw(14) << std::left << it.first;
 				}
 			}
 
-			if ("" != ir.dst)   std::cout << std::setw(24) << ir.dst;
-			if ("" != ir.src)   std::cout << std::setw(24) << ir.src;
-			if ("" != ir.size)  std::cout << std::setw(24) << ir.size;
-			if ("" != ir.index) std::cout << std::setw(24) << ir.index;
+			if ("" != _irs_[i].dst)   std::cout << std::setw(14) << _irs_[i].dst;
+			if ("" != _irs_[i].src)   std::cout << std::setw(14) << _irs_[i].src;
+			if ("" != _irs_[i].size)  std::cout << std::setw(6)  << _irs_[i].size;
+			if ("" != _irs_[i].index) std::cout << _irs_[i].index;
 			std::cout << std::endl;
+		} else if ("x64" == this->_args_.platform || "" == this->_args_.platform) {
+			_D(LOG_DEBUG, "compile IR %s", this->_args_.platform.c_str());
+			emit_x64(i);
+		} else {
+			_D(LOG_CRIT, "Not implement %s", this->_args_.platform.c_str());
 		}
-	} else {
-		/* allocate registers */
-		regalloc();
+	}
+
+	if (!this->_args_.only_ir) {
 		/* generate the binary code via Zasm::dump */
 		Zasm::dump();
 	}
@@ -140,15 +172,19 @@ void IR::compileL(std::string line) {
 		}
 	}
 EMIT:
-	if (0 != nr) {
+	if (nr) {
 		if (IROP_map.end() == IROP_map.find(irs[0])) {
 			_D(LOG_CRIT, "Not implement IR - %s", irs[0].c_str());
 		}
 
 		_D(LOG_DEBUG_LEXER, "IR lexer L#%04d - %s", ++_lineno_, line.c_str());
 		IRInstruction inst = {IROP_map[irs[0]], irs[1], irs[2], irs[3], irs[4], _lineno_};
-		this->_irs_.push_back(inst);
+		(*this) += inst;
 	}
+}
+IR& operator+= (IR &src, IRInstruction &inst) {
+	src._irs_.push_back(inst);
+	return src;
 }
 
 /* Register Allocation Problem
@@ -158,21 +194,14 @@ EMIT:
  *
  * we only can used the USED_REGISTERS defined in Zasm
  */
-void IR::regalloc(void) {
-	for (size_t i = 0; i < _irs_.size(); ++i) {
-		_irs_[i].dst = this->regalloc(i, _irs_[i].dst);
-		_irs_[i].src = this->regalloc(i, _irs_[i].src);
-	}
-}
-std::string IR::regalloc(int irpos, std::string src) {
+std::string IR::regalloc(int irpos, std::string src, std::string size) {
 	bool blFound = false;
 	int cnt = 0, pos = 0;
-	std::string ret = src, size = _irs_[irpos].size;
+	std::string ret = src;
 
 	/* register provided from Zasm, platform-dependency */
 	static std::vector<std::string> regs = { REGISTERS };
 
-	size = "" == size ? ZASM_MEM_QWORD : size;
 	if (1 == sscanf(src.c_str(), __IR_REG_FMT__, &cnt)) {	/* register */
 		if (0 != _alloc_regs_map_.count(src)) {
 			ret = _alloc_regs_map_[src];
@@ -221,17 +250,64 @@ std::string IR::regalloc(int irpos, std::string src) {
 			ret = regs[(pos & 0xE0) + (pos % 8) + 0x10];
 		} else if (ZASM_MEM_DWORD == size) {
 			ret = regs[(pos & 0xE0) + (pos % 8) + 0x08];
-		} else if (ZASM_MEM_QWORD == size) {
+		} else if (ZASM_MEM_QWORD == size || "" == size) {
 			ret = regs[(pos & 0xE0) + (pos % 8) + 0x00];
 		} else {
 			_D(LOG_CRIT, "Not implement %s", size.c_str());
 		}
 	} else if (src == __IR_SYSCALL_REG__) {					/* reserved */
 		#if defined(DEBUG_REGISTER_ALLOC) || defined(DEBUG)
-		_D(LOG_WARNING, "syscall    %s -> %s", __IR_SYSCALL_REG__, SYSCALL_REG);
+		_D(LOG_WARNING, "syscall    %6s -> %s", __IR_SYSCALL_REG__, SYSCALL_REG);
 		#endif /* DEBUG_REGISTER_ALLOC */
+
 		ret = SYSCALL_REG;
+	} else if (src == __IR_REG_TMP__) {						/* template register */
+		if (2 > _alloc_regs_.size()) _D(LOG_CRIT, "No enough register");
+
+		ret = _alloc_regs_[1];
+	} else if ('0' <= src[0] && '9' >= src[0]) {			/* digit */
+		/* NOP */
+		;;
 	}
 
 	return ret;
+}
+std::string IR::variable(std::string src) {
+	int cnt = 0;
+	char buff[BUFSIZ] = {0};
+	const char *fmt = NULL;
+	std::string ret = src;
+	std::vector<std::string>::iterator it;
+
+	if ("" != src && ! IR::is_register(src) && !('0' <= src[0] && '9' >= src[0])) {
+		it = std::find(_params_.begin(), _params_.end(), src);
+		if (_params_.end() != it ) {						/* parameter */
+			cnt = (it-_params_.begin()+2) * PARAM_SIZE;
+			fmt = "[rbp+0x%X]";
+		} else {
+			it = std::find(_locals_.begin(), _locals_.end(), src);
+			if (_locals_.end() != it) {
+				cnt = (it-_locals_.begin()+1) * PARAM_SIZE;
+				fmt = "[rbp-0x%X]";
+			} else {
+				_locals_.push_back(src);
+				cnt = _locals_.size() * PARAM_SIZE;
+				fmt = "[rbp-0x%X]";
+			}
+		}
+
+		snprintf(buff, sizeof(buff), fmt, cnt);
+		ret = buff;
+		#if defined(DEBUG_REGISTER_ALLOC) || defined(DEBUG)
+		_D(LOG_INFO, "local var  %6s -> %s", src.c_str(), ret.c_str());
+		#endif /* DEBUG_REGISTER_ALLOC */
+	}
+
+	return ret;
+}
+/* check is register or not */
+bool IR::is_register(std::string src) {
+	static std::vector<std::string> regs = { REGISTERS };
+
+	return regs.end() != std::find(regs.begin(), regs.end(), src);
 }

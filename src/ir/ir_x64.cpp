@@ -1,80 +1,108 @@
 /* Copyright (C) 2014-2016 cmj. All right reserved. */
-#ifdef __x86_64__
 
 #include "zerg.h"
 
-void IR::emit(IROP opcode, STRING dst, STRING src, STRING size, STRING index) {
-	std::string sys_param[] = { SYSCALL_PARAM };
 
-	switch(opcode) {
+void IR::emit_x64(size_t irpos) {
+	char buff[BUFSIZ] = {0};
+	std::string sys_param[] = { SYSCALL_PARAM };
+	std::string dst = _irs_[irpos].dst,
+				src = _irs_[irpos].src,
+				siz = _irs_[irpos].size,
+				idx = _irs_[irpos].index;
+
+	switch(_irs_[irpos].opcode) {
 		/* memory access*/
 			case IR_MEMORY_LOAD:
 				if (__IR_REFERENCE__ == src.substr(0, 1)) {
 					/* Load from referenced data */
 					(*this) += new Instruction("lea", dst, src);
-				} else {
-					//src = localvar(src, size, idx);
-					(*this) += new Instruction("mov", dst, src);
+				} else if ("" != idx && IR::is_register(src)) {
+					snprintf(buff, sizeof(buff), "%s [%s+%s]",
+									siz.c_str(), src.c_str(), idx.c_str());
+					(*this) += new Instruction("mov", dst, buff);
+				} else if ("" != idx) {
+					std::string tmpreg;
+
+					tmpreg = IR::regalloc(-1, __IR_REG_TMP__);
+					snprintf(buff, sizeof(buff), "%s [%s+%s]",
+										siz.c_str(), tmpreg.c_str(), idx.c_str());
+
+					(*this) += new Instruction("mov", tmpreg, IR::variable(src));
+					(*this) += new Instruction("mov", dst, buff);
+				} else if (dst != src){
+					/* simple register movement */
+					(*this) += new Instruction("mov", dst, IR::variable(src));
 				}
 				break;
 			case IR_MEMORY_STORE:
 				if (__IR_REFERENCE__ == src.substr(0, 1)) {
 					/* Load from referenced data */
 					(*this) += new Instruction("lea", dst, src);
-				} else if (dst != src) {
+				} else if ("" != idx && IR::is_register(dst)) {
+					snprintf(buff, sizeof(buff), "%s [%s+%s]",
+									siz.c_str(), dst.c_str(), idx.c_str());
+					(*this) += new Instruction("mov", buff, src);
+				} else if ("" != idx) {
+					std::string tmpreg;
+
+					tmpreg = IR::regalloc(-1, __IR_REG_TMP__);
+					snprintf(buff, sizeof(buff), "%s [%s+%s]",
+										siz.c_str(), tmpreg.c_str(), idx.c_str());
+
+					(*this) += new Instruction("mov", tmpreg, IR::variable(dst));
+					(*this) += new Instruction("mov", buff, src);
+				} else if (dst != src){
 					/* simple register movement */
-					//dst = localvar(dst, size, idx, true);
-					(*this) += new Instruction("mov", dst, src);
+					(*this) += new Instruction("mov", IR::variable(dst), src);
 				}
 				break;
 			case IR_MEMORY_XCHG:
-				(*this) += new Instruction("xchg", dst, src);
+				(*this) += new Instruction("xchg", IR::variable(dst), src);
 				break;
 			case IR_MEMORY_PUSH:
-				(*this) += new Instruction("push", dst);
+				(*this) += new Instruction("push", IR::variable(dst));
 				this->_syscall_nr_ ++;
 				break;
 			case IR_MEMORY_POP:
 				this->_syscall_nr_ --;
-				(*this) += new Instruction("pop", dst);
+				(*this) += new Instruction("pop", IR::variable(dst));
 				break;
 			case IR_MEMORY_PARAM:
 				this->_params_.push_back(dst);
 				break;
 		/* arithmetic operation */
 			case IR_ARITHMETIC_ADD:
-				(*this) += new Instruction("add", dst, src);
+				(*this) += new Instruction("add", IR::variable(dst), src);
 				break;
 			case IR_ARITHMETIC_SUB:
-				(*this) += new Instruction("sub", dst, src);
+				(*this) += new Instruction("sub", IR::variable(dst), src);
 				break;
 			case IR_ARITHMETIC_MUL:
-				(*this) += new Instruction("mul", dst, src);
+				(*this) += new Instruction("mul", IR::variable(dst), src);
 				break;
 			case IR_ARITHMETIC_DIV:
-				(*this) += new Instruction("push", "rdx");
-				if (dst != "rax") (*this) += new Instruction("push", "rax");
-				if (dst != "rax") (*this) += new Instruction("mov", "rax", dst);
-
-				(*this) += new Instruction("xor", "rdx", "rdx");
-				(*this) += new Instruction("cqo");
-				(*this) += new Instruction("idiv", src);
-
-				if (dst != "rax") (*this) += new Instruction("mov", dst, "rax");
-				if (dst != "rax") (*this) += new Instruction("pop", "rax");
-				(*this) += new Instruction("pop", "rdx");
+				/* FIXME - Should NOT use div in assembly
+				 *
+				 * By the link [0], div (36 uops) is more slower than shr (2 uops)
+				 *
+				 * [0] https://stackoverflow.com/questions/40354978
+				 */
+				_D(LOG_CRIT, "Not Implemented div");
 				break;
 			case IR_ARITHMETIC_MOD:
 				/* FIXME - Should always return the sign same as divisor */
 				(*this) += new Instruction("push", "rdx");
 				(*this) += new Instruction("push", "rax");
-				if (dst != "rax") (*this) += new Instruction("mov", "rax", dst);
+				if (dst != "rax") {
+					(*this) += new Instruction("mov", "rax", IR::variable(dst));
+				}
 
 				(*this) += new Instruction("xor", "rdx", "rdx");
 				(*this) += new Instruction("cqo");
 				(*this) += new Instruction("idiv", src);
 
-				(*this) += new Instruction("mov", dst, "rdx");
+				(*this) += new Instruction("mov", IR::variable(dst), "rdx");
 				(*this) += new Instruction("pop", "rax");
 				(*this) += new Instruction("pop", "rdx");
 				break;
@@ -127,7 +155,10 @@ void IR::emit(IROP opcode, STRING dst, STRING src, STRING size, STRING index) {
 				(*this) += new Instruction("call", dst);
 				break;
 			case IR_CONDITION_RET:
-				(*this) += new Instruction("mov", "rax", dst);
+				if ("" != dst) {
+					src = IR::regalloc(-1, __IR_SYSCALL_REG__);
+					(*this) += new Instruction("mov", src, dst);
+				}
 				(*this) += new Instruction("ret");
 				break;
 		/* extra */
@@ -167,9 +198,8 @@ void IR::emit(IROP opcode, STRING dst, STRING src, STRING size, STRING index) {
 				break;
 		default:
 			_D(LOG_CRIT, "Not Implemented #%d %s %s %s %s",
-						opcode, dst.c_str(), src.c_str(), size.c_str(), index.c_str());
+				_irs_[irpos].opcode, dst.c_str(), src.c_str(), siz.c_str(), idx.c_str());
 			break;
 	}
 }
 
-#endif /* __x86_64__ */

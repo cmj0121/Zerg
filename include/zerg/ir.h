@@ -10,6 +10,7 @@
 
 #define __IR_REFERENCE__	"&"
 #define __IR_REG_FMT__		".reg.%02d"
+#define __IR_REG_TMP__		".reg.temp"
 #define __IR_LABEL_FMT__	".zerg.label.%d"
 #define __IR_SYSCALL_REG__	".reg.sys"
 #define __IR_FUNC_STACK__	".func.param.%d"
@@ -92,7 +93,9 @@ class IR : public Zasm {
 		/* compile the IR from source code */
 		void compile(std::string src);
 		void compileL(std::string src);
-		void emit(IROP opcode, STRING dst, STRING src, STRING size, STRING index);
+		void emit_x64(size_t irpos);
+
+		friend IR& operator+= (IR &src, IRInstruction &inst);
 	private:
 		int _lineno_, _syscall_nr_;
 		Args _args_;
@@ -103,7 +106,9 @@ class IR : public Zasm {
 		std::vector<std::string> _locals_, _params_;
 
 		void regalloc(void);
-		std::string regalloc(int irpos, std::string src);
+		bool is_register(std::string src);
+		std::string regalloc(int irpos, std::string src, std::string size="");
+		std::string variable(std::string src);
 };
 
 #endif /* __ZERG_IR_H__ */

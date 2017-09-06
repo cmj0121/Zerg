@@ -24,14 +24,15 @@ void help(void) {
 
 int main(int argc, char *argv[]) {
 	int optIdx = -1;
-	char ch, opts[] = "f:ho:pSv";
+	char ch, opts[] = "f:ho:p:PSv";
 	struct option options[] = {
 		{"help",		no_argument,		0, 'h'},
 		{"output",		required_argument,	0, 'o'},
-		{"pie",			no_argument,		0, 'p'},
+		{"pie",			no_argument,		0, 'P'},
 		{"symbol",		optional_argument,	0, 'S'},
 		{"verbose",		optional_argument,	0, 'v'},
 		{"format",		optional_argument,  0, 'f'},
+		{"platform",	required_argument, 	0, 'p'},
 		{NULL, 0, 0, 0}
 	};
 	std::string dst = "a.out";
@@ -43,10 +44,11 @@ int main(int argc, char *argv[]) {
 		.compile_ir		= false,
 		.no_stdlib		= false,
 		#if defined(__APPLE__) && defined(__x86_64__)
-		.fmt	= "macho64",
+		.fmt			= "macho64",
 		#elif defined(__linux__) && defined(__x86_64__)
-		.fmt	= "elf64",
+		.fmt			= "elf64",
 		#endif /* __x86_64__ */
+		.platform		= "x64",
 	};
 
 
@@ -62,6 +64,9 @@ int main(int argc, char *argv[]) {
 				dst = optarg;
 				break;
 			case 'p':
+				args.platform = optarg;
+				break;
+			case 'P':
 				switch(optIdx) {
 					case 2:		/* --pie */
 						args.pie = true;
