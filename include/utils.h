@@ -88,6 +88,7 @@ typedef struct _tag_args_ {
 	bool	compile_ir;
 	bool	no_stdlib;
 	STRING	fmt;
+	STRING	platform;
 } Args;
 
 #include <stdio.h>
