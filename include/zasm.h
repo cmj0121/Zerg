@@ -4,7 +4,7 @@
 
 #include "utils.h"
 
-#define ZASM_VERSION		"1.1"
+#define ZASM_VERSION		"2.0"
 #define ZASM_ENTRY_POINT	".zasm.entry"
 #define ZASM_MAIN_FUNCTION	"__MAIN__"
 
