@@ -54,8 +54,7 @@ IR::IR(std::string dst, Args &args) : Zasm(dst, args) {
 }
 
 void IR::compile(std::string src) {
-	char buff[BUFSIZ] = {0};
-	std::string line, size;
+	std::string line;
 	std::fstream fs(src);
 
 	if (!fs.is_open()) {
@@ -67,6 +66,70 @@ void IR::compile(std::string src) {
 		/* compile IR line-by-line */
 		IR::compileL(line);
 	}
+
+	IR::dump();
+}
+
+void IR::compileL(std::string line) {
+	unsigned int pos, nr = 0;
+	std::string irs[5] = {""}/* OPCODE DST SRC SIZE INDEX */, tmp;
+
+	/* lexer IR line-by-line */
+	for (unsigned cur = 0; cur <= line.size(); ++cur) {
+		switch(line[cur]) {
+			case '\0': case '#':
+				/* Need not process anymore */
+				goto EMIT;
+			case ' ': case '\t':
+				/* whitespace */
+				break;
+			case '"': case '\'':			/* String */
+				tmp = line[cur++];
+				while ('\0' != line[cur]) {
+					tmp += line[cur];
+
+					if (tmp[0] == line[cur]) break;
+					++cur;
+				}
+
+				if (tmp[0] != line[cur]) {
+					/* invalid syntax for string */
+					_D(LOG_CRIT, "syntax error - %s", line.c_str());
+				}
+				irs[nr++] = tmp;
+				break;
+			default:
+				for (pos = cur+1; pos <= line.size(); ++pos) {
+					if (' ' == line[pos] || '\t' == line[pos]) break;
+				}
+
+				if (nr > ARRAY_SIZE(irs)) {
+					_D(LOG_CRIT, "Invalid IR `%s`", line.c_str());
+					break;
+				}
+				irs[nr++] = line.substr(cur, pos-cur);
+				cur       = pos;
+				break;
+		}
+	}
+EMIT:
+	if (nr) {
+		if (IROP_map.end() == IROP_map.find(irs[0])) {
+			_D(LOG_CRIT, "Not implement IR - %s", irs[0].c_str());
+		}
+
+		_D(LOG_DEBUG_LEXER, "IR lexer L#%04d - %s", ++_lineno_, line.c_str());
+		IRInstruction inst = {IROP_map[irs[0]], irs[1], irs[2], irs[3], irs[4], _lineno_};
+		(*this) += inst;
+	}
+}
+IR& operator+= (IR &src, IRInstruction &inst) {
+	src._irs_.push_back(inst);
+	return src;
+}
+void IR::dump(void) {
+	char buff[BUFSIZ] = {0};
+	std::string size;
 
 	/* compile the IR to Zasm */
 	_D(LOG_DEBUG_LEXER, "Total #%zu IR", this->_irs_.size());
@@ -127,64 +190,6 @@ void IR::compile(std::string src) {
 		/* generate the binary code via Zasm::dump */
 		Zasm::dump();
 	}
-}
-
-void IR::compileL(std::string line) {
-	unsigned int pos, nr = 0;
-	std::string irs[5] = {""}/* OPCODE DST SRC SIZE INDEX */, tmp;
-
-	/* lexer IR line-by-line */
-	for (unsigned cur = 0; cur <= line.size(); ++cur) {
-		switch(line[cur]) {
-			case '\0': case '#':
-				/* Need not process anymore */
-				goto EMIT;
-			case ' ': case '\t':
-				/* whitespace */
-				break;
-			case '"': case '\'':			/* String */
-				tmp = line[cur++];
-				while ('\0' != line[cur]) {
-					tmp += line[cur];
-
-					if (tmp[0] == line[cur]) break;
-					++cur;
-				}
-
-				if (tmp[0] != line[cur]) {
-					/* invalid syntax for string */
-					_D(LOG_CRIT, "syntax error - %s", line.c_str());
-				}
-				irs[nr++] = tmp;
-				break;
-			default:
-				for (pos = cur+1; pos <= line.size(); ++pos) {
-					if (' ' == line[pos] || '\t' == line[pos]) break;
-				}
-
-				if (nr > ARRAY_SIZE(irs)) {
-					_D(LOG_CRIT, "Invalid IR `%s`", line.c_str());
-					break;
-				}
-				irs[nr++] = line.substr(cur, pos-cur);
-				cur       = pos;
-				break;
-		}
-	}
-EMIT:
-	if (nr) {
-		if (IROP_map.end() == IROP_map.find(irs[0])) {
-			_D(LOG_CRIT, "Not implement IR - %s", irs[0].c_str());
-		}
-
-		_D(LOG_DEBUG_LEXER, "IR lexer L#%04d - %s", ++_lineno_, line.c_str());
-		IRInstruction inst = {IROP_map[irs[0]], irs[1], irs[2], irs[3], irs[4], _lineno_};
-		(*this) += inst;
-	}
-}
-IR& operator+= (IR &src, IRInstruction &inst) {
-	src._irs_.push_back(inst);
-	return src;
 }
 
 /* Register Allocation Problem

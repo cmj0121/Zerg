@@ -36,7 +36,6 @@ class Zerg : public IR, public Parser {
 		AST* parser(AST *node);
 		void emit(AST *node, bool init=false);
 		void emit(IROP op, STRING dst="", STRING src="", STRING size="", STRING idx="");
-		void flush(void);
 
 		AST* emitIR(AST *node);
 		virtual AST* emitIR_atom(AST *node);

@@ -95,6 +95,8 @@ class IR : public Zasm {
 		void compileL(std::string src);
 		void emit_x64(size_t irpos);
 
+		virtual void dump();
+
 		friend IR& operator+= (IR &src, IRInstruction &inst);
 	private:
 		int _lineno_, _syscall_nr_;

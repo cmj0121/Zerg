@@ -102,9 +102,9 @@ void Zasm::reallocreg(void) {
 		#endif /* __x86_64__ */
 	}
 }
-Zasm& Zasm::operator+= (Instruction *inst) {
-	this->_inst_.push_back(inst);
-	return *this;
+Zasm& operator+= (Zasm &zasm, Instruction *inst) {
+	zasm._inst_.push_back(inst);
+	return zasm;
 }
 off_t Zasm::length(void) {
 	off_t len = 0;

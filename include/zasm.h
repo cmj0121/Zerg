@@ -44,7 +44,7 @@ class Zasm {
 		void assembleF(std::string srcfile);
 		void assembleL(std::string line);
 
-		Zasm& operator+= (Instruction *inst);
+		friend Zasm& operator+= (Zasm &zasm, Instruction *inst);
 	private:
 		Args _args_;
 		int _linono_, _mode_;

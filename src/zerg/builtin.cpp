@@ -138,7 +138,8 @@ AST* Zerg::builtin_print(AST *node) {
 			}
 			break;
 		case ZTYPE_STRING:
-			label = IR::randstr(16, "_str_");
+			//label = IR::randstr(16, "_str_");
+			label = "_abcdefg";
 			snprintf(buff, sizeof(buff), "0x%zX", node->raw().size()-2);
 
 			node->setReg(++ this->_regcnt_);

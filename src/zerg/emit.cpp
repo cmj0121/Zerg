@@ -312,7 +312,8 @@ AST* Zerg::emitIR_atom(AST *node) {
 		case ZTYPE_STRING:
 			if (NULL != node->parent() && ZTYPE_UNKNOWN != node->parent()->type()) {
 				node->otype(OBJ_STRING);
-				symb = std::make_pair(randstr(8), node->raw());
+				//symb = std::make_pair(randstr(8), node->raw());
+				symb = std::make_pair("_aaaaaa", node->raw());
 				globals_str.push_back(symb);
 				node->setSymb(symb.first);
 			}
