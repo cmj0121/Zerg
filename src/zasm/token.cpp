@@ -171,7 +171,7 @@ InstToken* InstToken::asReg(void) {
 	if (!(this->isREG() || this->isMEM())) {
 		_D(LOG_CRIT, "Only support register or member");
 		exit(-1);
-	} else if (this->isREG()) {
+	} else if (this->isREG() || this->isREF()) {
 		return this;
 	} else {
 		unsigned int start, end;
@@ -185,8 +185,9 @@ InstToken* InstToken::asReg(void) {
 		}
 		for (end = start+1; end < _src_.size(); ++end) {
 			if (' ' == _src_[end] || ']' == _src_[end]) break;
-			if ('+' == _src_[end] || '-' == _src_[end]) break;
+			if ('+' == _src_[end] || '-' == _src_[end] || ':' == _src_[end]) break;
 		}
+
 		return new InstToken(_src_.substr(start, end-start));
 	}
 }
@@ -211,7 +212,7 @@ InstToken* InstToken::indexReg(void) {
 
 		for (idx = 0, pos = 0; idx < substr.size(); ++idx) {
 			switch (substr[idx]) {
-				case '+': case '-': case ' ':
+				case '+': case '-': case ' ': case ':':
 					tmpToken = new InstToken(substr.substr(pos, idx-pos));
 					pos = idx+1;
 					if (tmpToken->isREG()) {
@@ -254,7 +255,7 @@ off_t InstToken::offset(void) {
 
 	for (unsigned int s = 0, e = 0; s < this->_src_.size(); ++s) {
 		int sign = 1;
-		if ('+' != this->_src_[s] && '-' != this->_src_[s]) continue;
+		if ('+' != this->_src_[s] && '-' != this->_src_[s] && ':' != this->_src_[s]) continue;
 
 		if ('-' == this->_src_[s]) sign = -1;
 
@@ -264,7 +265,8 @@ off_t InstToken::offset(void) {
 			break;
 		}
 		for (e = s+1; e < this->_src_.size() && ']' != this->_src_[e]; ++e) {
-			if (' ' == this->_src_[e] || '+' == this->_src_[e] || '-' == this->_src_[e]) break;
+			if (' ' == this->_src_[e] || ':' == this->_src_[e]) break;
+			if ('+' == this->_src_[e] || '-' == this->_src_[e]) break;
 		}
 
 		InstToken token = InstToken(this->_src_.substr(s, e-s));

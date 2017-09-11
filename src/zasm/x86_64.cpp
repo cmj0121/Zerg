@@ -31,6 +31,29 @@ void Instruction::legacyPrefix(X86_64_INST &inst, int mode) {
 		_payload_[_length_++] = 0x48;
 	}
 
+	if ((this->dst.isMEM() && this->dst.asReg()->isSegREG()) ||
+		(this->src.isMEM() && this->src.asReg()->isSegREG())) {
+		InstToken *tmp = this->dst.asReg()->isSegREG() ? this->dst.asReg() : this->src.asReg();
+
+		switch(tmp->asInt()) {
+			case 0:
+			case 1:
+			case 2:
+			case 3:
+				_D(LOG_CRIT, "Not implement segment register %s", tmp->raw().c_str());
+				break;
+			case 4:
+				_payload_[_length_++] = 0x64;
+				break;
+			case 5:
+				_payload_[_length_++] = 0x65;
+				break;
+			default:
+				_D(LOG_CRIT, "Not implement segment register %s", tmp->raw().c_str());
+				break;
+		}
+	}
+
 	if (X86_REAL_MODE != mode &&
 			(CPU_16BIT == this->src.size() ||
 			(CPU_16BIT == this->dst.size() && !this->dst.isIMM()))) {
@@ -224,8 +247,14 @@ void Instruction::modRW(X86_64_INST &inst, int mode) {
 					(this->src.isREF() ? 0 : this->src.asInt());
 		if (this->src.isIMM() && ! this->src.isREF()) reg = 0;
 
-		if (this->offset()) {
+		if (this->offset() && 
+			((this->dst.isMEM() && !this->dst.asReg()->isSegREG()) ||
+			(this->src.isMEM() && !this->src.asReg()->isSegREG()))) {
 			mod = 0 == (~0x7F & this->offset()) ? 0x01 : 0x02;
+		} else if (this->dst.isMEM() && this->dst.asReg()->isSegREG()) {
+			;;
+		} else if (this->src.isMEM() && this->src.asReg()->isSegREG()) {
+			;;
 		} else if (this->src.isMEM() && !this->src.isREF()) {
 			InstToken *base = this->src.asReg();
 
@@ -242,6 +271,11 @@ void Instruction::modRW(X86_64_INST &inst, int mode) {
 			rm = 0x05;	/* EIP / RIP / R13 */
 		} else if (this->dst.isMEM() || this->src.isMEM()) {
 			rm = this->dst.isMEM() ? this->dst.asInt() : this->src.asInt();
+			if (this->dst.isMEM() && this->dst.asReg()->isSegREG()) {
+				rm = 0x06;
+			} else if (this->src.isMEM() && this->src.asReg()->isSegREG()) {
+				rm = 0x06;
+			}
 		}
 
 		if (this->dst.isREG() && CPU_8BIT == this->dst.size() && 'h' == this->dst.raw()[1]) {
@@ -261,6 +295,10 @@ void Instruction::modRW(X86_64_INST &inst, int mode) {
 				_payload_[_length_++] = 0x0;
 				_D(LOG_ZASM_INFO, "Mod R/W       - %02X", _payload_[_length_-1]);
 			}
+		} else if (this->dst.isMEM() && this->dst.asReg()->isSegREG()) {
+			;;
+		} else if (this->src.isMEM() && this->src.asReg()->isSegREG()) {
+			;;
 		} else if ((this->src.isMEM() && 4 == this->src.asInt() % 8) ||
 					(this->dst.isMEM() && 4 == this->dst.asInt() % 8)) {
 			_payload_[_length_++] = 0x24;
@@ -269,29 +307,32 @@ void Instruction::modRW(X86_64_INST &inst, int mode) {
 	}
 }
 void Instruction::displacement(X86_64_INST &inst, int mode) {
-	off_t ret;
+	off_t ret = 0;
+	int size = CPU_32BIT;
 	InstToken token;
 
 	if (this->src.isREF()) {
 		return ;
-	} else if (this->dst.isMEM() && this->dst.offset()) {
+	} else if (this->dst.isMEM() && (this->dst.offset() || this->dst.asReg()->isSegREG())) {
 		token = this->dst;
-	} else if (this->src.isMEM() && this->src.offset()) {
+	} else if (this->src.isMEM() && (this->src.offset() || this->src.asReg()->isSegREG())) {
 		token = this->src;
-	} else if (this->src.isMEM() && this->src.asReg()->isPosREG()) {
+	} else if (this->src.isMEM() && this->src.asReg()->isSegREG()) {
 		token = this->src;
 	} else {
 		return;
 	}
 
+	size = 0 == (~0x7F & ret) ? CPU_8BIT : CPU_32BIT;
+	size = X86_REAL_MODE == mode ? CPU_16BIT : size;
 	ret = token.offset();
 	ret = (0 > ret && INST_NONE == inst.op2) ? ~ret : ret;
-	ret = this->setIMM(token.offset(), 0 == (~0x7F & ret) ? 1 : 4);
-	if (ret) _D(LOG_ZASM_INFO, "Displacement  - " OFF_T, ret);
+	ret = this->setIMM(token.offset(), size);
+	_D(LOG_ZASM_INFO, "Displacement  - " OFF_T "(%d)", ret, size);
 }
 void Instruction::immediate(X86_64_INST &inst, int mode) {
 	off_t ret = 0;
-	int size = 4;
+	int size = CPU_32BIT;
 
 	if (this->src.isREF()) {
 		ret = this->setIMM(-1, X86_REAL_MODE == mode ? CPU_16BIT : CPU_32BIT);
@@ -321,7 +362,7 @@ void Instruction::immediate(X86_64_INST &inst, int mode) {
 				break;
 		}
 
-		if (X86_REAL_MODE == mode && this->dst.isREF()) {
+		if (X86_REAL_MODE == mode && (this->dst.isREF() || this->src.isIMM())) {
 			_D(LOG_ZASM_DEBUG, "reset immediate to CPU_16BIT");
 			size = size > CPU_16BIT ? CPU_16BIT : size;
 		}
