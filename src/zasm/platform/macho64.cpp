@@ -38,7 +38,7 @@ void Zasm::dump_macho64(off_t entry, bool showSymb) {
 			for (unsigned int idx = 0; idx < _inst_.size(); ++idx) {
 				std::string symb = _inst_[idx]->label();
 
-				if (_inst_[idx]->isShowLabel()) {
+				if (false) {
 					struct nlist_64 symlist;
 
 					symlist.n_un.n_strx = symboff;
@@ -65,7 +65,7 @@ void Zasm::dump_macho64(off_t entry, bool showSymb) {
 
 	/* Write machine code */
 	for (int idx = 0; idx < _inst_.size(); ++idx) {
-		(*_inst_[idx]) << fp;
+		fp << (*_inst_[idx]);
 	}
 
 	/* HACK - Mach-O 64 always need large than 4K */

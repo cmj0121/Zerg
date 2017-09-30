@@ -1,6 +1,6 @@
 include Makefile.in
 
-ZASM_SRC=$(wildcard zasm/*.cpp)
+ZASM_SRC=$(wildcard zasm/*.cpp) $(wildcard zasm/*/*.cpp)
 ZASM_OBJ=$(subst .cpp,.o,$(ZASM_SRC))
 
 ZGIR_SRC=$(wildcard ir/*.cpp)

@@ -5,18 +5,19 @@
 #include "zasm.h"
 
 static X86_64_INST InstructionSets[] = {
-	#define INST_ASM_OP(cmd, op, x, y, flag) 			{ #cmd, op, x, y, flag },
-	#define INST_ASM_OP_TWOBYTE(cmd, op, x, y, flag)	INST_ASM_OP( cmd, op, x, y, flag | INST_TWO_BYTE)
-	#define INST_ASM_OP0(cmd, op) 						INST_ASM_OP( cmd, op, INST_NONE, INST_NONE, INST_NONE)
-	#define INST_ASM_OP1(cmd, op, x)					INST_ASM_OP( cmd, op, x,         INST_NONE, INST_NONE)
-	#define INST_ASM_OP2(cmd, op, x, y)					INST_ASM_OP( cmd, op, x,         y,		    INST_NONE)
+	#define _ASM_OP(cmd, _x, _y, _z, _u) 		{ #cmd, _x, _y, _z, _u },
+	#define _ASM_OP_PF_TB(_x, _y, _z, _u, _w)	_ASM_OP(_x, _y, _z, _u, _w | INST_PF_TWOBYTE)
+	#define _ASM_OP2(cmd, op, x, y)				_ASM_OP(cmd, op, x, y, INST_NONE)
+	#define _ASM_OP1(cmd, op, x)				_ASM_OP2(cmd, op, x, INST_NONE, INST_NONE)
+	#define _ASM_OP0(cmd, op) 					_ASM_OP1(cmd, op, INST_NONE, INST_NONE, INST_NONE)
 
-	#  include "zasm/x86_64_opcodes.h"
+	//#  include "zasm/x86_64_opcodes.h"
 
-	#undef INST_ASM_OP
-	#undef INST_ASM_OP_TWOBYTE
-	#undef INST_ASM_OP0
-	#undef INST_ASM_OP1
+	#undef _ASM_OP0
+	#undef _ASM_OP1
+	#undef _ASM_OP2
+	#undef _ASM_OP_PF_TB
+	#undef _ASM_OP
 };
 
 
@@ -67,36 +68,55 @@ std::string Instruction::refer(void) {
 	ref = this->dst.isREF() ? this->dst.raw() : this->src.raw();
 	return 0 < ref.size() && ZASM_REFERENCE == ref[0] ? ref.substr(1) : ref;
 }
-std::string Instruction::rangeFrom(void) {
-	size_t tmp;
-
-	tmp = this->src.raw().find(ZASM_RANGE);
-	return this->src.raw().substr(0, tmp);
-}
-std::string Instruction::rangeTo(void) {
-	size_t tmp;
-
-	tmp = this->src.raw().find(ZASM_RANGE);
-	return this->src.raw().substr(tmp+1);
-}
 bool Instruction::readdressable(void) {
 	/* Reply this instruction is need to readdress or not */
 	return this->dst.isREF() || this->src.isREF() || this->src.isIMMRange();
 }
-bool Instruction::isABSAddress(void) {
-	return this->_absaddr_;
-}
-bool Instruction::isShowLabel(void) {
-	std::string symb = this->label();
+off_t Instruction::setIMM(off_t imm, int size, bool reset) {
+	off_t off = imm;
 
-	return  "" == this->src.raw() &&
-		(ZASM_ENTRY_POINT == symb || ZASM_MAIN_FUNCTION == symb ||
-		("" != symb && '.' != symb[0] && '_' != symb[0]));
+	_D(LOG_ZASM_DEBUG, "add immediate " OFF_T ", %d", imm, size);
+	if (reset) {
+		this->_length_ -= size;
+	}
+
+	while (size) {
+		this->_payload_[this->_length_++] = (unsigned char)(off & 0xFF);
+		size --;
+		off >>= 8;
+	}
+
+	if (off != 0 && off != (off_t)-1) {
+		_D(LOG_CRIT, "Not Implemented " OFF_T " " OFF_T, imm, off);
+		exit(-1);
+	}
+
+	return imm;
 }
-bool Instruction::isIMMRange(void) {
-	return this->src.isIMMRange();
+off_t Instruction::setRepeat(off_t imm) {
+	this->_repeat_ = imm;
+	return this->_repeat_;
 }
-Instruction& Instruction::operator << (std::fstream &dst) {
+
+void Instruction::assemble(int mode) {
+	unsigned int idx = 0;
+	X86_64_INST inst;
+
+	for (idx = 0; idx < ARRAY_SIZE(InstructionSets); ++idx) {
+		inst = InstructionSets[idx];
+
+		if (this->cmd != inst.cmd) continue;
+
+		goto END;
+	}
+
+	_D(LOG_CRIT, "Not Implemented `%s` `%s` `%s`",
+		this->cmd.raw().c_str(), this->dst.raw().c_str(), this->src.raw().c_str());
+	exit(-1);
+END:
+	return;
+}
+Instruction& operator << (std::fstream &dst, const Instruction &inst) {
 	if ("" != this->_label_ && "" != this->src.raw()) {
 		dst.write(this->src.unescape().c_str(), this->length());
 	} else if (0 != this->_repeat_) {
@@ -143,80 +163,4 @@ Instruction& Instruction::operator << (std::fstream &dst) {
 		_D(LOG_DISASM, "%-32s - %s", src.str().c_str(), ss.str().c_str());
 	}
 	return (*this);
-}
-
-off_t Instruction::offset(void) {
-	/* Get the all offset in the current instruction */
-	return this->dst.offset() ? this->dst.offset() : this->src.offset();
-}
-off_t Instruction::setIMM(off_t imm, int size, bool reset) {
-	off_t off = imm;
-
-	_D(LOG_ZASM_DEBUG, "add immediate " OFF_T ", %d", imm, size);
-	if (reset) {
-		this->_length_ -= size;
-	}
-
-	while (size) {
-		this->_payload_[this->_length_++] = (unsigned char)(off & 0xFF);
-		size --;
-		off >>= 8;
-	}
-
-	if (off != 0 && off != (off_t)-1) {
-		_D(LOG_CRIT, "Not Implemented " OFF_T " " OFF_T, imm, off);
-		exit(-1);
-	}
-
-	return imm;
-}
-off_t Instruction::setRepeat(off_t imm) {
-	this->_repeat_ = imm;
-	return this->_repeat_;
-}
-
-void Instruction::assemble(int mode) {
-	unsigned int idx = 0;
-	X86_64_INST inst;
-
-	for (idx = 0; idx < ARRAY_SIZE(InstructionSets); ++idx) {
-		inst = InstructionSets[idx];
-
-		if (this->cmd != inst.cmd) {
-			continue;
-		} else if (! this->dst.match(inst.op1) || ! this->src.match(inst.op2)) {
-			_D(LOG_ZASM_DEBUG, "%s 0x%02X not match %d %d",
-							inst.cmd, inst.opcode,
-							this->dst.match(inst.op1),
-							this->src.match(inst.op2));
-			continue;
-		#if __x86_64__
-		} else if (X86_REAL_MODE == mode && 0x8B == inst.opcode) {
-			continue;
-		#endif /* __x86_64__ */
-		}
-
-		this->_absaddr_ = 0 == (INST_IMM & inst.op2) ? false : true;
-
-		_D(LOG_ZASM_INFO, "%s 0x%02X match %d %d",
-						inst.cmd, inst.opcode,
-						this->dst.match(inst.op1),
-						this->src.match(inst.op2));
-
-		#ifdef __x86_64__
-			legacyPrefix(inst, mode);
-			opcode(inst, mode);
-			modRW(inst, mode);
-			displacement(inst, mode);
-			immediate(inst, mode);
-		#endif /* __x86_64__ */
-
-		goto END;
-	}
-
-	_D(LOG_CRIT, "Not Implemented `%s` `%s` `%s`",
-		this->cmd.raw().c_str(), this->dst.raw().c_str(), this->src.raw().c_str());
-	exit(-1);
-END:
-	return;
 }

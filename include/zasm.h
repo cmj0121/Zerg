@@ -24,6 +24,9 @@
 #define ZASM_MEM_DWORD		"dword"
 #define ZASM_MEM_QWORD		"qword"
 
+#define DEFAULT_MODE		0
+#define X86_REAL_MODE		1
+#define X86_PROTECTED_MODE	2
 
 #include <map>
 #include "zasm/instruction.h"
@@ -44,7 +47,7 @@ class Zasm {
 		void assembleF(std::string srcfile);
 		void assembleL(std::string line);
 
-		Zasm& operator+= (Instruction *inst);
+		friend Zasm& operator += (Zasm &zasm, Instruction *inst);
 	private:
 		Args _args_;
 		int _linono_, _mode_;

@@ -8,6 +8,10 @@
 
 
 InstToken::InstToken(std::string src) : _src_(src) {
+	unsigned int start = 0, end = 0;
+	std::string tmp;
+	InstToken *token = NULL;
+
 	/* classify the token */
 	if (!*this) {
 		_D(LOG_CRIT, "empty string");
@@ -32,12 +36,20 @@ InstToken::InstToken(std::string src) : _src_(src) {
 		} else {
 			_D(LOG_CRIT, "Unkonwn register - `%s`", _src_.c_str());
 		}
-	} else if (this->isIMM()) {	/* IMMDEIATE */
-		_based_  = this;
-		_index_  = NULL;
-		_offset_ = NULL;
+	} else if (this->isIMM()) {	/* IMMEDIATE */
+		if (this->isRANImm()) {
+			tmp = this->_src_.substr(0, this->_src_.find(ZASM_RANGE));
+			this->_based_ = new InstToken(tmp);
 
-		off_t len = this->asInt();
+			tmp = this->_src_.substr(this->_src_.find(ZASM_RANGE)+1);
+			this->_index_ = new InstToken(tmp);
+		} else {
+			_based_  = this;
+			_index_  = NULL;
+			_offset_ = NULL;
+		}
+
+		off_t len = this->_based_->asInt();
 
 		if (0 == (len & ~0xFF)) {
 			_size_ = CPU_8BIT;
@@ -54,10 +66,6 @@ InstToken::InstToken(std::string src) : _src_(src) {
 		_offset_ = NULL;
 		_size_   = CPU_UNKNOWN;	/* undefined size */
 	} else {					/* MEMORY */
-		unsigned int start = 0, end = 0;
-		std::string tmp;
-		InstToken *token = NULL;
-
 		if (0 == this->_src_.find(ZASM_MEM_QWORD)) {
 			this->_size_ = CPU_64BIT;
 			tmp = this->_src_.substr(strlen(ZASM_MEM_QWORD));
@@ -147,7 +155,7 @@ END:
 bool InstToken::isIMM(void) {
 	bool blRet = false;
 
-	if (this->isIMMRange()) {
+	if (this->isRANImm()) {
 		blRet = true;
 	} else if ("0x" == this->_src_.substr(0, 2) || "0X" == this->_src_.substr(0, 2)) {
 		for (unsigned int idx = 2; idx < this->_src_.size(); ++idx) {

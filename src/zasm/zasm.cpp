@@ -8,113 +8,6 @@ Zasm::~Zasm(void) {
 		_inst_[i] = NULL;
 	}
 }
-void Zasm::reallocreg(void) {
-	_D(LOG_ZASM_DEBUG, "re-allocate register");
-	for (unsigned int idx = 0; idx < _inst_.size(); ++idx) {
-		off_t offset = 0;
-
-		if (!_inst_[idx]->readdressable()) {
-			continue;
-		}
-
-		if (_inst_[idx]->isIMMRange()) {
-			off_t size = 0;
-			InstToken tmp;
-
-			if ("" == _inst_[idx]->rangeFrom()) {
-				size = 0;
-			} else if (ZASM_CURRENT_POS == _inst_[idx]->rangeFrom()) {
-				for (int pos = idx-1; pos >= 0 ; --pos) {
-					size -= _inst_[pos]->length();
-				}
-			} else if (ZASM_SESSION_POS == _inst_[idx]->rangeFrom()) {
-				for (int pos = idx-1; pos >= 0 ; --pos) {
-					size -= _inst_[pos]->length();
-					if ("" != _inst_[pos]->label()) break;
-				}
-			} else {
-				tmp = InstToken(_inst_[idx]->rangeFrom());
-				size = -1 * tmp.asInt();
-			}
-
-			tmp = InstToken(_inst_[idx]->rangeTo());
-			size += tmp.asInt();
-			_inst_[idx]->setRepeat(size);
-			goto END;
-		} else if (ZASM_CURRENT_POS == _inst_[idx]->refer()) {
-			offset = -1 * _inst_[idx]->length();
-			goto END;
-		} else if (ZASM_SESSION_POS == _inst_[idx]->refer()) {
-			for(int pos = idx-1; pos >= 0; --pos) {
-				if ("" != _inst_[pos]->label()) {
-					/* HACK - Fix the compiler warning sign-compare */
-					while (pos < (int)idx) {
-						offset -= _inst_[pos+1]->length();
-						pos ++;
-					}
-					goto END;
-				}
-			}
-			_D(LOG_CRIT, "No symbol defined");
-		} else if (_inst_[idx]->isABSAddress()) {	/* absolute address */
-			offset = this->_args_.entry;
-
-			for (unsigned int pos = 0; pos < _inst_.size(); ++pos) {
-				if (_inst_[pos]->label() == _inst_[idx]->refer()) break;
-				offset += _inst_[pos]->length();
-			}
-
-			goto END;
-		} else {									/* related address */
-			for(unsigned int pos = idx+1; pos < _inst_.size(); ++pos) {
-				if (_inst_[pos]->label() == _inst_[idx]->refer()) {
-					pos --;
-					while (pos > idx) {
-						offset += _inst_[pos]->length();
-						pos --;
-					}
-
-					goto END;
-				}
-			}
-
-			for(int pos = idx-1; pos >= 0; --pos) {
-				if (_inst_[pos]->label() == _inst_[idx]->refer()) {
-					/* HACK - Fix the compiler warning sign-compare */
-					while (pos < (int)idx) {
-						offset -= _inst_[pos+1]->length();
-						pos ++;
-					}
-					goto END;
-				}
-			}
-		}
-
-
-		_D(LOG_CRIT, "Not found the symbol [%s]", _inst_[idx]->refer().c_str());
-		exit(-1);
-
-		END:
-		#ifdef __x86_64__
-			_inst_[idx]->setIMM(offset, X86_REAL_MODE == _mode_ ? CPU_16BIT : CPU_32BIT, true);
-		#else
-			_inst_[idx]->setIMM(offset, CPU_32BIT, true);
-		#endif /* __x86_64__ */
-	}
-}
-Zasm& Zasm::operator+= (Instruction *inst) {
-	this->_inst_.push_back(inst);
-	return *this;
-}
-off_t Zasm::length(void) {
-	off_t len = 0;
-
-	for (unsigned int i = 0; i < _inst_.size(); ++i) {
-		len += _inst_[i]->length();
-	}
-
-	return len;
-};
 void Zasm::assembleF(std::string srcfile) {
 	std::fstream src(srcfile, std::fstream::in);
 	std::string line;
@@ -294,3 +187,112 @@ void Zasm::dump(void) {
 		_D(LOG_CRIT, "Not implemented %s", this->_args_.fmt.c_str());
 	}
 }
+Zasm& operator += (Zasm &zasm, Instruction *inst) {
+	zasm._inst_.push_back(inst);
+	return zasm;
+}
+
+/* ======== private methods ======== */
+void Zasm::reallocreg(void) {
+	_D(LOG_ZASM_DEBUG, "re-allocate register");
+	for (unsigned int idx = 0; idx < _inst_.size(); ++idx) {
+		off_t offset = 0;
+
+		if (!_inst_[idx]->readdressable()) {
+			continue;
+		}
+
+		if (_inst_[idx]->isIMMRange()) {
+			off_t size = 0;
+			InstToken tmp;
+
+			if ("" == _inst_[idx]->rangeFrom()) {
+				size = 0;
+			} else if (ZASM_CURRENT_POS == _inst_[idx]->rangeFrom()) {
+				for (int pos = idx-1; pos >= 0 ; --pos) {
+					size -= _inst_[pos]->length();
+				}
+			} else if (ZASM_SESSION_POS == _inst_[idx]->rangeFrom()) {
+				for (int pos = idx-1; pos >= 0 ; --pos) {
+					size -= _inst_[pos]->length();
+					if ("" != _inst_[pos]->label()) break;
+				}
+			} else {
+				tmp = InstToken(_inst_[idx]->rangeFrom());
+				size = -1 * tmp.asInt();
+			}
+
+			tmp = InstToken(_inst_[idx]->rangeTo());
+			size += tmp.asInt();
+			_inst_[idx]->setRepeat(size);
+			goto END;
+		} else if (ZASM_CURRENT_POS == _inst_[idx]->refer()) {
+			offset = -1 * _inst_[idx]->length();
+			goto END;
+		} else if (ZASM_SESSION_POS == _inst_[idx]->refer()) {
+			for(int pos = idx-1; pos >= 0; --pos) {
+				if ("" != _inst_[pos]->label()) {
+					/* HACK - Fix the compiler warning sign-compare */
+					while (pos < (int)idx) {
+						offset -= _inst_[pos+1]->length();
+						pos ++;
+					}
+					goto END;
+				}
+			}
+			_D(LOG_CRIT, "No symbol defined");
+		} else if (_inst_[idx]->isABSAddress()) {	/* absolute address */
+			offset = this->_args_.entry;
+
+			for (unsigned int pos = 0; pos < _inst_.size(); ++pos) {
+				if (_inst_[pos]->label() == _inst_[idx]->refer()) break;
+				offset += _inst_[pos]->length();
+			}
+
+			goto END;
+		} else {									/* related address */
+			for(unsigned int pos = idx+1; pos < _inst_.size(); ++pos) {
+				if (_inst_[pos]->label() == _inst_[idx]->refer()) {
+					pos --;
+					while (pos > idx) {
+						offset += _inst_[pos]->length();
+						pos --;
+					}
+
+					goto END;
+				}
+			}
+
+			for(int pos = idx-1; pos >= 0; --pos) {
+				if (_inst_[pos]->label() == _inst_[idx]->refer()) {
+					/* HACK - Fix the compiler warning sign-compare */
+					while (pos < (int)idx) {
+						offset -= _inst_[pos+1]->length();
+						pos ++;
+					}
+					goto END;
+				}
+			}
+		}
+
+
+		_D(LOG_CRIT, "Not found the symbol [%s]", _inst_[idx]->refer().c_str());
+		exit(-1);
+
+		END:
+		#ifdef __x86_64__
+			_inst_[idx]->setIMM(offset, X86_REAL_MODE == _mode_ ? CPU_16BIT : CPU_32BIT, true);
+		#else
+			_inst_[idx]->setIMM(offset, CPU_32BIT, true);
+		#endif /* __x86_64__ */
+	}
+}
+off_t Zasm::length(void) {
+	off_t len = 0;
+
+	for (unsigned int i = 0; i < _inst_.size(); ++i) {
+		len += _inst_[i]->length();
+	}
+
+	return len;
+};
