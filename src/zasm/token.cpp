@@ -3,36 +3,115 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+
 #include "zasm.h"
 
-#ifndef REGISTERS
-#   error "You need define REGISTERS first"
-#endif /* REGISTERS */
 
-bool InstToken::isNULL(void) {
-	return "" == this->_src_;
+InstToken::InstToken(std::string src) : _src_(src) {
+	/* classify the token */
+	if (!*this) {
+		_D(LOG_CRIT, "empty string");
+	} else if (this->isREG()) {	/* REGISTER */
+		const std::vector<std::string> regs8  = { X86_REG64, X86_EXTREG64 };
+		const std::vector<std::string> regs16 = { X86_REG32, X86_EXTREG32 };
+		const std::vector<std::string> regs32 = { X86_REG16, X86_EXTREG16 };
+		const std::vector<std::string> regs64 = { X86_REG8, X86_REG_LOWER8, X86_EXTREG8 };
+
+		_based_  = this;
+		_index_  = NULL;
+		_offset_ = NULL;
+
+		if (regs8.end() != std::find(regs8.begin(), regs8.end(), this->_src_))  {
+			_size_ = CPU_8BIT;
+		} else if (regs16.end() != std::find(regs16.begin(), regs16.end(), this->_src_)) {
+			_size_ = CPU_16BIT;
+		} else if (regs32.end() != std::find(regs32.begin(), regs32.end(), this->_src_)) {
+			_size_ = CPU_32BIT;
+		} else if (regs64.end() != std::find(regs64.begin(), regs64.end(), this->_src_)) {
+			_size_ = CPU_64BIT;
+		} else {
+			_D(LOG_CRIT, "Unkonwn register - `%s`", _src_.c_str());
+		}
+	} else if (this->isIMM()) {	/* IMMDEIATE */
+		_based_  = this;
+		_index_  = NULL;
+		_offset_ = NULL;
+
+		off_t len = this->asInt();
+
+		if (0 == (len & ~0xFF)) {
+			_size_ = CPU_8BIT;
+		} else if (0 == (len & ~0xFFFF)) {
+			_size_ = CPU_16BIT;
+		} else if (0 == (len & ~0xFFFFFFFF)) {
+			_size_ = CPU_32BIT;
+		} else {
+			_size_ = CPU_64BIT;
+		}
+	} else if (this->isREF()) { /* REFERENCE */
+		_based_  = this;
+		_index_  = NULL;
+		_offset_ = NULL;
+		_size_   = CPU_UNKNOWN;	/* undefined size */
+	} else {					/* MEMORY */
+		unsigned int start = 0, end = 0;
+		std::string tmp;
+		InstToken *token = NULL;
+
+		if (0 == this->_src_.find(ZASM_MEM_QWORD)) {
+			this->_size_ = CPU_64BIT;
+			tmp = this->_src_.substr(strlen(ZASM_MEM_QWORD));
+		} else if (0 == this->_src_.find(ZASM_MEM_DWORD)) {
+			this->_size_ = CPU_32BIT;
+			tmp = this->_src_.substr(strlen(ZASM_MEM_DWORD));
+		} else if (0 == this->_src_.find(ZASM_MEM_WORD)) {
+			this->_size_ = CPU_16BIT;
+			tmp = this->_src_.substr(strlen(ZASM_MEM_WORD));
+		} else if (0 == this->_src_.find(ZASM_MEM_BYTE)) {
+			this->_size_ = CPU_8BIT;
+			tmp = this->_src_.substr(strlen(ZASM_MEM_BYTE));
+		} else {
+			this->_size_ = CPU_64BIT;
+			tmp = this->_src_;
+		}
+
+		tmp   = strip(tmp);
+		while (']' != tmp[end]) {
+			if ('[' != tmp[0] || ']' != tmp[tmp.size()-1]) {
+				_D(LOG_CRIT, "Unknown token - `%s`", this->_src_.c_str());
+			}
+
+			for (start = 0; start < tmp.size(); ++start) {
+				if (' ' != tmp[start]) break;
+			}
+			for (end = start+1; end < tmp.size(); ++end) {
+				if (' ' == tmp[end] || ']' == tmp[end]) break;
+				if ('+' == tmp[end] || '-' == tmp[end] || ':' == tmp[end]) break;
+			}
+			token = new InstToken(tmp.substr(start, end-1));
+			if (token->isIMM()) {
+				if (NULL != this->_offset_) _D(LOG_CRIT, "Multiple offset in memory");
+				this->_offset_ = token;
+			} else if (NULL == this->_based_) {
+				this->_based_ = token;
+			} else if (NULL == this->_index_) {
+				this->_index_ = token;
+			} else {
+				_D(LOG_CRIT, "Unknown token - `%s`", this->_src_.c_str());
+			}
+
+			start = end+1;
+		}
+	}
 }
 
+
+/* ======== simple token classify ======== */
 bool InstToken::isREG(void) {
 	const std::vector<std::string> regs = { REGISTERS };
 	unsigned int idx = std::find(regs.begin(), regs.end(), this->_src_) - regs.begin();
 
-	return idx != regs.size() || this->isSSE() || this->isSegREG();
-}
-bool InstToken::isSegREG(void) {
-	const std::vector<std::string> regs = { SEGMENT_REG };
-	unsigned int idx = std::find(regs.begin(), regs.end(), this->_src_) - regs.begin();
-
 	return idx != regs.size();
-}
-bool InstToken::isLowerByteReg(void) {
-	const std::vector<std::string> regs = { REG_GENERAL_8 };
-	unsigned int idx = std::find(regs.begin(), regs.end(), this->_src_) - regs.begin();
-
-	return idx != regs.size() && idx < 8;
-}
-bool InstToken::isPosREG(void) {
-	return this->isREG() && (4 == this->asInt() % 8 || 5 == this->asInt() % 8);
 }
 bool InstToken::isMEM(void) {
 	bool blRet = false;
@@ -42,34 +121,33 @@ bool InstToken::isMEM(void) {
 		goto END;
 	} else if ("" != this->_src_ && '[' == this->_src_[0]) {
 		_D(LOG_ZASM_DEBUG, "simple memory space without size specified");
-		blRet = true;
+		_size_ = CPU_64BIT;
+		blRet  = true;
 		goto END;
-	} else if ( (0 == this->_src_.find(ZASM_MEM_BYTE)  && '[' == this->_src_[5]) ||
-				(0 == this->_src_.find(ZASM_MEM_WORD)  && '[' == this->_src_[5]) ||
-				(0 == this->_src_.find(ZASM_MEM_DWORD) && '[' == this->_src_[6]) ||
-				(0 == this->_src_.find(ZASM_MEM_QWORD) && '[' == this->_src_[6])) {
-		_D(LOG_ZASM_DEBUG, "simple memory space with size specified");
-		blRet = true;
+	} else if (0 == this->_src_.find(ZASM_MEM_BYTE)  && '[' == this->_src_[5]) {
+		_size_ = CPU_8BIT;
+		blRet  = true;
+		goto END;
+	} else if (0 == this->_src_.find(ZASM_MEM_WORD)  && '[' == this->_src_[5]) {
+		_size_ = CPU_16BIT;
+		blRet  = true;
+		goto END;
+	} else if (0 == this->_src_.find(ZASM_MEM_DWORD) && '[' == this->_src_[6]) {
+		_size_ = CPU_32BIT;
+		blRet  = true;
+		goto END;
+	} else if (0 == this->_src_.find(ZASM_MEM_QWORD) && '[' == this->_src_[6]) {
+		_size_ = CPU_64BIT;
+		blRet  = true;
 		goto END;
 	}
 END:
 	return blRet;
 }
-bool InstToken::isMEM2(void) {
-	InstToken *token = NULL;
-
-	if (!this->isMEM() || NULL == (token = this->indexReg())) {
-		return false;
-	}
-	delete token;
-	return true;
-}
 bool InstToken::isIMM(void) {
 	bool blRet = false;
 
-	if (*this == "") {
-		goto END;
-	} else if (this->isIMMRange()) {
+	if (this->isIMMRange()) {
 		blRet = true;
 	} else if ("0x" == this->_src_.substr(0, 2) || "0X" == this->_src_.substr(0, 2)) {
 		for (unsigned int idx = 2; idx < this->_src_.size(); ++idx) {
@@ -80,8 +158,6 @@ bool InstToken::isIMM(void) {
 			}
 			goto END;
 		}
-	} else if (this->isREF()) {
-		blRet = true;
 	} else {
 		for (unsigned int idx = 0; idx < this->_src_.size(); ++idx) {
 			if ('0' <= this->_src_[idx] && this->_src_[idx] <= '9') {
@@ -94,242 +170,36 @@ bool InstToken::isIMM(void) {
 END:
 	return blRet;
 }
-bool InstToken::isIMMRange(void) {
-	return this->_src_.end() != std::find(this->_src_.begin(), this->_src_.end(), ZASM_RANGE);
+bool InstToken::isREF(void) {
+	return	ZASM_REFERENCE == _src_[0] ||
+			ZASM_CURRENT_POS == _src_ || ZASM_SESSION_POS == _src_;
+}
+
+/* ================ */
+bool InstToken::isLOWReg(void) {
+	InstToken *based = this->_based_;
+	const std::vector<std::string> low = { X86_REG_LOWER8 };
+
+	return NULL != based && IN_VECTOR(based->_src_, low);
+}
+bool InstToken::isPOSREG(void) {
+	InstToken *based = this->_based_;
+
+	return NULL != based && (4 == based->asInt() % 8 || 5 == based->asInt() % 8);
+}
+bool InstToken::isSEGReg(void) {
+	InstToken *based = this->_based_;
+	const std::vector<std::string> seg = { SEGREGS };
+
+	return NULL != based && IN_VECTOR(based->_src_, seg);
 }
 bool InstToken::isEXT(void) {
-	if (this->isREF()) {
-		return false;
-	} else if (this->isREG()) {
-		unsigned int idx = 0;
-		const std::vector<std::string> regs = { REG_EXTENSION };
+	InstToken *based = this->_based_;
+	const std::vector<std::string> ext = { X86_EXTREGS };
 
-		idx = std::find(regs.begin(), regs.end(), this->_src_) - regs.begin();
-		return idx != regs.size();
-	} else if (this->isMEM()) {
-		InstToken *tmp = this->asReg();
-		return tmp->isEXT();
-	}
-	return false;
-}
-bool InstToken::isREF(void) {
-	/* Check is reference or not */
-	return ZASM_REFERENCE == this->_src_[0] || ZASM_CURRENT_POS == this->_src_ ||
-		 ZASM_SESSION_POS == this->_src_;
-}
-bool InstToken::isSSE(void) {
-	/* Streaming SIMD Extensions Register */
-
-	return 0 == this->_src_.find("xmm");
-}
-bool InstToken::isDecorator(void) {
-	/* return the is decorator or NOT */
-	return ZASM_DECORATOR == this->_src_[0];
+	return NULL != based && IN_VECTOR(based->_src_, ext);
 }
 
-off_t InstToken::asInt(void) {
-	if (0 < this->_src_.size() && this->isREF()) {
-		return (off_t)-1;
-	} else if (this->isSSE()) {
-		std::string off = this->_src_.substr(3);
-
-		return atoi(off.c_str());
-	} else if (this->isSegREG()) {
-		const std::vector<std::string> regs = { SEGMENT_REG };
-		int idx = 0;
-
-		idx = std::find(regs.begin(), regs.end(), this->raw()) - regs.begin();
-		return idx;
-	} else if (this->isREG() || this->isMEM()) {
-		const std::vector<std::string> regs = { REGISTERS };
-		int idx = 0;
-
-		idx = (std::find(regs.begin(), regs.end(), this->asReg()->raw()) - regs.begin()) % 8;
-		return idx;
-	} else if (this->isIMM()) {
-		std::string src = this->_src_;
-		std::stringstream ss;
-		off_t ret;
-
-		if (this->isIMMRange()) {
-			src = src.substr(1);
-		}
-
-		if ("0x" == src.substr(0, 2) || "0X" == src.substr(0, 2)) {
-			ss << std::hex << src;
-		} else {
-			ss << src;
-		}
-		ss >> ret;
-		return ret;
-	} else {
-		_D(LOG_CRIT, "Not Implemented '%s'", this->_src_.c_str());
-		exit(-1);
-	}
-}
-InstToken* InstToken::asReg(void) {
-	if (!(this->isREG() || this->isMEM())) {
-		_D(LOG_CRIT, "Only support register or member");
-		exit(-1);
-	} else if (this->isREG()) {
-		return this;
-	} else {
-		unsigned int start, end;
-
-		for (start = 0; start < _src_.size(); ++start) {
-			if ('[' == _src_[start]) break;
-		}
-		start ++;
-		for (; start < _src_.size(); ++start) {
-			if (' ' != _src_[start]) break;
-		}
-		for (end = start+1; end < _src_.size(); ++end) {
-			if (' ' == _src_[end] || ']' == _src_[end]) break;
-			if ('+' == _src_[end] || '-' == _src_[end]) break;
-		}
-		return new InstToken(_src_.substr(start, end-start));
-	}
-}
-InstToken* InstToken::indexReg(void) {
-	std::string substr;
-	InstToken *token = NULL, *tmpToken = NULL;
-
-	for (unsigned int s = 0; s < _src_.size(); ++s) {
-		if ('[' != _src_[s]) continue;
-
-		for (unsigned int e = s+1; e < _src_.size(); ++e) {
-			if (']' != this->_src_[e]) continue;
-			substr = this->_src_.substr(s+1, e-s-1);
-			break;
-		}
-		break;
-	}
-
-	if ("" != substr) {
-		unsigned int cnt = 0, idx, pos;
-		std::string tmp;
-
-		for (idx = 0, pos = 0; idx < substr.size(); ++idx) {
-			switch (substr[idx]) {
-				case '+': case '-': case ' ':
-					tmpToken = new InstToken(substr.substr(pos, idx-pos));
-					pos = idx+1;
-					if (tmpToken->isREG()) {
-						token = tmpToken;
-						cnt ++;
-					} else {
-						delete tmpToken;
-						tmpToken = NULL;
-					}
-					break;
-				default:
-					break;
-			}
-		}
-		tmpToken = new InstToken(substr.substr(pos, idx-pos));
-		if (tmpToken->isREG()) {
-			token = tmpToken;
-			cnt ++;
-		} else {
-			delete tmpToken;
-		}
-
-		if (cnt > 2) {
-			_D(LOG_CRIT, "Not support %s", this->_src_.c_str());
-			exit(-1);
-		}
-		if (cnt != 2) {
-			delete token;
-			token = NULL;
-		}
-	}
-	return token;
-}
-off_t InstToken::offset(void) {
-	off_t offset = 0;
-
-	if (!this->isMEM() || this->isREF()) {
-		offset = 0;
-	}
-
-	for (unsigned int s = 0, e = 0; s < this->_src_.size(); ++s) {
-		int sign = 1;
-		if ('+' != this->_src_[s] && '-' != this->_src_[s]) continue;
-
-		if ('-' == this->_src_[s]) sign = -1;
-
-		/* Skip space */
-		for (++s; s < this->_src_.size(); ++s) {
-			if (' ' == this->_src_[s]) continue;
-			break;
-		}
-		for (e = s+1; e < this->_src_.size() && ']' != this->_src_[e]; ++e) {
-			if (' ' == this->_src_[e] || '+' == this->_src_[e] || '-' == this->_src_[e]) break;
-		}
-
-		InstToken token = InstToken(this->_src_.substr(s, e-s));
-
-		if (token.isIMM()) {
-			offset += token.asInt() * sign;
-		}
-	}
-
-	_D(LOG_ZASM_DEBUG, "offset %s -> " OFF_T, this->_src_.c_str(), offset);
-	return offset;
-}
-
-int InstToken::size(void) {
-	int size = CPU_UNKNOWN;
-	if (this->isREG()) {
-		const std::vector<std::string> regs8  = { REG_GENERAL_8,  REG_EXTENSION_8 };
-		const std::vector<std::string> regs16 = { REG_GENERAL_16, REG_EXTENSION_16 };
-		const std::vector<std::string> regs32 = { REG_GENERAL_32, REG_EXTENSION_32 };
-		const std::vector<std::string> regs64 = { REG_GENERAL_64, REG_EXTENSION_64 };
-
-		if (regs8.end() != std::find(regs8.begin(), regs8.end(), this->_src_))  {
-			size = CPU_8BIT;
-		} else if (regs16.end() != std::find(regs16.begin(), regs16.end(), this->_src_)) {
-			size = CPU_16BIT;
-		} else if (regs32.end() != std::find(regs32.begin(), regs32.end(), this->_src_)) {
-			size = CPU_32BIT;
-		} else if (regs64.end() != std::find(regs64.begin(), regs64.end(), this->_src_)) {
-			size = CPU_64BIT;
-		}
-	} else if (this->isREF()) {
-		size = CPU_64BIT;
-	} else if (this->isMEM()) {
-		if (0 == this->_src_.find(ZASM_MEM_BYTE)) {
-			size = CPU_8BIT;
-		} else if (0 == this->_src_.find(ZASM_MEM_WORD)) {
-			size = CPU_16BIT;
-		} else if (0 == this->_src_.find(ZASM_MEM_DWORD)) {
-			size = CPU_32BIT;
-		} else if (0 == this->_src_.find(ZASM_MEM_QWORD)) {
-			size = CPU_64BIT;
-		} else {
-			size = CPU_64BIT;
-		}
-	} else if (this->isIMM()) {
-		off_t len = this->asInt();
-
-		if (0 == (len & ~0x7F)) {
-			size = CPU_8BIT;
-		} else if (0 == (len & ~0x7FFF)) {
-			size = CPU_16BIT;
-		} else if (0 == (len & ~0xFFFFFFFF)) {
-			size = CPU_32BIT;
-		} else {
-			size = CPU_64BIT;
-		}
-	}
-
-	_D(LOG_ZASM_DEBUG, "`%s` size %d", this->_src_.c_str(), size);
-	return size;
-}
-std::string InstToken::raw(void) {
-	/* Just return the original string */
-	return this->_src_;
-}
 std::string InstToken::unescape(void) {
 	std::string dst = "";
 	char tmp = 0x0;
@@ -398,96 +268,3 @@ std::string InstToken::unescape(void) {
 	_D(LOG_ZASM_DEBUG, "escape `%s` -> `%s`", this->_src_.c_str(), dst.c_str());
 	return dst;
 };
-bool InstToken::match(unsigned int flag) {
-	bool blRet = false;
-
-	_D(LOG_ZASM_DEBUG, "check %s vs %X", this->_src_.c_str(), flag);
-	if (INST_NONE == flag && *this == "") {
-		blRet = true;
-		goto END;
-	}
-	if (0 != (INST_REG & flag) && this->isREG() && ! this->isSegREG()) {
-		blRet = true;
-		goto CHECK_SIZE;
-	}
-	if (0 != (INST_MEM & flag) && this->isMEM()) {
-		blRet = true;
-		goto CHECK_SIZE;
-	}
-	if (0 != (INST_IMM & flag) && (this->isIMM() || this->isREF())) {
-		blRet = true;
-		if (this->isREF()) goto END;
-		goto CHECK_SIZE;
-	}
-
-#ifdef __x86_64__
-	if (0 != (INST_REG_SEGMEM & flag) && this->isSegREG()) {
-		blRet = true;
-		goto END;
-	}
-	if (INST_REG_SPECIFY & flag) {
-		switch(flag) {
-			case INST_REG_RAX:
-				blRet = *this == "rax";
-				break;
-			case INST_REG_AH:
-				blRet = *this == "ah";
-				break;
-			case INST_REG_AL:
-				blRet = *this == "al";
-				break;
-			case INST_REG_CL:
-				blRet = *this == "cl";
-				break;
-			default:
-				_D(LOG_CRIT, "Not Implemented");
-				exit(-1);
-		}
-	}
-#endif /* __x86_64__ */
-	goto END;
-
-CHECK_SIZE:
-	switch (flag & INST_SIZE_ALL) {
-		case INST_SIZE8:
-			if (this->isREG() || this->isIMM()) {
-				blRet = this->size() == 1 && 0 == (~0x7F & this->asInt());
-			} else {
-				/* FIXME */
-				blRet = true;
-			}
-			break;
-		case INST_SIZE16:
-			blRet = this->size() <= 2;
-			break;
-		case INST_SIZE32:
-			blRet = this->size() <= 4;
-			break;
-		case INST_SIZE16_32:
-			blRet = this->size() <= 4;
-			break;
-		case INST_SIZE16_32_64:
-			blRet = this->isIMM() ||  1 != this->size();
-			break;
-		case INST_SIZE64:
-			blRet = this->size() <= 8;
-			break;
-		case INST_SIZE_ALL:
-		default:
-			blRet = true;
-			break;
-	}
-END:
-	return blRet;
-}
-bool InstToken::operator== (std::string src) {
-	/* Compared with string */
-	return src == this->_src_;
-}
-bool InstToken::operator!= (std::string src) {
-	/* Compared with string */
-	return ! (*this == src);
-}
-InstToken::operator int() const {
-	return this->_src_ != "";
-}

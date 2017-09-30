@@ -35,9 +35,9 @@ class Zasm {
 
 		void dump();
 		void dump_bin(off_t entry, bool symb);
-		#if defined(__APPLE__) && defined(__x86_64__)
+		#if defined(__APPLE__)
 		void dump_macho64(off_t entry, bool symb);	/* Binary-Specified */
-		#elif defined(__linux__) && defined(__x86_64__)
+		#elif defined(__linux__)
 		void dump_elf64(off_t entry, bool symb);
 		#endif /* __x86_64__ */
 

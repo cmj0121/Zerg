@@ -17,38 +17,38 @@
 
 class InstToken {
 	public:
-		InstToken(std::string src="") : _src_(src) {};
+		InstToken(std::string src="");
 
-		bool isNULL(void);			/* is NULL or empty */
-		bool isREG(void);			/* register */
-		bool isSegREG(void);		/* Memory-Segment register */
-		bool isLowerByteReg(void);	/* lower 8-bit register */
-		bool isPosREG(void);		/* special register - position-related */
-		bool isMEM(void);			/* memory */
-		bool isMEM2(void);			/* memory with two registers */
-		bool isIMM(void);			/* immediate */
-		bool isIMMRange(void);		/* immediate with range */
+		/* simple token classify */
+		bool isREG(void);			/* register   */
+		bool isMEM(void);			/* memory     */
+		bool isIMM(void);			/* immediate  */
+		bool isREF(void);			/* referenced */
+
+		bool isLOWReg(void);		/* lower 8-bit register */
+		bool isPOSREG(void);		/* special register - position-related */
+		bool isSEGReg(void);		/* segment register */
+		bool isIMMRange(void)		{ return _src_.size() != _src_.find(ZASM_RANGE); }
 		bool isEXT(void);			/* extension in 64-bit mode */
-		bool isREF(void);			/* referenced symbol */
-		bool isSSE(void);			/* streaming SIMD extensions */
-		bool isDecorator(void);		/* decorator */
 
-		InstToken* asReg(void);		/* treated as register */
-		InstToken* indexReg(void);	/* index register of memory */
-		off_t asInt(void);			/* treated as integer */
-		off_t offset(void);			/* offset of memory */
+		/* [ based + index + offset ] */
+		InstToken* asReg(void)		{ return this->_based_;  }
+		InstToken* idxReg(void)		{ return this->_index_;  }
+		InstToken* offReg(void)		{ return this->_offset_; }
+		/* the size of this token, CPU_8BIT ~ CPU_64BIT */
+		int size(void)				{ return this->_size_;   }
+		/* treated as integer */
+		off_t asInt(void)			{ return this->_int_;    }
 
-		int size(void);
-
-		std::string raw(void);		/* row string */
 		std::string unescape(void);	/* unescape string */
 
-		bool match(unsigned int flag);
-		bool operator== (std::string src);
-		bool operator!= (std::string src);
-		operator int() const;
+		bool operator == (std::string src)	{ return _src_ == src; }
+		bool operator != (std::string src)	{ return _src_ != src; }
+		operator int(void) const 			{ return _src_ != "";  }
 	private:
 		std::string _src_;
+		off_t _size_, _int_;
+		InstToken *_based_, *_index_, *_offset_;
 };
 
 #include <fstream>

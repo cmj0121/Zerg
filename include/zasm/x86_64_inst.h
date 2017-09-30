@@ -7,30 +7,9 @@
 #define PARAM_SIZE				0x08
 #define MAX_CMD_LEN				8
 
-#define REG_GENERAL_64		"rax", "rcx", "rdx", "rbx", "rsp", "rbp", "rsi", "rdi"
-#define REG_GENERAL_32		"eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi"
-#define REG_GENERAL_16		 "ax",  "cx",  "dx",  "bx",  "sp",  "bp",  "si",  "di"
-#define REG_GENERAL_8		 "al",  "cl",  "dl",  "bl", "spl", "bpl", "sil", "dil", \
-							 "ah",  "ch",  "dh",  "bh"
-#define REG_GENERAL			REG_GENERAL_64, REG_GENERAL_32, REG_GENERAL_16, REG_GENERAL_8
+#include "zasm/registers.h"
 
-#define REG_EXTENSION_64	"r8",  "r9",  "r10",  "r11",  "r12",  "r13",  "r14",  "r15"
-#define REG_EXTENSION_32	"r8d", "r9d", "r10d", "r11d", "r12d", "r13d", "r14d", "r15d"
-#define REG_EXTENSION_16	"r8w", "r9w", "r10w", "r11w", "r12w", "r13w", "r14w", "r15w"
-#define REG_EXTENSION_8		"r8b", "r9b", "r10b", "r11b", "r12b", "r13b", "r14b", "r15b"
-#define REG_EXTENSION		REG_EXTENSION_64, REG_EXTENSION_32, REG_EXTENSION_16, REG_EXTENSION_8
-
-#define SEGMENT_ES		"es"	/* destination segment */
-#define SEGMENT_CS		"cs"	/* code segment - IP   */
-#define SEGMENT_SS		"ss"	/* stack segment       */
-#define SEGMENT_DS		"ds"	/* data segment        */
-#define SEGMENT_FS		"fs"
-#define SEGMENT_GS		"gs"
-#define SEGMENT_REG		SEGMENT_ES, SEGMENT_CS, SEGMENT_SS, SEGMENT_DS, SEGMENT_FS, SEGMENT_GS
-
-#define REGISTERS			REG_EXTENSION, REG_GENERAL
 #define USED_REGISTERS		"rcx", "rbx", "r8", "r9", "r10", "r11", 
-
 #define SYSCALL_PARAM		"rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"
 #define SYSCALL_REG			"rax"
 

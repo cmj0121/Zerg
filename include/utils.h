@@ -10,6 +10,10 @@
 
 /* general help function */
 #include <stdio.h>
+#include <string>
+#include <string>
+#include <vector>
+
 #define StrCP(dst, src)		snprintf((char *)dst, sizeof(dst), "%s", src)
 #define ARRAY_SIZE(ctx)		(sizeof(ctx)/sizeof(ctx[0]))
 #define FREE(ctx)			{ if (NULL != ctx) free(ctx); (ctx) = NULL; }
@@ -20,15 +24,10 @@
 #define ISHEX(c)			(ISDIGIT(c) || (LOWERCASE(c) >= 'a' && LOWERCASE(c) <= 'f'))
 #define ISWHITESPACE(c)		(c == ' ' || c == '\t' || c == '\0')
 #define ISWORD(c)			(ISDIGIT(c) || ISLETTER(c) || '_' == c)
+#define IN_VECTOR(_s, _v)	(_v.end() != std::find(_v.begin(), _v.end(), _s))
 
-#include <string>
 typedef std::string STRING;
 
-#include <string>
-typedef std::string STRING;
-
-#include <string>
-#include <vector>
 inline static std::string strip(std::string src) {
 	if (' ' != src[0] && ' ' != src[src.size()-1]) {
 		return src;
@@ -90,8 +89,6 @@ typedef struct _tag_args_ {
 	STRING	fmt;
 	STRING	platform;
 } Args;
-
-#include <stdio.h>
 
 #define _D(lv, msg, ...) 										\
 	do {														\
